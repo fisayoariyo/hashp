@@ -1,10 +1,12 @@
-# Hashmar CropEx Farmer App
+Hashmar CropEx Farmer App
 
-A mobile-first React application providing Nigerian smallholder farmers with a digital identity, farm tracking, and access to financial services.
+Boss, nice to work with you!
+
+This is a mobile-first React app that gives Nigerian smallholder farmers a digital identity they can carry in their pocket.
 
 ---
 
-## Tech Stack
+The Tech Stack
 
 | Layer | Choice |
 |---|---|
@@ -13,27 +15,24 @@ A mobile-first React application providing Nigerian smallholder farmers with a d
 | Styling | Tailwind CSS v3 |
 | Icons | Lucide React |
 | State | React Context + hooks |
-| Persistence | localStorage via `useLocalStorage` |
-| Data | Static mock (Phase 1) — swap via `src/services/api.js` |
+| Data | Static mock (Phase 1) — swap via src/services/api.js |
 
 ---
 
-## Quick Start
+Start here my Oga
 
 ```bash
 npm install
 npm run dev
 ```
 
-### Test Login Credentials
-| Field | Value |
-|---|---|
-| Phone | `08012345678` |
-| OTP | `1234` |
+Test login credentials:
+- Phone: 08012345678
+- OTP: 1234
 
 ---
 
-## Project Structure
+This is the Project Structure my boss, shey you like sharwarma?
 
 ```
 src/
@@ -42,95 +41,97 @@ src/
 ├── index.css                   # Tailwind base + global styles
 │
 ├── constants/
-│   └── routes.js               # ROUTES — all path strings as named constants
+│   └── routes.js               # All route paths in one place
 │
 ├── context/
-│   ├── AuthContext.jsx          # isAuthenticated, login(), logout(), farmerID, token
-│   ├── ToastContext.jsx         # Global toast: success/error/info/warning, auto-dismiss
-│   └── index.js                # Barrel export
+│   ├── AuthContext.jsx          # Login, logout, auth state
+│   ├── ToastContext.jsx         # Global toast notifications
+│   └── index.js
 │
 ├── data/
-│   └── farmerMock.js           # All static mock data (Phase 1)
+│   └── farmerMock.js           # All mock data lives here (Phase 1)
 │
 ├── hooks/
-│   ├── useActivities.js        # Fetch recent farm activities
-│   ├── useClipboard.js         # clipboard.writeText with toast feedback
-│   ├── useFarmer.js            # Fetch full farmer profile
-│   ├── useFarmerID.js          # Fetch digital ID card data
-│   ├── useFarms.js             # Fetch farmer's farm list
-│   ├── useHelp.js              # Fetch FAQs and support contact
-│   ├── useLocalStorage.js      # Persist values in localStorage
-│   ├── useNotifications.js     # Fetch notifications + unreadCount
+│   ├── useActivities.js        # Farm activities
+│   ├── useClipboard.js         # Copy to clipboard
+│   ├── useFarmer.js            # Farmer profile
+│   ├── useFarmerID.js          # Digital ID card data
+│   ├── useFarms.js             # Farm list
+│   ├── useHelp.js              # FAQs and support contacts
+│   ├── useLocalStorage.js      # Persist to localStorage
+│   ├── useNotifications.js     # Notifications + unread count
 │   ├── useScrollToTop.js       # Scroll to top on route change
-│   └── index.js                # Barrel export
+│   └── index.js
 │
 ├── screens/
-│   ├── SplashScreen.jsx        # / — Logo + farm background, auto-advances
-│   ├── OnboardingScreen.jsx    # /onboard — 3-slide swipeable onboarding
-│   ├── VerifyScreen.jsx        # /verify — Phone number login
-│   ├── OTPScreen.jsx           # /otp — 4-digit OTP with resend countdown
-│   ├── HomeScreen.jsx          # /home — Dashboard (protected)
-│   ├── FarmerIDScreen.jsx      # /id-card — Digital ID card + QR (protected)
-│   ├── ProfileScreen.jsx       # /profile — Read-only farmer profile (protected)
-│   ├── UpdatesScreen.jsx       # /updates — Notifications list (protected)
-│   ├── HelpScreen.jsx          # /help — FAQs + support contacts (protected)
-│   ├── FarmsScreen.jsx         # /farms — Farm list + weather card (protected)
-│   ├── ActivitiesScreen.jsx    # /activities — Full activity log + filter (protected)
-│   └── NotFoundScreen.jsx      # * — 404 fallback
+│   ├── SplashScreen.jsx        # / — Logo screen, auto-advances
+│   ├── OnboardingScreen.jsx    # /onboard — 3 swipeable slides
+│   ├── VerifyScreen.jsx        # /verify — Phone number input
+│   ├── OTPScreen.jsx           # /otp — 4-digit code + resend timer
+│   ├── HomeScreen.jsx          # /home — Main dashboard
+│   ├── FarmerIDScreen.jsx      # /id-card — Digital ID + QR code
+│   ├── ProfileScreen.jsx       # /profile — Read-only farmer info
+│   ├── UpdatesScreen.jsx       # /updates — Notifications list
+│   ├── HelpScreen.jsx          # /help — FAQs + support contacts
+│   ├── FarmsScreen.jsx         # /farms — Farm list + weather
+│   ├── ActivitiesScreen.jsx    # /activities — Activity log + filter
+│   └── NotFoundScreen.jsx      # * — 404 page
 │
 ├── components/
-│   ├── BottomNav.jsx           # Fixed 2-tab nav (Home, My Profile)
-│   ├── WelcomeHeader.jsx       # Name, Farmer ID copy, notification bell
-│   ├── FarmWeatherCard.jsx     # Dark green weather + farm info card
-│   ├── AddFarmBanner.jsx       # Green CTA banner → /farms
-│   ├── FarmCard.jsx            # Farm summary row card
-│   ├── ActivityItem.jsx        # Activity row with emoji, title, acres, date
-│   ├── ActivityBox.jsx         # Square selectable activity card
-│   ├── CropTypeCard.jsx        # Square selectable crop card
-│   ├── SoilTypeCard.jsx        # Square selectable soil card
-│   ├── FaceVerification.jsx    # Face capture row (idle / verified states)
-│   ├── QRCodeModal.jsx         # Full-screen QR expand modal
-│   ├── ConfirmModal.jsx        # Bottom-sheet confirm dialog
+│   ├── BottomNav.jsx           # Fixed bottom nav (Home, My Profile)
+│   ├── WelcomeHeader.jsx       # Farmer name, ID copy, bell icon
+│   ├── FarmWeatherCard.jsx     # Green weather + farm info card
+│   ├── AddFarmBanner.jsx       # CTA banner to add a farm
+│   ├── FarmCard.jsx            # Farm summary row
+│   ├── ActivityItem.jsx        # Activity row with icon and date
+│   ├── ActivityBox.jsx         # Square activity selector card
+│   ├── CropTypeCard.jsx        # Square crop selector card
+│   ├── SoilTypeCard.jsx        # Square soil selector card
+│   ├── FaceVerification.jsx    # Face capture (idle / verified)
+│   ├── QRCodeModal.jsx         # Full screen QR code view
+│   ├── ConfirmModal.jsx        # Bottom sheet confirmation dialog
 │   ├── Button.jsx              # 4 variants: amber, green, outline, dark
-│   ├── InputField.jsx          # Labelled input with prefix + error state
-│   ├── PageHeader.jsx          # Back button + optional centered title
-│   ├── EmptyState.jsx          # Emoji + title + subtitle + CTA
-│   ├── ProtectedRoute.jsx      # Auth guard — redirects to /verify
-│   ├── Skeleton.jsx            # CardSkeleton, WeatherCardSkeleton, ActivitySkeleton, ProfileRowSkeleton
-│   └── index.js                # Barrel export
+│   ├── InputField.jsx          # Input with label, prefix, error state
+│   ├── PageHeader.jsx          # Back button + page title
+│   ├── EmptyState.jsx          # Empty screen with CTA
+│   ├── ProtectedRoute.jsx      # Redirects to /verify if not logged in
+│   ├── Skeleton.jsx            # Loading skeleton components
+│   └── index.js
 │
 ├── services/
-│   └── api.js                  # All API contracts (swap mock → real here)
+│   └── api.js                  # All API contracts — backend dev works here
 │
 └── utils/
-    └── helpers.js              # formatDate, maskPhone, getCropEmoji, buildShareURLs, etc.
+    └── helpers.js              # formatDate, maskPhone, getCropEmoji, share URLs
 ```
 
 ---
 
-## Authentication Flow
+This is how Login Works
 
 ```
 / (Splash)
-  → /onboard (3 slides, swipeable)
+  → /onboard (3 slides)
     → /verify (phone number)
-      → /otp (4-digit code, resend timer)
-        → /home (authenticated)
+      → /otp (4-digit code)
+        → /home (logged in)
 ```
 
-- Auth state stored in `localStorage` via `AuthContext`
-- Keys: `hcx_token`, `hcx_farmer_id`
-- All routes under `/home`, `/id-card`, `/profile`, etc. are protected via `ProtectedRoute`
-- Logout clears both keys and redirects to `/verify`
+Auth state is stored in localStorage under two keys:
+- hcx_token
+- hcx_farmer_id
+
+All screens after /home are protected. If someone visits them without logging in, they get sent back to /verify. Logout clears both keys.
 
 ---
 
-## Connecting a Real Backend
+My boss, easier for your backend work
 
-All API calls live in `src/services/api.js`. Each function has a clear contract:
+All API functions are in src/services/api.js. Each one is a placeholder with a clear contract showing what it expects and what it should return. You only need to fill these in — no component files need to be touched.
+
+Example of how to replace a mock function with a real API call:
 
 ```js
-// Replace mock with real call:
 export const getFarmerByPhone = async (phone) => {
   const res = await fetch(`${API_BASE}/auth/request-otp`, {
     method: "POST",
@@ -141,61 +142,57 @@ export const getFarmerByPhone = async (phone) => {
 };
 ```
 
-Mock data lives in `src/data/farmerMock.js` and is **only** imported by `src/services/api.js`. No screen or component imports mock data directly.
+Mock data is only in src/data/farmerMock.js and is only imported by src/services/api.js. No screen or component touches mock data directly.
 
 ---
 
-## Design System
+Boss, Security Notes
 
-### Colors (Tailwind tokens)
-| Token | Value | Usage |
+> hcx_token and hcx_farmer_id are currently stored in localStorage.
+> This is fine for Phase 1 (mock data, no real auth).
+> Before going live with real authentication, the backend dev must migrate tokens to httpOnly cookies.
+> localStorage is readable by any JavaScript running on the page and should never hold real auth tokens in production.
+
+---
+
+Check out the Design System my oga
+
+Brand colors:
+
+| Token | Hex | Used For |
 |---|---|---|
-| `brand-green` | `#155235` | Primary brand, buttons, nav active |
-| `brand-green-dark` | `#0d3d27` | Hover states |
-| `brand-green-light` | `#1a6645` | Secondary accents |
-| `brand-green-muted` | `#e8f4ee` | Icon backgrounds, subtle fills |
-| `brand-amber` | `#d4900a` | CTA buttons (Add Farm, etc.) |
-| `brand-bg-page` | `#f2f2f0` | App background |
-| `brand-border` | `#e5e7eb` | Input and card borders |
+| brand-green | #155235 | Buttons, nav active state, primary brand |
+| brand-green-dark | #0d3d27 | Hover states |
+| brand-green-light | #1a6645 | Secondary accents |
+| brand-green-muted | #e8f4ee | Icon backgrounds, subtle fills |
+| brand-amber | #d4900a | CTA buttons like Add Farm |
+| brand-bg-page | #f2f2f0 | App background |
+| brand-border | #e5e7eb | Input and card borders |
 
-### Fonts
-- **Display**: Outfit (headings, labels, buttons)
-- **Body**: DM Sans (body text, inputs, metadata)
-
-### Reusable CSS classes (index.css)
-```css
-.btn-primary       /* Full-width green rounded button */
-.btn-amber         /* Full-width amber rounded button */
-.btn-outline       /* Full-width white/green outlined button */
-.card              /* White rounded card with shadow */
-.page-container    /* Full-height flex column, max-w-sm centered */
-.page-content      /* Flex-1 padded content area with bottom nav clearance */
-.input-field       /* Styled text input */
-.section-title     /* Bold section heading */
-.label-sm          /* Small muted label */
-.value-md          /* Medium weight value text */
-```
+Fonts:
+- Outfit — headings, labels, buttons
+- DM Sans — body text, inputs, metadata
 
 ---
 
-## Phase 1 Scope
+ What Is NOT in Phase 1, as per wetin deh prd
 
-Per PRD Phase 1 — these features are intentionally **excluded**:
+Per PRD, these are intentionally left out:
 
-- ❌ Self-registration (agent-only enrollment)
-- ❌ Farm mapping interaction
-- ❌ Loan application flow
-- ❌ Marketplace usage
-- ❌ Profile editing by farmer
+- Self-registration (farmers are enrolled by field agents only)
+- Farm mapping
+- Loan applications
+- Marketplace
+- Profile editing by the farmer
 
-All screens are **read-only**. Profile updates are agent-driven.
+All screens are read-only. Any profile updates go through a field agent.
 
 ---
 
-## Scripts
+Here lies Scripts, you like poetry?
 
 ```bash
-npm run dev       # Start dev server (http://localhost:5173)
-npm run build     # Production build → dist/
+npm run dev       # Start dev server at http://localhost:5173
+npm run build     # Build for production
 npm run preview   # Preview production build locally
 ```
