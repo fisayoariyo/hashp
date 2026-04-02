@@ -1,12 +1,20 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import { ROUTES } from "../constants/routes";
 
+function isAuthenticated() {
+  try {
+    const token = localStorage.getItem("hcx_token");
+    const farmerID = localStorage.getItem("hcx_farmer_id");
+    return Boolean(token && farmerID);
+  } catch {
+    return false;
+  }
+}
+
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
   const location = useLocation();
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated()) {
     return (
       <Navigate
         to={ROUTES.VERIFY}

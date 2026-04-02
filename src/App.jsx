@@ -17,28 +17,75 @@ import FarmsScreen from "./screens/FarmsScreen";
 import ActivitiesScreen from "./screens/ActivitiesScreen";
 import NotFoundScreen from "./screens/NotFoundScreen";
 
-function Protected({ element }) {
-  return <ProtectedRoute>{element}</ProtectedRoute>;
-}
-
 export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
         <BrowserRouter>
           <Routes>
-            <Route path={ROUTES.SPLASH}      element={<SplashScreen />} />
-            <Route path={ROUTES.ONBOARD}     element={<OnboardingScreen />} />
-            <Route path={ROUTES.VERIFY}      element={<VerifyScreen />} />
-            <Route path={ROUTES.OTP}         element={<OTPScreen />} />
-            <Route path={ROUTES.HOME}        element={<Protected element={<HomeScreen />} />} />
-            <Route path={ROUTES.ID_CARD}     element={<Protected element={<FarmerIDScreen />} />} />
-            <Route path={ROUTES.PROFILE}     element={<Protected element={<ProfileScreen />} />} />
-            <Route path={ROUTES.UPDATES}     element={<Protected element={<UpdatesScreen />} />} />
-            <Route path={ROUTES.HELP}        element={<Protected element={<HelpScreen />} />} />
-            <Route path={ROUTES.FARMS}       element={<Protected element={<FarmsScreen />} />} />
-            <Route path={ROUTES.ACTIVITIES}  element={<Protected element={<ActivitiesScreen />} />} />
-            <Route path="*"                  element={<NotFoundScreen />} />
+            <Route path={ROUTES.SPLASH}   element={<SplashScreen />} />
+            <Route path={ROUTES.ONBOARD}  element={<OnboardingScreen />} />
+            <Route path={ROUTES.VERIFY}   element={<VerifyScreen />} />
+            <Route path={ROUTES.OTP}      element={<OTPScreen />} />
+
+            <Route
+              path={ROUTES.HOME}
+              element={
+                <ProtectedRoute>
+                  <HomeScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.ID_CARD}
+              element={
+                <ProtectedRoute>
+                  <FarmerIDScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.PROFILE}
+              element={
+                <ProtectedRoute>
+                  <ProfileScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.UPDATES}
+              element={
+                <ProtectedRoute>
+                  <UpdatesScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.HELP}
+              element={
+                <ProtectedRoute>
+                  <HelpScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.FARMS}
+              element={
+                <ProtectedRoute>
+                  <FarmsScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.ACTIVITIES}
+              element={
+                <ProtectedRoute>
+                  <ActivitiesScreen />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="*" element={<NotFoundScreen />} />
           </Routes>
         </BrowserRouter>
       </ToastProvider>
