@@ -10,7 +10,6 @@ import FarmerHome          from "./pages/farmer/FarmerHome";
 import FarmerID            from "./pages/farmer/FarmerID";
 import FarmerProfile       from "./pages/farmer/FarmerProfile";
 import FarmerSettings      from "./pages/farmer/FarmerSettings";
-import FarmerComingSoon     from "./pages/farmer/FarmerComingSoon";
 
 // ── Agent pages ──────────────────────────────────
 import AgentSplash         from "./pages/agent/AgentSplash";
@@ -36,9 +35,6 @@ export default function App() {
         <Route path="/farmer/id"               element={<FarmerID />} />
         <Route path="/farmer/profile"          element={<FarmerProfile />} />
         <Route path="/farmer/settings"         element={<FarmerSettings />} />
-        <Route path="/farmer/loans"            element={<FarmerComingSoon />} />
-        <Route path="/farmer/support"          element={<FarmerComingSoon />} />
-        <Route path="/farmer/buyers"           element={<FarmerComingSoon />} />
 
         {/* Agent */}
         <Route path="/agent/splash"            element={<AgentSplash />} />
