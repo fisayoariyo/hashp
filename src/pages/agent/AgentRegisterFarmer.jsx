@@ -730,7 +730,7 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
       </div>
 
       <div
-        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-center`}
+        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-stretch sm:items-center max-w-sm sm:max-w-none mx-auto sm:mx-0`}
       >
         <button
           type="button"
@@ -738,14 +738,14 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
             const msg = `Farmer ID: *${idCard.farmerID}*\nName: ${idCard.name}\nVerify: https://cropex.hashmarcropex.com/verify/${idCard.farmerID}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
           }}
-          className="order-2 sm:order-1 py-3 px-8 rounded-full border-2 border-brand-green text-brand-green font-display font-semibold text-sm hover:bg-brand-green/5 transition-colors w-full sm:w-auto max-w-xs"
+          className="order-2 sm:order-1 inline-flex items-center justify-center min-h-12 py-2.5 px-6 sm:px-8 rounded-full border-2 border-brand-green text-brand-green font-display font-semibold text-sm bg-white box-border hover:bg-brand-green/5 transition-colors w-full sm:w-auto sm:min-w-[11rem] text-center leading-snug"
         >
           Share ID
         </button>
         <button
           type="button"
           onClick={onRegisterAnother}
-          className="order-1 sm:order-2 btn-capture-pill px-8 sm:min-w-[12rem] w-full sm:w-auto max-w-xs"
+          className="order-1 sm:order-2 inline-flex items-center justify-center min-h-12 py-2.5 px-6 sm:px-8 rounded-full border-2 border-brand-green bg-brand-green text-white font-display font-semibold text-sm box-border hover:brightness-95 active:scale-[0.99] transition-all w-full sm:w-auto sm:min-w-[12rem] text-center leading-snug"
         >
           Register Another Farmer
         </button>
