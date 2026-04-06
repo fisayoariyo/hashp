@@ -3,6 +3,13 @@
 // TODO: Replace with API calls from src/services/agentApi.js
 // ============================================================
 
+/** Contact details shown on agent support screen (AWD-CA-11). */
+export const agentSupportContact = {
+  phoneDisplay: "+234 XXX XXX XXXX",
+  phoneHref: "tel:+2348000000000",
+  email: "support@hashmar.com",
+};
+
 export const agentData = {
   id: "AGT-001",
   name: "Tomide",

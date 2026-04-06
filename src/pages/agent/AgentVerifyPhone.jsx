@@ -1,12 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 
+const REG_KEY = "hcx_agent_registration";
+const RESET_FLAG = "hcx_agent_reset_otp_ok";
+
 export default function AgentVerifyPhone() {
   const navigate = useNavigate();
+  const location = useLocation();
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const mode = location.state?.mode === "reset-password" ? "reset-password" : "register";
+  const emailForReset = location.state?.email || "";
 
   const [digits, setDigits] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -18,7 +24,23 @@ export default function AgentVerifyPhone() {
   const r3 = useRef(null);
   const refs = [r0, r1, r2, r3];
 
-  useEffect(() => { r0.current?.focus(); }, []);
+  useEffect(() => {
+    r0.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (mode === "register") {
+      try {
+        if (!sessionStorage.getItem(REG_KEY)) {
+          navigate("/agent/create-account", { replace: true });
+        }
+      } catch {
+        navigate("/agent/create-account", { replace: true });
+      }
+    } else if (!emailForReset) {
+      navigate("/agent/forgot-password", { replace: true });
+    }
+  }, [mode, emailForReset, navigate]);
 
   const handleChange = (i, e) => {
     const raw = e.target.value.replace(/\D/g, "");
@@ -57,8 +79,14 @@ export default function AgentVerifyPhone() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     if (otp === "1234") {
-      sessionStorage.setItem("hcx_agent_auth", JSON.stringify({ agentId: "AGT-001" }));
-      navigate("/agent/home");
+      if (mode === "reset-password") {
+        try {
+          sessionStorage.setItem(RESET_FLAG, "1");
+        } catch { /* ignore */ }
+        navigate("/agent/reset-password-new", { replace: true, state: { email: emailForReset } });
+      } else {
+        navigate("/agent/select-location");
+      }
     } else {
       setError("Incorrect code. Try 1234 for demo.");
       setDigits(["", "", "", ""]);
@@ -120,10 +148,10 @@ export default function AgentVerifyPhone() {
             </button>
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")}
               className="w-full py-4 rounded-3xl bg-gray-100 text-brand-green font-sans text-xl font-medium"
             >
-              Edit phone number
+              {mode === "reset-password" ? "Back" : "Edit phone number"}
             </button>
           </div>
         }
@@ -137,7 +165,11 @@ export default function AgentVerifyPhone() {
   return (
     <div className="page-white flex flex-col">
       <div className="flex-1 px-5 pt-5">
-        <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-2 text-brand-text-secondary mb-6">
+        <button
+          type="button"
+          onClick={() => navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")}
+          className="flex items-center gap-2 text-brand-text-secondary mb-6"
+        >
           <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
         </button>
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">
@@ -160,10 +192,10 @@ export default function AgentVerifyPhone() {
         </button>
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")}
           className="w-full text-center text-brand-green font-sans text-sm font-medium py-2"
         >
-          Edit phone number
+          {mode === "reset-password" ? "Back" : "Edit phone number"}
         </button>
       </div>
     </div>

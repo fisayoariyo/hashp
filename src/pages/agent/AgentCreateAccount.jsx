@@ -27,6 +27,17 @@ export default function AgentCreateAccount() {
   const handleSubmit = async () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
+    try {
+      sessionStorage.setItem(
+        "hcx_agent_registration",
+        JSON.stringify({
+          fullName: form.fullName,
+          phone: form.phone,
+          email: form.email,
+          gender: form.gender,
+        })
+      );
+    } catch { /* ignore */ }
     navigate("/agent/verify-phone", { state: { phone: form.phone, mode: "register" } });
     setLoading(false);
   };

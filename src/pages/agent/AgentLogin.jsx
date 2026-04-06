@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
@@ -13,6 +13,22 @@ export default function AgentLogin() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [banner, setBanner] = useState("");
+
+  useEffect(() => {
+    try {
+      const m = sessionStorage.getItem("hcx_agent_login_message");
+      if (m) {
+        setBanner(m);
+        sessionStorage.removeItem("hcx_agent_login_message");
+      }
+      const pre = sessionStorage.getItem("hcx_agent_reset_email_prefill");
+      if (pre) {
+        setEmail(pre);
+        sessionStorage.removeItem("hcx_agent_reset_email_prefill");
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) { setError("Please enter your email and password."); return; }
@@ -63,8 +79,15 @@ export default function AgentLogin() {
         {error && <p className="text-xs text-red-500">{error}</p>}
       </div>
       <div className="flex justify-end">
-        <button type="button" className="font-sans text-sm font-semibold text-brand-green">Forgot password?</button>
+        <button
+          type="button"
+          onClick={() => navigate("/agent/forgot-password")}
+          className="font-sans text-sm font-semibold text-brand-green"
+        >
+          Forgot password?
+        </button>
       </div>
+      {banner && <p className="text-xs text-brand-green font-medium">{banner}</p>}
       <p className="font-sans text-xs text-brand-text-muted">
         Demo: <strong>{agentData.email}</strong> / <strong>password123</strong>
       </p>

@@ -349,7 +349,12 @@ export default function AgentSettings() {
   const [showLogout, setShowLogout] = useState(false);
 
   const handleLogout = () => {
-    sessionStorage.removeItem("hcx_agent_auth");
+    try {
+      sessionStorage.removeItem("hcx_agent_auth");
+      sessionStorage.removeItem("hcx_agent_registration");
+      sessionStorage.removeItem("hcx_agent_review_refresh_count");
+      sessionStorage.removeItem("hcx_agent_reset_otp_ok");
+    } catch { /* ignore */ }
     navigate("/agent/login");
   };
 
