@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronRight, ScanFace, Fingerprint, Check, Camera, ChevronDown, Plus, MessageCircle, Smartphone } from "lucide-react";
+import {
+  ArrowLeft, ChevronRight, ScanFace, Fingerprint,
+  Check, Camera, ChevronDown, MessageCircle,
+} from "lucide-react";
 import { nigerianStates } from "../../mockData/agent";
+import AgentFacialVerification from "./AgentFacialVerification";
+import AgentFingerprintVerification from "./AgentFingerprintVerification";
 
-const DRAFT_KEY = "hcx_reg_draft";
-const getDraft = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
-const setDraft = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...getDraft(), ...d })); } catch {} };
+const DRAFT_KEY  = "hcx_reg_draft";
+const getDraft   = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
+const setDraft   = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...getDraft(), ...d })); } catch {} };
 const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
 
-// ── Step indicator ─────────────────────────────────────────
+// ── Step indicator ──────────────────────────────────────────
 function Steps({ current }) {
   return (
     <div className="flex items-center gap-0 mb-6">
@@ -24,7 +29,7 @@ function Steps({ current }) {
   );
 }
 
-// ── Shared form helpers ────────────────────────────────────
+// ── Shared helpers ──────────────────────────────────────────
 const Input = ({ value, onChange, placeholder, type = "text" }) => (
   <input type={type} value={value} onChange={onChange} placeholder={placeholder} className="input-field" />
 );
@@ -47,7 +52,8 @@ const F = ({ label, required, children }) => (
 );
 const NavRow = ({ onBack, onNext, nextLabel = "Continue", disabled = false }) => (
   <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex gap-3 border-t border-brand-border">
-    <button onClick={onBack} className="flex-1 flex items-center justify-center gap-1.5 py-4 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm">
+    <button onClick={onBack}
+      className="flex-1 flex items-center justify-center gap-1.5 py-4 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm">
       <ArrowLeft size={14} /> Go back
     </button>
     <button onClick={onNext} disabled={disabled}
@@ -57,14 +63,14 @@ const NavRow = ({ onBack, onNext, nextLabel = "Continue", disabled = false }) =>
   </div>
 );
 
-// ── STEP 0: Start screen ───────────────────────────────────
+// ── STEP 0: Start ───────────────────────────────────────────
 function StartScreen({ onStart, onBack }) {
   const STEPS = [
-    { icon: "🫆", label: "Biometric Capture", sub: "Capture fingerprint and face for identity verification" },
-    { icon: "📋", label: "Personal Information", sub: "Enter the farmer's basic details and identification number." },
-    { icon: "🚜", label: "Farm Information", sub: "Provide details about the farm and crop type." },
-    { icon: "🤝", label: "Cooperative & Association", sub: "Add cooperative details if the farmer belongs to one" },
-    { icon: "✅", label: "Review & Submit", sub: "Confirm all details and complete registration." },
+    { icon: "🫆", label: "Biometric Capture",        sub: "Capture fingerprint and face for identity verification" },
+    { icon: "📋", label: "Personal Information",      sub: "Enter the farmer's basic details and identification number." },
+    { icon: "🚜", label: "Farm Information",           sub: "Provide details about the farm and crop type." },
+    { icon: "🤝", label: "Cooperative & Association",  sub: "Add cooperative details if the farmer belongs to one" },
+    { icon: "✅", label: "Review & Submit",            sub: "Confirm all details and complete registration." },
   ];
   return (
     <div className="page-container">
@@ -77,7 +83,7 @@ function StartScreen({ onStart, onBack }) {
           Begin a new farmer registration by capturing their personal and biometric details.
         </p>
         <h2 className="font-display font-bold text-base text-brand-text-primary mb-4">Registration steps</h2>
-        <div className="space-y-0">
+        <div>
           {STEPS.map((s, i) => (
             <div key={s.label} className="flex gap-4 items-start">
               <div className="flex flex-col items-center">
@@ -99,25 +105,30 @@ function StartScreen({ onStart, onBack }) {
   );
 }
 
-// ── STEP 1: Biometrics ─────────────────────────────────────
-function BiometricStep({ onNext, onBack }) {
-  const [face, setFace] = useState("idle");
-  const [finger, setFinger] = useState("idle");
-
-  const Row = ({ label, subLabel, Icon, state, onCapture }) => (
+// ── STEP 1: Biometric hub (AWMRF02 / AWMRF04 / AWMRF08) ────
+// NOTE: faceCapture + fingerCapture state live in the PARENT (AgentRegisterFarmer)
+// so they survive navigation to/from sub-screens.
+function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onNext, onBack }) {
+  const Row = ({ label, subLabel, Icon, done, onTap }) => (
     <div>
       <p className="font-sans text-sm font-semibold text-brand-text-primary mb-2">{label}</p>
-      <button onClick={state === "idle" ? onCapture : undefined}
-        className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl border transition-all ${state === "done" ? "bg-white border-brand-green/40" : "bg-white border-brand-border"}`}>
-        <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 ${state === "done" ? "border-brand-green text-brand-green" : "border-brand-border text-brand-text-muted"}`}>
-          {state === "loading" || state === "scanning"
-            ? <div className="w-4 h-4 border-2 border-brand-green border-t-transparent rounded-full animate-spin" />
+      <button
+        onClick={!done ? onTap : undefined}
+        className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl border transition-all active:scale-[0.98] ${
+          done ? "bg-white border-brand-green/40" : "bg-white border-brand-border"
+        }`}
+      >
+        <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+          done ? "border-brand-green bg-brand-green-muted" : "border-brand-border text-brand-text-muted"
+        }`}>
+          {done
+            ? <Check size={18} className="text-brand-green" />
             : <Icon size={18} strokeWidth={1.5} />}
         </div>
-        <span className={`flex-1 text-left font-sans text-sm ${state === "done" ? "text-brand-green font-medium" : "text-brand-text-secondary"}`}>
-          {state === "done" ? `${label.split(" ")[0]} captured ✓` : subLabel}
+        <span className={`flex-1 text-left font-sans text-sm ${done ? "text-brand-green font-medium" : "text-brand-text-secondary"}`}>
+          {done ? `${label.split(" ")[0]} verification successful` : subLabel}
         </span>
-        {state !== "done" && <ChevronRight size={16} className="text-brand-text-muted shrink-0" />}
+        {!done && <ChevronRight size={16} className="text-brand-text-muted shrink-0" />}
       </button>
     </div>
   );
@@ -127,22 +138,36 @@ function BiometricStep({ onNext, onBack }) {
       <div className="flex-1 px-4 pt-5 pb-32 overflow-y-auto scrollbar-hide">
         <Steps current={1} />
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Biometric capture</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">Capture fingerprint and face for identity verification.</p>
+        <p className="font-sans text-sm text-brand-text-secondary mb-8">
+          Capture fingerprint and face for identity verification.
+        </p>
         <div className="space-y-5">
-          <Row label="Face verification" subLabel="Capture your face to verify" Icon={ScanFace} state={face}
-            onCapture={() => { setFace("loading"); setTimeout(() => setFace("done"), 1500); }} />
-          <Row label="Fingerprint verification" subLabel="Capture your finger to verify" Icon={Fingerprint} state={finger}
-            onCapture={() => { setFinger("scanning"); setTimeout(() => setFinger("done"), 2000); }} />
+          <Row
+            label="Face verification"
+            subLabel="Capture your face to verify"
+            Icon={ScanFace}
+            done={faceCapture === "done"}
+            onTap={onFaceTap}
+          />
+          <Row
+            label="Fingerprint verification"
+            subLabel="Capture your finger to verify"
+            Icon={Fingerprint}
+            done={fingerCapture === "done"}
+            onTap={onFingerTap}
+          />
         </div>
       </div>
-      <NavRow onBack={onBack}
+      <NavRow
+        onBack={onBack}
         onNext={() => { setDraft({ biometric: { face: true, fingerprint: true } }); onNext(); }}
-        disabled={face !== "done" || finger !== "done"} />
+        disabled={faceCapture !== "done" || fingerCapture !== "done"}
+      />
     </div>
   );
 }
 
-// ── STEP 2: Personal info ──────────────────────────────────
+// ── STEP 2: Personal info ───────────────────────────────────
 function PersonalStep({ onNext, onBack }) {
   const d = getDraft().personal || {};
   const [form, setForm] = useState({ fullName:"",phone:"",dob:"",gender:"Male",state:"",lga:"",address:"",nin:"",bvn:"", ...d });
@@ -164,13 +189,16 @@ function PersonalStep({ onNext, onBack }) {
             <div className="w-px h-5 bg-brand-border shrink-0" />
             <input type="tel" inputMode="numeric" value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, "") }))}
-              placeholder="Input phone number here" className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
+              placeholder="Input phone number here"
+              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
           </div>
         </F>
-        <F label="Date of birth" required><Input type="date" value={form.dob} onChange={set("dob")} placeholder="DD/MM/YYYY" /></F>
+        <F label="Date of birth" required><Input type="date" value={form.dob} onChange={set("dob")} /></F>
         <F label="Gender" required><Sel value={form.gender} onChange={set("gender")} options={["Male","Female","Other"]} /></F>
         <F label="State of origin" required><Sel value={form.state} onChange={set("state")} options={nigerianStates} placeholder="Select" /></F>
-        <F label="Local government area" required><Sel value={form.lga} onChange={set("lga")} options={["Ibadan North","Ibadan South","Ogbomoso","Oyo East"]} placeholder="Select" /></F>
+        <F label="Local government area" required>
+          <Sel value={form.lga} onChange={set("lga")} options={["Ibadan North","Ibadan South","Ogbomoso","Oyo East"]} placeholder="Select" />
+        </F>
         <F label="Residential address" required><Input value={form.address} onChange={set("address")} placeholder="Write residential address" /></F>
         <F label="NIN (National ID No.)" required><Input value={form.nin} onChange={set("nin")} placeholder="11-digit NIN" /></F>
         <F label="BVN" required><Input value={form.bvn} onChange={set("bvn")} placeholder="11-digit BVN" /></F>
@@ -180,10 +208,10 @@ function PersonalStep({ onNext, onBack }) {
   );
 }
 
-// ── STEP 3: Farm info ──────────────────────────────────────
+// ── STEP 3: Farm info ───────────────────────────────────────
 function FarmStep({ onNext, onBack }) {
   const d = getDraft().farm || {};
-  const [form, setForm] = useState({ farmSize:"",cropType:"",landOwnership:"", ...d });
+  const [form, setForm] = useState({ farmSize:"", cropType:"", landOwnership:"", ...d });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   return (
@@ -200,8 +228,7 @@ function FarmStep({ onNext, onBack }) {
         </F>
         <F label="Land Ownership (Optional)">
           <Sel value={form.landOwnership} onChange={set("landOwnership")}
-            options={["Owned","Leased","Communal","Family"]}
-            placeholder="Select ownership type" />
+            options={["Owned","Leased","Communal","Family"]} placeholder="Select ownership type" />
         </F>
       </div>
       <NavRow onBack={onBack} onNext={() => { setDraft({ farm: form }); onNext(); }} />
@@ -209,7 +236,7 @@ function FarmStep({ onNext, onBack }) {
   );
 }
 
-// ── STEP 4: Cooperative ────────────────────────────────────
+// ── STEP 4: Cooperative ─────────────────────────────────────
 function CoopStep({ onNext, onBack }) {
   const d = getDraft().cooperative || {};
   const [form, setForm] = useState({ name:"",regNo:"",role:"Member",lga:"",commodity:"",size:"",landType:"",farmHect:"",supplier:"", ...d });
@@ -221,7 +248,15 @@ function CoopStep({ onNext, onBack }) {
         <Steps current={4} />
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Cooperative & Association</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-2">Add cooperative details if the farmer belongs to one.</p>
-        {[["Cooperative Name","name",true,"Enter cooperative name"],["Registration No.","regNo",true,"e.g. OY-COOP-2019-00441"],["LGA of Cooperative","lga",false,"LGA"],["Commodity Focus","commodity",false,"e.g. Maize, Cassava"],["Cooperative Size (members)","size",false,"e.g. 120"],["Farm Size (Hectares)","farmHect",false,"e.g. 2"],["Input Supplier","supplier",false,"Optional"]].map(([label,key,req,ph]) => (
+        {[
+          ["Cooperative Name","name",true,"Enter cooperative name"],
+          ["Registration No.","regNo",true,"e.g. OY-COOP-2019-00441"],
+          ["LGA of Cooperative","lga",false,"LGA"],
+          ["Commodity Focus","commodity",false,"e.g. Maize, Cassava"],
+          ["Cooperative Size (members)","size",false,"e.g. 120"],
+          ["Farm Size (Hectares)","farmHect",false,"e.g. 2"],
+          ["Input Supplier","supplier",false,"Optional"],
+        ].map(([label, key, req, ph]) => (
           <F key={key} label={label} required={req}><Input value={form[key]} onChange={set(key)} placeholder={ph} /></F>
         ))}
         <F label="Membership Role"><Sel value={form.role} onChange={set("role")} options={["Member","Secretary","Chairman","Treasurer"]} /></F>
@@ -232,7 +267,7 @@ function CoopStep({ onNext, onBack }) {
   );
 }
 
-// ── STEP 5: Review ─────────────────────────────────────────
+// ── STEP 5: Review ──────────────────────────────────────────
 function ReviewStep({ onSubmit, onBack, submitting }) {
   const draft = getDraft();
   const Row = ({ label, value }) => (
@@ -250,10 +285,10 @@ function ReviewStep({ onSubmit, onBack, submitting }) {
         <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">Review Details</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-5">Confirm all details before submitting.</p>
         {[
-          { title:"Biometric", rows:[["Face","Captured"],["Fingerprint","Captured"]] },
-          { title:"Personal Info", rows:[["Name",draft.personal?.fullName],["Phone",draft.personal?.phone],["DOB",draft.personal?.dob],["Gender",draft.personal?.gender],["State",draft.personal?.state],["Address",draft.personal?.address]] },
-          { title:"Farm Info", rows:[["Farm Size",draft.farm?.farmSize],["Crop Type",draft.farm?.cropType],["Land Ownership",draft.farm?.landOwnership]] },
-          { title:"Cooperative", rows:[["Name",draft.cooperative?.name],["Reg. No.",draft.cooperative?.regNo],["Role",draft.cooperative?.role]] },
+          { title:"Biometric",    rows:[["Face","Captured"],["Fingerprint","Captured"]] },
+          { title:"Personal Info",rows:[["Name",draft.personal?.fullName],["Phone",draft.personal?.phone],["DOB",draft.personal?.dob],["Gender",draft.personal?.gender],["State",draft.personal?.state],["Address",draft.personal?.address]] },
+          { title:"Farm Info",    rows:[["Farm Size",draft.farm?.farmSize],["Crop Type",draft.farm?.cropType],["Land Ownership",draft.farm?.landOwnership]] },
+          { title:"Cooperative",  rows:[["Name",draft.cooperative?.name],["Reg. No.",draft.cooperative?.regNo],["Role",draft.cooperative?.role]] },
         ].map(({ title, rows }) => (
           <div key={title} className="bg-white rounded-2xl p-4 mb-3">
             <p className="font-sans text-xs text-brand-text-muted uppercase tracking-wider mb-2">{title}</p>
@@ -266,7 +301,7 @@ function ReviewStep({ onSubmit, onBack, submitting }) {
   );
 }
 
-// ── STEP 6: Done ───────────────────────────────────────────
+// ── STEP 6: Done ────────────────────────────────────────────
 function DoneStep({ idCard, onRegisterAnother }) {
   const shareViaWhatsApp = () => {
     const msg = `Farmer ID: *${idCard.farmerID}*\nName: ${idCard.name}\nVerify: https://cropex.hashmarcropex.com/verify/${idCard.farmerID}`;
@@ -314,12 +349,16 @@ function DoneStep({ idCard, onRegisterAnother }) {
   );
 }
 
-// ── MAIN EXPORT ────────────────────────────────────────────
+// ── MAIN EXPORT ─────────────────────────────────────────────
 export default function AgentRegisterFarmer() {
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
   const [step, setStep] = useState("start");
   const [submitting, setSubmitting] = useState(false);
   const [idCard, setIdCard] = useState(null);
+
+  // Biometric capture state LIFTED here — survives sub-screen navigation
+  const [faceCapture,   setFaceCapture]   = useState("idle"); // "idle" | "done"
+  const [fingerCapture, setFingerCapture] = useState("idle"); // "idle" | "done"
 
   const goHome = () => navigate("/agent/home");
 
@@ -339,12 +378,48 @@ export default function AgentRegisterFarmer() {
     setStep("done");
   };
 
-  if (step === "start")   return <StartScreen onStart={() => setStep("biometric")} onBack={goHome} />;
-  if (step === "biometric") return <BiometricStep onNext={() => setStep("personal")} onBack={() => setStep("start")} />;
-  if (step === "personal")  return <PersonalStep onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />;
-  if (step === "farm")      return <FarmStep onNext={() => setStep("coop")} onBack={() => setStep("personal")} />;
-  if (step === "coop")      return <CoopStep onNext={() => setStep("review")} onBack={() => setStep("farm")} />;
-  if (step === "review")    return <ReviewStep onSubmit={handleSubmit} onBack={() => setStep("coop")} submitting={submitting} />;
-  if (step === "done")      return <DoneStep idCard={idCard} onRegisterAnother={() => { setStep("start"); }} />;
+  // Sub-screens for biometric capture (inline — no route change needed)
+  if (step === "face-capture") {
+    return (
+      <AgentFacialVerification
+        onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
+        onBack={() => setStep("biometric")}
+      />
+    );
+  }
+
+  if (step === "fingerprint-capture") {
+    return (
+      <AgentFingerprintVerification
+        onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
+        onBack={() => setStep("biometric")}
+      />
+    );
+  }
+
+  // Main registration steps
+  if (step === "start")    return <StartScreen onStart={() => setStep("biometric")} onBack={goHome} />;
+  if (step === "biometric") return (
+    <BiometricStep
+      faceCapture={faceCapture}
+      fingerCapture={fingerCapture}
+      onFaceTap={() => setStep("face-capture")}
+      onFingerTap={() => setStep("fingerprint-capture")}
+      onNext={() => setStep("personal")}
+      onBack={() => setStep("start")}
+    />
+  );
+  if (step === "personal") return <PersonalStep onNext={() => setStep("farm")}  onBack={() => setStep("biometric")} />;
+  if (step === "farm")     return <FarmStep     onNext={() => setStep("coop")}  onBack={() => setStep("personal")} />;
+  if (step === "coop")     return <CoopStep     onNext={() => setStep("review")} onBack={() => setStep("farm")} />;
+  if (step === "review")   return <ReviewStep   onSubmit={handleSubmit} onBack={() => setStep("coop")} submitting={submitting} />;
+  if (step === "done")     return (
+    <DoneStep idCard={idCard} onRegisterAnother={() => {
+      setFaceCapture("idle");
+      setFingerCapture("idle");
+      setStep("start");
+    }} />
+  );
+
   return null;
 }
