@@ -5,6 +5,7 @@ import {
   ChevronDown, ChevronUp, Eye, EyeOff, ArrowLeft,
 } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
+import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { agentData, agentFAQs } from "../../mockData/agent";
 
 // ── Change Password ────────────────────────────────────────
@@ -177,9 +178,8 @@ function ChangePasswordScreen({ onBack }) {
 // ── FAQ screen ─────────────────────────────────────────────
 function FAQScreen({ onBack }) {
   const [open, setOpen] = useState(null);
-  return (
-    <div className="page-container">
-      <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">
+  const content = (
+    <div className="flex-1 px-4 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-brand-text-secondary mb-5"
@@ -216,9 +216,17 @@ function FAQScreen({ onBack }) {
             </button>
           ))}
         </div>
-      </div>
-      <AgentBottomNav />
     </div>
+  );
+
+  return (
+    <>
+      <div className="md:hidden page-container">
+        {content}
+        <AgentBottomNav />
+      </div>
+      <AgentDesktopShell active="settings">{content}</AgentDesktopShell>
+    </>
   );
 }
 
@@ -252,9 +260,8 @@ function LogoutModal({ onConfirm, onCancel }) {
 
 // ── Main Settings screen ───────────────────────────────────
 function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
-  return (
-    <div className="page-container">
-      <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">
+  const content = (
+    <div className="flex-1 px-4 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
         <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">
           Settings
         </h1>
@@ -321,9 +328,17 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
             </span>
           </button>
         </div>
-      </div>
-      <AgentBottomNav />
     </div>
+  );
+
+  return (
+    <>
+      <div className="md:hidden page-container">
+        {content}
+        <AgentBottomNav />
+      </div>
+      <AgentDesktopShell active="settings">{content}</AgentDesktopShell>
+    </>
   );
 }
 

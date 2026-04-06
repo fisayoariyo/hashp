@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 
 export default function AgentVerifyPhone() {
   const navigate = useNavigate();
@@ -71,66 +72,94 @@ export default function AgentVerifyPhone() {
     setLoading(false);
   };
 
+  const OtpBody = (
+    <>
+      <div className="grid grid-cols-4 gap-4 mb-4">
+        {digits.map((d, i) => (
+          <input
+            key={i}
+            ref={refs[i]}
+            type="tel"
+            inputMode="numeric"
+            maxLength={1}
+            value={d}
+            autoComplete="one-time-code"
+            onChange={(e) => handleChange(i, e)}
+            onKeyDown={(e) => handleKeyDown(i, e)}
+            onPaste={i === 0 ? handlePaste : undefined}
+            className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2
+              rounded-2xl focus:outline-none transition-colors
+              ${d ? "border-brand-green text-brand-green" : "border-brand-border"}
+              focus:border-brand-green`}
+          />
+        ))}
+      </div>
+      {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
+      <p className="font-sans text-sm text-brand-text-secondary">
+        I did not receive a code,{" "}
+        <button className="text-brand-green font-semibold">Resend Code</button>
+      </p>
+      <p className="font-sans text-xs text-brand-text-muted mt-2">
+        Demo OTP: <strong>1234</strong>
+      </p>
+    </>
+  );
+
   return (
-    <div className="page-white flex flex-col">
-      <div className="flex-1 px-5 pt-5">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-brand-text-secondary mb-6">
-          <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
-        </button>
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">
-          Verify Phone number
-        </h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">
-          Enter the 4-digit code we sent to your registered phone number
-        </p>
-
-        <div className="grid grid-cols-4 gap-4 mb-4">
-          {digits.map((d, i) => (
-            <input
-              key={i}
-              ref={refs[i]}
-              type="tel"
-              inputMode="numeric"
-              maxLength={1}
-              value={d}
-              autoComplete="one-time-code"
-              onChange={(e) => handleChange(i, e)}
-              onKeyDown={(e) => handleKeyDown(i, e)}
-              onPaste={i === 0 ? handlePaste : undefined}
-              className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2
-                rounded-2xl focus:outline-none transition-colors
-                ${d ? "border-brand-green text-brand-green" : "border-brand-border"}
-                focus:border-brand-green`}
-            />
-          ))}
+    <>
+      <div className="page-white flex flex-col md:hidden">
+        <div className="flex-1 px-5 pt-5">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-brand-text-secondary mb-6">
+            <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
+          </button>
+          <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">
+            Verify Phone number
+          </h1>
+          <p className="font-sans text-sm text-brand-text-secondary mb-8">
+            Enter the 4-digit code we sent to your registered phone number
+          </p>
+          {OtpBody}
         </div>
-
-        {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
-
-        <p className="font-sans text-sm text-brand-text-secondary">
-          I did not receive a code,{" "}
-          <button className="text-brand-green font-semibold">Resend Code</button>
-        </p>
-        <p className="font-sans text-xs text-brand-text-muted mt-2">
-          Demo OTP: <strong>1234</strong>
-        </p>
+        <div className="px-5 pb-8 space-y-3">
+          <button
+            onClick={handleContinue}
+            disabled={loading || digits.join("").length < 4}
+            className="btn-primary"
+          >
+            {loading ? "Verifying..." : "Continue"}
+          </button>
+          <button
+            onClick={() => navigate(-1)}
+            className="w-full text-center text-brand-green font-sans text-sm font-medium py-2"
+          >
+            Edit phone number
+          </button>
+        </div>
       </div>
 
-      <div className="px-5 pb-8 space-y-3">
-        <button
-          onClick={handleContinue}
-          disabled={loading || digits.join("").length < 4}
-          className="btn-primary"
-        >
-          {loading ? "Verifying..." : "Continue"}
-        </button>
-        <button
-          onClick={() => navigate(-1)}
-          className="w-full text-center text-brand-green font-sans text-sm font-medium py-2"
-        >
-          Edit phone number
-        </button>
-      </div>
-    </div>
+      <AgentAuthDesktopLayout
+        title="Verify Phone number"
+        subtitle="Enter the 4-digit code we sent to your registered phone number"
+        actions={
+          <div className="space-y-3">
+            <button
+              onClick={handleContinue}
+              disabled={loading || digits.join("").length < 4}
+              className="btn-primary"
+            >
+              {loading ? "Verifying..." : "Continue"}
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="w-full py-4 rounded-3xl bg-gray-100 text-brand-green font-sans text-xl font-medium"
+            >
+              Edit phone number
+            </button>
+          </div>
+        }
+      >
+        {OtpBody}
+      </AgentAuthDesktopLayout>
+    </>
   );
 }

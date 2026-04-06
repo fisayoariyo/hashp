@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 // scanning → animated scanning overlay
 // success  → green tick, show "Verification successful"
 
-export default function AgentFacialVerification({ onSuccess, onBack }) {
+export default function AgentFacialVerification({ onSuccess, onBack, embedded }) {
   const [status, setStatus] = useState("idle"); // idle | scanning | success
 
   const handleCapture = () => {
@@ -19,9 +19,17 @@ export default function AgentFacialVerification({ onSuccess, onBack }) {
     onSuccess();
   };
 
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)] bg-brand-bg-page rounded-2xl"
+    : "page-container bg-brand-bg-page flex flex-col";
+  const scrollPb = embedded ? "pb-4" : "pb-32";
+  const bottomClass = embedded
+    ? "flex flex-col gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 px-4"
+    : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-8 bg-transparent pt-3 z-10";
+
   return (
-    <div className="page-container bg-brand-bg-page flex flex-col">
-      <div className="flex-1 px-4 pt-5 pb-32 overflow-y-auto scrollbar-hide">
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-brand-text-secondary mb-5"
@@ -120,8 +128,7 @@ export default function AgentFacialVerification({ onSuccess, onBack }) {
         </p>
       </div>
 
-      {/* Bottom button */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-8 bg-transparent pt-3">
+      <div className={bottomClass}>
         {status === "success" ? (
           <button onClick={handleContinue} className="btn-primary">
             Continue

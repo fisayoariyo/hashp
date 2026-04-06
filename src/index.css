@@ -85,10 +85,10 @@
 
   /* ── Page wrappers ── */
   .page-container {
-    @apply flex flex-col min-h-dvh bg-brand-bg-page max-w-mobile mx-auto w-full;
+    @apply flex flex-col min-h-dvh bg-brand-bg-page max-w-mobile md:max-w-none mx-auto w-full;
   }
   .page-white {
-    @apply flex flex-col min-h-dvh bg-white max-w-mobile mx-auto w-full;
+    @apply flex flex-col min-h-dvh bg-white max-w-mobile md:max-w-none mx-auto w-full;
   }
   .page-content {
     @apply flex-1 px-4 pb-28 pt-4 overflow-y-auto;

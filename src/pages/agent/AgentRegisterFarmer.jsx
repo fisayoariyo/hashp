@@ -4,9 +4,12 @@ import {
   ArrowLeft, ChevronRight, ScanFace, Camera,
   ChevronDown, MessageCircle, X, Plus,
 } from "lucide-react";
-import { nigerianStates } from "../../mockData/agent";
+import { nigerianStates, nigerianLGAs } from "../../mockData/agent";
+import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
+
+const DEMO_FARMER_PHOTO = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop";
 
 const DRAFT_KEY  = "hcx_reg_draft";
 const getDraft   = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
@@ -60,14 +63,25 @@ const F = ({ label, required = false, children }) => (
     {children}
   </div>
 );
-const NavRow = ({ onBack, onNext, nextLabel = "Continue", disabled = false }) => (
-  <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex gap-3 border-t border-brand-border">
-    <button onClick={onBack}
-      className="flex-1 flex items-center justify-center gap-1.5 py-4 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm">
+const NavRow = ({ onBack, onNext, nextLabel = "Continue", disabled = false, layout = "fixed" }) => (
+  <div
+    className={
+      layout === "fixed"
+        ? "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex gap-3 border-t border-brand-border z-10"
+        : "flex gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0"
+    }
+  >
+    <button
+      onClick={onBack}
+      className="flex-1 flex items-center justify-center gap-1.5 py-4 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm"
+    >
       <ArrowLeft size={14} /> Go back
     </button>
-    <button onClick={onNext} disabled={disabled}
-      className="flex-2 flex items-center justify-center gap-1.5 py-4 px-8 rounded-3xl bg-brand-green text-white font-display font-semibold text-sm disabled:opacity-40">
+    <button
+      onClick={onNext}
+      disabled={disabled}
+      className="flex-[1.35] flex items-center justify-center gap-1.5 py-4 px-8 rounded-3xl bg-brand-green text-white font-display font-semibold text-sm disabled:opacity-40"
+    >
       {nextLabel} <ChevronRight size={14} />
     </button>
   </div>
@@ -90,7 +104,7 @@ function FPIcon({ color = "#9ca3af", size = 20 }) {
 
 // ── RF01: Start screen ─────────────────────────────────────
 // Icons: green rounded-square with white SVG icon (matches Figma RF01)
-function StartScreen({ onStart, onBack }) {
+function StartScreen({ onStart, onBack, embedded }) {
   const STEPS = [
     {
       label: "Biometric Capture",
@@ -138,49 +152,61 @@ function StartScreen({ onStart, onBack }) {
     },
   ];
 
-  return (
-    <div className="page-container">
-      <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">
-        <button onClick={onBack} className="flex items-center gap-2 text-brand-text-secondary mb-5">
-          <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
-        </button>
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">
-          Register new farmer
-        </h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-7">
-          Begin a new farmer registration by capturing their personal and biometric details to create a verified profile.
-        </p>
-        <h2 className="font-display font-bold text-base text-brand-text-primary mb-5">
-          Registration steps
-        </h2>
-        <div>
-          {STEPS.map((s, i) => (
-            <div key={s.label} className="flex gap-4 items-start">
-              <div className="flex flex-col items-center">
-                <div className="w-11 h-11 rounded-xl bg-brand-green flex items-center justify-center shrink-0">
-                  {s.icon}
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div className="w-0 border-l-2 border-dashed border-brand-border h-8 my-1" />
-                )}
-              </div>
-              <div className="pb-3 pt-1">
-                <p className="font-sans font-bold text-sm text-brand-text-primary">{s.label}</p>
-                <p className="font-sans text-xs text-brand-text-secondary mt-0.5">{s.sub}</p>
-              </div>
+  const body = (
+    <>
+      <button onClick={onBack} className="flex items-center gap-2 text-brand-text-secondary mb-5">
+        <ArrowLeft size={18} />
+        <span className="font-sans text-sm">Go back</span>
+      </button>
+      <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Register new farmer</h1>
+      <p className="font-sans text-sm text-brand-text-secondary mb-7">
+        Begin a new farmer registration by capturing their personal and biometric details to create a verified profile.
+      </p>
+      <h2 className="font-display font-bold text-base text-brand-text-primary mb-5">Registration steps</h2>
+      <div>
+        {STEPS.map((s, i) => (
+          <div key={s.label} className="flex gap-4 items-start">
+            <div className="flex flex-col items-center">
+              <div className="w-11 h-11 rounded-xl bg-brand-green flex items-center justify-center shrink-0">{s.icon}</div>
+              {i < STEPS.length - 1 && <div className="w-0 border-l-2 border-dashed border-brand-border h-8 my-1" />}
             </div>
-          ))}
+            <div className="pb-3 pt-1">
+              <p className="font-sans font-bold text-sm text-brand-text-primary">{s.label}</p>
+              <p className="font-sans text-xs text-brand-text-secondary mt-0.5">{s.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]">
+        <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">{body}</div>
+        <div className="shrink-0 pt-4 border-t border-brand-border">
+          <button onClick={onStart} className="btn-primary w-full">
+            Start Registration
+          </button>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="page-container">
+      <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">{body}</div>
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3">
-        <button onClick={onStart} className="btn-primary">Start Registration</button>
+        <button onClick={onStart} className="btn-primary">
+          Start Registration
+        </button>
       </div>
     </div>
   );
 }
 
 // ── RF02/04/08: Biometric capture hub ─────────────────────
-function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onNext, onBack }) {
+function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onNext, onBack, embedded }) {
   const done_color = "#155235";
   const idle_color = "#9ca3af";
 
@@ -216,13 +242,17 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
     </svg>
   );
 
+  const navLayout = embedded ? "inline" : "fixed";
+  const scrollPb = embedded ? "pb-4" : "pb-32";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-white flex flex-col";
+
   return (
-    <div className="page-white flex flex-col">
-      <div className="flex-1 px-4 pt-5 pb-32 overflow-y-auto scrollbar-hide">
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <Steps current={1} />
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">
-          Biometric capture
-        </h1>
+        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Biometric capture</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-8">
           Capture fingerprint and face for identity verification.
         </p>
@@ -244,8 +274,12 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
         </div>
       </div>
       <NavRow
+        layout={navLayout}
         onBack={onBack}
-        onNext={() => { setDraft({ biometric: { face: true, fingerprint: true } }); onNext(); }}
+        onNext={() => {
+          setDraft({ biometric: { face: true, fingerprint: true } });
+          onNext();
+        }}
         disabled={faceCapture !== "done" || fingerCapture !== "done"}
       />
     </div>
@@ -253,7 +287,7 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
 }
 
 // ── RF09: Personal info (all fields including optional) ────
-function PersonalStep({ onNext, onBack }) {
+function PersonalStep({ onNext, onBack, embedded }) {
   const d = getDraft().personal || {};
   const [form, setForm] = useState({
     fullName: "", phone: "", dob: "", gender: "Male",
@@ -264,7 +298,11 @@ function PersonalStep({ onNext, onBack }) {
     nextKinName: "", nextKinPhone: "", nextKinRelationship: "",
     ...d,
   });
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => setForm((f) => ({
+    ...f,
+    [k]: e.target.value,
+    ...(k === "state" ? { lga: "" } : {}),
+  }));
 
   // Primary crop tags
   const CROP_OPTIONS = ["Maize","Rice","Cassava","Yam","Soybean","Green Beans","Tomato","Pepper","Groundnut","Wheat"];
@@ -275,9 +313,15 @@ function PersonalStep({ onNext, onBack }) {
   };
   const removeCrop = (crop) => setForm((f) => ({ ...f, primaryCrops: f.primaryCrops.filter((c) => c !== crop) }));
 
+  const navLayout = embedded ? "inline" : "fixed";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-white flex flex-col";
+
   return (
-    <div className="page-white flex flex-col">
-      <div className="flex-1 px-4 pt-5 pb-36 overflow-y-auto scrollbar-hide space-y-4">
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-4 min-h-0 ${scrollPb}`}>
         <Steps current={2} />
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-1">
           Personal Information
@@ -322,7 +366,12 @@ function PersonalStep({ onNext, onBack }) {
         <F label="Gender" required><Sel value={form.gender} onChange={set("gender")} options={["Male","Female","Other"]} /></F>
         <F label="State of origin" required><Sel value={form.state} onChange={set("state")} options={nigerianStates} placeholder="Select" /></F>
         <F label="Local government area" required>
-          <Sel value={form.lga} onChange={set("lga")} options={["Ibadan North","Ibadan South","Ibadan South West","Ogbomoso","Oyo East","Atiba","Iseyin"]} placeholder="Select" />
+          <Sel
+            value={form.lga}
+            onChange={set("lga")}
+            options={nigerianLGAs[form.state] || []}
+            placeholder={form.state ? "Select LGA" : "Select state first"}
+          />
         </F>
         <F label="Residential address" required>
           <div className="flex items-center input-field gap-3">
@@ -400,20 +449,26 @@ function PersonalStep({ onNext, onBack }) {
             options={["Spouse","Parent","Sibling","Child","Relative","Friend"]} placeholder="Select" />
         </F>
       </div>
-      <NavRow onBack={onBack} onNext={() => { setDraft({ personal: form }); onNext(); }} />
+      <NavRow layout={navLayout} onBack={onBack} onNext={() => { setDraft({ personal: form }); onNext(); }} />
     </div>
   );
 }
 
 // ── Farm info ──────────────────────────────────────────────
-function FarmStep({ onNext, onBack }) {
+function FarmStep({ onNext, onBack, embedded }) {
   const d = getDraft().farm || {};
   const [form, setForm] = useState({ farmSize:"", cropType:"", landOwnership:"", ...d });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const navLayout = embedded ? "inline" : "fixed";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-white flex flex-col";
+
   return (
-    <div className="page-white flex flex-col">
-      <div className="flex-1 px-4 pt-5 pb-36 overflow-y-auto scrollbar-hide space-y-5">
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-5 min-h-0 ${scrollPb}`}>
         <Steps current={3} />
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-1">Farm Information</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-2">Enter basic details about the farmer's farm.</p>
@@ -435,20 +490,26 @@ function FarmStep({ onNext, onBack }) {
             placeholder="Select ownership type (e.g. Owned, Leased)" />
         </F>
       </div>
-      <NavRow onBack={onBack} onNext={() => { setDraft({ farm: form }); onNext(); }} />
+      <NavRow layout={navLayout} onBack={onBack} onNext={() => { setDraft({ farm: form }); onNext(); }} />
     </div>
   );
 }
 
 // ── Cooperative info ───────────────────────────────────────
-function CoopStep({ onNext, onBack }) {
+function CoopStep({ onNext, onBack, embedded }) {
   const d = getDraft().cooperative || {};
   const [form, setForm] = useState({ name:"",regNo:"",role:"Member",lga:"",commodity:"",size:"",landType:"",farmHect:"",supplier:"", ...d });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const navLayout = embedded ? "inline" : "fixed";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-white flex flex-col";
+
   return (
-    <div className="page-white flex flex-col">
-      <div className="flex-1 px-4 pt-5 pb-36 overflow-y-auto scrollbar-hide space-y-4">
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-4 min-h-0 ${scrollPb}`}>
         <Steps current={4} />
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-1">Cooperative & Association</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-2">Add cooperative details if the farmer belongs to one.</p>
@@ -472,13 +533,18 @@ function CoopStep({ onNext, onBack }) {
           <Sel value={form.landType} onChange={set("landType")} options={["Owned","Leased","Communal","Family"]} placeholder="Select" />
         </F>
       </div>
-      <NavRow onBack={onBack} onNext={() => { setDraft({ cooperative: form }); onNext(); }} nextLabel="Review" />
+      <NavRow
+        layout={navLayout}
+        onBack={onBack}
+        onNext={() => { setDraft({ cooperative: form }); onNext(); }}
+        nextLabel="Review"
+      />
     </div>
   );
 }
 
 // ── RF12: Review — flat label:bold-value list (no cards) ───
-function ReviewStep({ onSubmit, onBack, submitting }) {
+function ReviewStep({ onSubmit, onBack, submitting, embedded }) {
   const d = getDraft();
   const p = d.personal   || {};
   const f = d.farm       || {};
@@ -497,9 +563,18 @@ function ReviewStep({ onSubmit, onBack, submitting }) {
     </div>
   );
 
+  const footerClass =
+    embedded
+      ? "mt-6 pt-4 border-t border-brand-border space-y-3 w-full shrink-0"
+      : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3 z-10";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-container";
+
   return (
-    <div className="page-container">
-      <div className="flex-1 px-4 pt-5 pb-36 overflow-y-auto scrollbar-hide">
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">Review Details</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-6">
           Please review all information before submitting.
@@ -538,13 +613,11 @@ function ReviewStep({ onSubmit, onBack, submitting }) {
         ]} />
       </div>
 
-      {/* RF12 buttons — NOT using NavRow */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3">
+      <div className={footerClass}>
         <button onClick={onSubmit} disabled={submitting} className="btn-primary">
           {submitting ? "Submitting..." : "Continue and submit"}
         </button>
-        <button onClick={onBack}
-          className="w-full text-center text-brand-green font-sans font-semibold text-sm py-2">
+        <button onClick={onBack} className="w-full text-center text-brand-green font-sans font-semibold text-sm py-2">
           Edit Details
         </button>
       </div>
@@ -553,11 +626,19 @@ function ReviewStep({ onSubmit, onBack, submitting }) {
 }
 
 // ── RF13: Done screen ──────────────────────────────────────
-function DoneStep({ idCard, onRegisterAnother, onGoHome }) {
+function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
+  const footerClass =
+    embedded
+      ? "mt-6 pt-4 border-t border-brand-border space-y-3 w-full shrink-0"
+      : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3 z-10";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-container";
+
   return (
-    <div className="page-container">
-      <div className="flex-1 px-4 pt-5 pb-36 overflow-y-auto scrollbar-hide">
-        {/* Go back home link */}
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <button onClick={onGoHome} className="flex items-center gap-2 text-brand-text-secondary mb-4">
           <ArrowLeft size={16} /><span className="font-sans text-sm">Go back home</span>
         </button>
@@ -580,7 +661,7 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome }) {
           </div>
 
           {/* Photo */}
-          <img src={idCard.photo || "https://via.placeholder.com/150"} alt={idCard.name}
+          <img src={idCard.photo || DEMO_FARMER_PHOTO} alt={idCard.name}
             className="w-28 h-28 rounded-2xl object-cover border-4 border-white/30 mb-4" />
 
           <div className="text-center mb-3">
@@ -610,12 +691,10 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome }) {
         </div>
       </div>
 
-      {/* RF13 bottom actions */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3">
+      <div className={footerClass}>
         <button onClick={onRegisterAnother} className="btn-primary">
           Register Another Farmer
         </button>
-        {/* "Share ID" is a plain text link — no outline button */}
         <button
           onClick={() => {
             const msg = `Farmer ID: *${idCard.farmerID}*\nName: ${idCard.name}\nVerify: https://cropex.hashmarcropex.com/verify/${idCard.farmerID}`;
@@ -651,7 +730,7 @@ export default function AgentRegisterFarmer() {
     setIdCard({
       farmerID: id,
       name: draft.personal?.fullName || "New Farmer",
-      photo: "https://via.placeholder.com/150",
+      photo: DEMO_FARMER_PHOTO,
       cooperative: draft.cooperative?.name || "—",
     });
     clearDraft();
@@ -662,43 +741,151 @@ export default function AgentRegisterFarmer() {
   // Biometric sub-screens (inline — no route change)
   if (step === "face-capture") {
     return (
-      <AgentFacialVerification
-        onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
-        onBack={() => setStep("biometric")}
-      />
+      <>
+        <div className="md:hidden">
+          <AgentFacialVerification
+            onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
+            onBack={() => setStep("biometric")}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <AgentFacialVerification
+            embedded
+            onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
+            onBack={() => setStep("biometric")}
+          />
+        </AgentDesktopShell>
+      </>
     );
   }
   if (step === "fingerprint-capture") {
     return (
-      <AgentFingerprintVerification
-        onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
-        onBack={() => setStep("biometric")}
-      />
+      <>
+        <div className="md:hidden">
+          <AgentFingerprintVerification
+            onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
+            onBack={() => setStep("biometric")}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <AgentFingerprintVerification
+            embedded
+            onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
+            onBack={() => setStep("biometric")}
+          />
+        </AgentDesktopShell>
+      </>
     );
   }
 
-  if (step === "start")     return <StartScreen onStart={() => setStep("biometric")} onBack={goHome} />;
-  if (step === "biometric") return (
-    <BiometricStep
-      faceCapture={faceCapture}
-      fingerCapture={fingerCapture}
-      onFaceTap={() => setStep("face-capture")}
-      onFingerTap={() => setStep("fingerprint-capture")}
-      onNext={() => setStep("personal")}
-      onBack={() => setStep("start")}
-    />
-  );
-  if (step === "personal")  return <PersonalStep onNext={() => setStep("farm")}  onBack={() => setStep("biometric")} />;
-  if (step === "farm")      return <FarmStep     onNext={() => setStep("coop")}  onBack={() => setStep("personal")} />;
-  if (step === "coop")      return <CoopStep     onNext={() => setStep("review")} onBack={() => setStep("farm")} />;
-  if (step === "review")    return <ReviewStep   onSubmit={handleSubmit} onBack={() => setStep("coop")} submitting={submitting} />;
-  if (step === "done")      return (
-    <DoneStep
-      idCard={idCard}
-      onRegisterAnother={() => { setFaceCapture("idle"); setFingerCapture("idle"); setStep("start"); }}
-      onGoHome={goHome}
-    />
-  );
+  if (step === "start") {
+    return (
+      <>
+        <div className="md:hidden">
+          <StartScreen onStart={() => setStep("biometric")} onBack={goHome} />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <StartScreen embedded onStart={() => setStep("biometric")} onBack={goHome} />
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "biometric") {
+    return (
+      <>
+        <div className="md:hidden">
+          <BiometricStep
+            faceCapture={faceCapture}
+            fingerCapture={fingerCapture}
+            onFaceTap={() => setStep("face-capture")}
+            onFingerTap={() => setStep("fingerprint-capture")}
+            onNext={() => setStep("personal")}
+            onBack={() => setStep("start")}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <BiometricStep
+            embedded
+            faceCapture={faceCapture}
+            fingerCapture={fingerCapture}
+            onFaceTap={() => setStep("face-capture")}
+            onFingerTap={() => setStep("fingerprint-capture")}
+            onNext={() => setStep("personal")}
+            onBack={() => setStep("start")}
+          />
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "personal") {
+    return (
+      <>
+        <div className="md:hidden">
+          <PersonalStep onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <PersonalStep embedded onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "farm") {
+    return (
+      <>
+        <div className="md:hidden">
+          <FarmStep onNext={() => setStep("coop")} onBack={() => setStep("personal")} />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <FarmStep embedded onNext={() => setStep("coop")} onBack={() => setStep("personal")} />
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "coop") {
+    return (
+      <>
+        <div className="md:hidden">
+          <CoopStep onNext={() => setStep("review")} onBack={() => setStep("farm")} />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <CoopStep embedded onNext={() => setStep("review")} onBack={() => setStep("farm")} />
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "review") {
+    return (
+      <>
+        <div className="md:hidden">
+          <ReviewStep onSubmit={handleSubmit} onBack={() => setStep("coop")} submitting={submitting} />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <ReviewStep embedded onSubmit={handleSubmit} onBack={() => setStep("coop")} submitting={submitting} />
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "done") {
+    return (
+      <>
+        <div className="md:hidden">
+          <DoneStep
+            idCard={idCard}
+            onRegisterAnother={() => { setFaceCapture("idle"); setFingerCapture("idle"); setStep("start"); }}
+            onGoHome={goHome}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <DoneStep
+            embedded
+            idCard={idCard}
+            onRegisterAnother={() => { setFaceCapture("idle"); setFingerCapture("idle"); setStep("start"); }}
+            onGoHome={goHome}
+          />
+        </AgentDesktopShell>
+      </>
+    );
+  }
 
   return null;
 }

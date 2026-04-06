@@ -150,7 +150,7 @@ function HandsDiagram({ fingerStates, activeId }) {
 }
 
 // ── Main component ─────────────────────────────────────────
-export default function AgentFingerprintVerification({ onSuccess, onBack }) {
+export default function AgentFingerprintVerification({ onSuccess, onBack, embedded }) {
   const [fingerStates, setFingerStates] = useState(
     Object.fromEntries(SCAN_ORDER.map((f) => [f.id, "idle"]))
   );
@@ -228,9 +228,17 @@ export default function AgentFingerprintVerification({ onSuccess, onBack }) {
     { color: COLORS.failed,  text: "Fingerprint scan failed"     },
   ];
 
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-container";
+  const scrollPb = embedded ? "pb-4" : "pb-40";
+  const bottomClass = embedded
+    ? "flex flex-col gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 px-4"
+    : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3 z-10";
+
   return (
-    <div className="page-container">
-      <div className="flex-1 px-4 pt-5 pb-40 overflow-y-auto scrollbar-hide">
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <button onClick={onBack} className="flex items-center gap-2 text-brand-text-secondary mb-5">
           <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
         </button>
@@ -280,8 +288,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack }) {
         </div>
       </div>
 
-      {/* Bottom actions */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3">
+      <div className={bottomClass}>
         {currentIdx === null ? (
           <button onClick={() => setCurrentIdx(0)} className="btn-primary">
             Begin Fingerprint Scan

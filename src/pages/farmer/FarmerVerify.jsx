@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
 import { farmerData } from "../../mockData/farmer";
+import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
 
 const SLIDES = [
   {
@@ -20,33 +21,6 @@ const SLIDES = [
     sub: "Use your Farmer ID to apply for loans, get farm support and connect with buyers.",
   },
 ];
-
-// Left photo panel — reused on login and OTP desktop views
-function DesktopPhotoPanel({ image }) {
-  return (
-    <div className="relative w-[46%] shrink-0 rounded-2xl overflow-hidden bg-black min-h-[560px]">
-      <img src={image} alt="Farm" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-      <div className="absolute bottom-8 left-8 right-8">
-        {/* HFEI Primary Logo White — on dark photo bg */}
-        <div className="mb-4">
-          <img
-            src="/brand/HFEI_Primary_Logo_White.png"
-            alt="HFEI by Hashmar Cropex Ltd"
-            className="h-9 w-auto object-contain drop-shadow-sm"
-            draggable="false"
-          />
-        </div>
-        <h2 className="font-display font-bold text-white text-2xl leading-tight mb-2">
-          Welcome to your Farmer Profile
-        </h2>
-        <p className="font-sans text-white/80 text-sm leading-relaxed">
-          You now have a digital identity that helps you access support, loans, and better opportunities.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 // ── MOBILE onboarding slides ───────────────────────────────
 function MobileOnboarding({ onDone }) {
@@ -142,26 +116,25 @@ function PhoneStep({ onSubmit, onBack }) {
         </div>
       </div>
 
-      {/* DESKTOP: split panel */}
-      <div className="hidden md:flex min-h-screen bg-white items-center justify-center p-8">
-        <div className="flex gap-10 w-full max-w-4xl">
-          <DesktopPhotoPanel image="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80" />
-          <div className="flex-1 flex flex-col justify-center py-8">
-            <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-8">
-              Login to your farmer profile
-            </h1>
-            <PhoneField />
-            <div className="space-y-3">
-              <button onClick={handle} disabled={loading} className="btn-primary">
-                {loading ? "Checking..." : "Continue"}
-              </button>
-              <button onClick={onBack} className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium hover:bg-gray-100 transition-colors">
-                I do not have an account
-              </button>
-            </div>
+      <FarmerAuthDesktopLayout
+        title="Login to your farmer profile"
+        heroImage="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1400&q=80"
+        actions={
+          <div className="space-y-3">
+            <button onClick={handle} disabled={loading} className="btn-primary">
+              {loading ? "Checking..." : "Continue"}
+            </button>
+            <button
+              onClick={onBack}
+              className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium hover:bg-gray-100 transition-colors"
+            >
+              I do not have an account
+            </button>
           </div>
-        </div>
-      </div>
+        }
+      >
+        <PhoneField />
+      </FarmerAuthDesktopLayout>
     </>
   );
 }
@@ -233,28 +206,6 @@ function OTPStep({ phone, onSuccess, onBack }) {
     setLoading(false);
   };
 
-  const OTPBoxes = () => (
-    <>
-      <div className="grid grid-cols-4 gap-4 mb-4">
-        {digits.map((d, i) => (
-          <input key={i} ref={refs[i]} type="tel" inputMode="numeric" maxLength={1} value={d}
-            onChange={(e) => handleChange(i, e)}
-            onKeyDown={(e) => handleKeyDown(i, e)}
-            onPaste={i === 0 ? handlePaste : undefined}
-            autoComplete="one-time-code"
-            className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
-          />
-        ))}
-      </div>
-      {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
-      <p className="font-sans text-sm text-brand-text-secondary mb-1">
-        I did not receive a code,{" "}
-        <button className="text-brand-green font-semibold">Resend Code</button>
-      </p>
-      <p className="font-sans text-xs text-brand-text-muted mb-6">Demo OTP: <strong>1234</strong></p>
-    </>
-  );
-
   return (
     <>
       {/* MOBILE */}
@@ -267,7 +218,23 @@ function OTPStep({ phone, onSuccess, onBack }) {
           <p className="font-sans text-sm text-brand-text-secondary mb-8">
             Enter the 4-digit code we sent to your registered phone number
           </p>
-          <OTPBoxes />
+          <div className="grid grid-cols-4 gap-4 mb-4">
+            {digits.map((d, i) => (
+              <input key={i} ref={refs[i]} type="tel" inputMode="numeric" maxLength={1} value={d}
+                onChange={(e) => handleChange(i, e)}
+                onKeyDown={(e) => handleKeyDown(i, e)}
+                onPaste={i === 0 ? handlePaste : undefined}
+                autoComplete="one-time-code"
+                className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
+              />
+            ))}
+          </div>
+          {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+          <p className="font-sans text-sm text-brand-text-secondary mb-1">
+            I did not receive a code,{" "}
+            <button className="text-brand-green font-semibold">Resend Code</button>
+          </p>
+          <p className="font-sans text-xs text-brand-text-muted mb-6">Demo OTP: <strong>1234</strong></p>
         </div>
         <div className="px-5 pb-8 space-y-3">
           <button onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
@@ -279,27 +246,49 @@ function OTPStep({ phone, onSuccess, onBack }) {
         </div>
       </div>
 
-      {/* DESKTOP: split panel */}
-      <div className="hidden md:flex min-h-screen bg-white items-center justify-center p-8">
-        <div className="flex gap-10 w-full max-w-4xl">
-          <DesktopPhotoPanel image="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=80" />
-          <div className="flex-1 flex flex-col justify-center py-8">
-            <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Enter 4-Digit code</h1>
-            <p className="font-sans text-sm text-brand-text-secondary mb-10">
-              Enter the 4-digit code we sent to your registered phone number
-            </p>
-            <OTPBoxes />
-            <div className="space-y-3">
-              <button onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
-                {loading ? "Verifying..." : "Login"}
-              </button>
-              <button onClick={onBack} className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium hover:bg-gray-100 transition-colors">
-                Back
-              </button>
-            </div>
+      <FarmerAuthDesktopLayout
+        title="Enter 4-Digit code"
+        subtitle="Enter the 4-digit code we sent to your registered phone number"
+        heroImage="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=1400&q=80"
+        heroTitle="Your Digital Identity"
+        heroSub="One verified ID that proves you're a registered farmer and unlocks access to services."
+        actions={
+          <div className="space-y-3">
+            <button onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
+              {loading ? "Verifying..." : "Login"}
+            </button>
+            <button
+              onClick={onBack}
+              className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium hover:bg-gray-100 transition-colors"
+            >
+              Back
+            </button>
           </div>
+        }
+      >
+        <div className="grid grid-cols-4 gap-4 mb-4">
+          {digits.map((d, i) => (
+            <input
+              key={i}
+              ref={refs[i]}
+              type="tel"
+              inputMode="numeric"
+              maxLength={1}
+              value={d}
+              onChange={(e) => handleChange(i, e)}
+              onKeyDown={(e) => handleKeyDown(i, e)}
+              onPaste={i === 0 ? handlePaste : undefined}
+              autoComplete="one-time-code"
+              className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
+            />
+          ))}
         </div>
-      </div>
+        {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+        <p className="font-sans text-sm text-brand-text-secondary mb-1">
+          I did not receive a code, <button className="text-brand-green font-semibold">Resend Code</button>
+        </p>
+        <p className="font-sans text-xs text-brand-text-muted mb-0">Demo OTP: <strong>1234</strong></p>
+      </FarmerAuthDesktopLayout>
     </>
   );
 }
