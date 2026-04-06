@@ -1,10 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AgentOnboarding from "../../components/agent/AgentOnboarding";
+import { agentBrandSplash } from "../../mockData/agent";
 
 export default function AgentSplash() {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState("onboarding");
+  const [phase, setPhase] = useState("brand");
+
+  useEffect(() => {
+    if (phase !== "brand") return;
+    const t = setTimeout(() => setPhase("onboarding"), 2600);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  if (phase === "brand") {
+    return (
+      <div className="relative min-h-dvh w-full overflow-hidden bg-black">
+        <img
+          src={agentBrandSplash.image}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-dvh px-6">
+          <img
+            src="/brand/HFEI_Primary_Logo_White.png"
+            alt="HFEI by Hashmar Cropex Ltd"
+            className="h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-lg"
+            draggable={false}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (phase === "onboarding") {
     return <AgentOnboarding onDone={() => setPhase("menu")} />;
@@ -15,7 +43,7 @@ export default function AgentSplash() {
       {/* Mobile: full-bleed hero */}
       <div className="relative md:hidden min-h-[40vh] bg-black shrink-0">
         <img
-          src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1200&q=80"
+          src="/onboarding/agent-1.jpg"
           alt="Field agents supporting farmers"
           className="absolute inset-0 w-full h-full object-cover opacity-80"
         />
@@ -38,7 +66,7 @@ export default function AgentSplash() {
       <div className="hidden md:flex md:min-w-0 items-stretch">
         <div className="relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
-            src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1200&q=80"
+            src="/onboarding/agent-1.jpg"
             alt="Field agents supporting farmers"
             className="absolute inset-0 w-full h-full object-cover"
           />

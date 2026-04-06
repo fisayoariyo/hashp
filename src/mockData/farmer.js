@@ -5,27 +5,23 @@
 
 /** FWM-CA-01 — full-bleed brand moment after role = Farmer (mobile + desktop). */
 export const farmerBrandSplash = {
-  image:
-    "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1400&q=80&fit=crop",
+  image: "/onboarding/brand-field.jpg",
 };
 
 /** FWM-CA-02–04 — three onboarding slides before phone login. */
 export const farmerOnboardingSlides = [
   {
-    image:
-      "https://images.unsplash.com/photo-1593113598335-c59f8fd05925?w=1000&q=80&fit=crop",
+    image: "/onboarding/farmer-1.jpg",
     title: "Welcome to your Farmer Profile",
     sub: "You now have a digital identity that helps you access support, loans, and better opportunities.",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1000&q=80&fit=crop",
+    image: "/onboarding/farmer-2.jpg",
     title: "Your Identity Matters",
     sub: "Your Farmer ID makes you visible and verified. It helps you access financial services, insurance, and government support.",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1560493676-04071c5f467b?w=1000&q=80&fit=crop",
+    image: "/onboarding/farmer-3.jpg",
     title: "Access More with Ease",
     sub: "View your profile, get farming support, access markets, and explore opportunities all in one place.",
   },
