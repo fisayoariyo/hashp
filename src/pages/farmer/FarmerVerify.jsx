@@ -111,7 +111,7 @@ function PhoneStep({ onSubmit, onBack }) {
         <div className="w-px h-5 bg-brand-border shrink-0" />
         <span className="text-sm text-brand-text-secondary shrink-0">+234</span>
         <input
-          type="tel" inputMode="numeric" value={phone}
+          type="tel" inputMode="tel" value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && handle()}
           placeholder="Input your phone number here"
