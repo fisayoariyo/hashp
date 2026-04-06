@@ -1,9 +1,9 @@
 export default function AgentAuthDesktopLayout({ title, subtitle, children, actions, centerTitle = false, leading = null }) {
   return (
-    <div className="hidden md:flex min-h-dvh bg-white px-6 py-8 lg:px-10 lg:py-10 gap-10 lg:gap-14 items-stretch">
-      {/* Contained hero card (AWD) — not edge-to-edge half screen */}
-      <div className="flex w-full max-w-lg shrink-0 flex-col justify-center">
-        <div className="relative w-full min-h-[min(640px,calc(100dvh-5rem))] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
+    <div className="hidden md:grid md:grid-cols-2 md:min-h-dvh md:bg-white md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch">
+      {/* Left ~50% — same visual weight as Create Account (AWD-CA-02) */}
+      <div className="flex min-w-0 min-h-0 items-stretch">
+        <div className="relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
             src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1400&q=80"
             alt="Farmers"
@@ -26,7 +26,7 @@ export default function AgentAuthDesktopLayout({ title, subtitle, children, acti
       </div>
 
       <div
-        className={`flex-1 min-w-0 max-w-[640px] mx-auto py-6 lg:py-10 pr-2 lg:pr-8 flex flex-col w-full justify-center ${
+        className={`flex min-w-0 flex-col w-full justify-center py-4 lg:py-6 px-2 lg:px-6 max-w-xl mx-auto lg:max-w-none lg:mx-0 lg:pr-10 ${
           centerTitle ? "items-center text-center" : ""
         }`}
       >

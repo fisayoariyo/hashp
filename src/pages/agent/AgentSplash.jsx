@@ -11,7 +11,7 @@ export default function AgentSplash() {
   }
 
   return (
-    <div className="relative w-full overflow-hidden min-h-dvh flex flex-col md:flex-row md:items-stretch bg-white md:px-8 md:py-10 lg:px-12 lg:py-12 md:gap-10 lg:gap-14">
+    <div className="relative w-full overflow-hidden min-h-dvh flex flex-col bg-white md:grid md:grid-cols-2 md:min-h-dvh md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch">
       {/* Mobile: full-bleed hero */}
       <div className="relative md:hidden min-h-[40vh] bg-black shrink-0">
         <img
@@ -34,9 +34,9 @@ export default function AgentSplash() {
         </div>
       </div>
 
-      {/* Desktop: contained rounded card */}
-      <div className="hidden md:flex md:w-full md:max-w-lg shrink-0 flex-col justify-center">
-        <div className="relative w-full h-[min(680px,calc(100dvh-5rem))] min-h-[480px] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
+      {/* Desktop: ~50% column — match Create Account hero size */}
+      <div className="hidden md:flex md:min-w-0 items-stretch">
+        <div className="relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
             src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1200&q=80"
             alt="Field agents supporting farmers"
@@ -58,7 +58,7 @@ export default function AgentSplash() {
         </div>
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col items-center justify-center px-6 py-10 md:py-8 lg:py-12">
+      <div className="flex-1 min-w-0 flex flex-col items-center justify-center px-6 py-10 md:py-8 lg:py-10 md:max-w-xl md:mx-auto lg:mx-0 lg:max-w-none lg:pr-8">
         <img
           src="/brand/HFEI_Primary_Logo_.png"
           alt="HFEI by Hashmar Cropex Ltd"

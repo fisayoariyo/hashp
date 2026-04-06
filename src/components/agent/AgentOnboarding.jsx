@@ -33,7 +33,7 @@ export default function AgentOnboarding({ onDone }) {
 
   return (
     <div
-      className="min-h-dvh w-full flex flex-col md:flex-row md:items-stretch bg-black md:bg-white md:px-8 md:py-10 lg:px-12 lg:py-12 md:gap-10 lg:gap-14"
+      className="min-h-dvh w-full flex flex-col bg-black md:grid md:grid-cols-2 md:min-h-dvh md:bg-white md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch"
       onTouchStart={(e) => {
         touchX.current = e.touches[0].clientX;
       }}
@@ -45,16 +45,17 @@ export default function AgentOnboarding({ onDone }) {
         touchX.current = null;
       }}
     >
-      <div className="relative w-full min-h-[60vh] md:min-h-0 shrink-0 md:flex md:w-full md:max-w-lg md:flex-col md:justify-center">
-        <div className="md:hidden absolute inset-0">
+      <div className="relative w-full h-dvh min-h-dvh shrink-0 md:h-auto md:min-h-0 md:flex md:min-w-0 md:items-stretch">
+        {/* Mobile: full-viewport bleed (AWM) — image fills entire screen */}
+        <div className="md:hidden absolute inset-0 h-full w-full">
           <img
             src={slide.image}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/35" />
         </div>
-        <div className="hidden md:block relative w-full h-[min(640px,calc(100dvh-5rem))] min-h-[440px] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
+        <div className="hidden md:block relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
             src={slide.image}
             alt=""
@@ -63,7 +64,7 @@ export default function AgentOnboarding({ onDone }) {
           <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/15 to-black/50" />
         </div>
 
-        <div className="md:hidden relative z-10 flex flex-col justify-end min-h-[60vh] px-5 pb-10 pt-20">
+        <div className="md:hidden relative z-10 flex h-full min-h-dvh flex-col justify-end px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-24">
           <h2 className="font-display font-bold text-3xl text-white leading-tight mb-2">{slide.title}</h2>
           <p className="font-sans text-sm text-white/80 leading-relaxed mb-6">{slide.sub}</p>
           {dots}
@@ -73,7 +74,7 @@ export default function AgentOnboarding({ onDone }) {
         </div>
       </div>
 
-      <div className="hidden md:flex flex-1 min-w-0 flex-col justify-center px-4 lg:px-8 py-12 w-full max-w-xl mx-auto lg:mx-0 lg:max-w-none">
+      <div className="hidden md:flex min-w-0 flex-col justify-center px-4 lg:px-8 py-8 lg:py-10 w-full max-w-xl mx-auto lg:max-w-none lg:mx-0 lg:pr-10">
         <h2 className="font-display font-bold text-4xl lg:text-5xl text-brand-text-primary leading-tight mb-4">
           {slide.title}
         </h2>
