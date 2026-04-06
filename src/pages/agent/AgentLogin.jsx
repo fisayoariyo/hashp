@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
+import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { agentData } from "../../mockData/agent";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 
@@ -87,7 +88,11 @@ export default function AgentLogin() {
           Forgot password?
         </button>
       </div>
-      {banner && <p className="text-xs text-brand-green font-medium">{banner}</p>}
+      {banner && (
+        <div className="mt-2">
+          <AgentFormFeedback variant="success">{banner}</AgentFormFeedback>
+        </div>
+      )}
       <p className="font-sans text-xs text-brand-text-muted">
         Demo: <strong>{agentData.email}</strong> / <strong>password123</strong>
       </p>

@@ -686,51 +686,51 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
           Farmer has been successfully registered. View and share their ID below.
         </p>
 
-        {/* Green ID card */}
-        <div className="bg-brand-green rounded-3xl p-5 flex flex-col items-center text-white">
+        {/* Green ID card — compact width to match desktop reference */}
+        <div className="max-w-sm mx-auto w-full bg-brand-green rounded-2xl p-4 flex flex-col items-center text-white shadow-md">
           {/* HFEI Primary Logo White on green ID card */}
-          <div className="self-start mb-5">
+          <div className="self-start mb-3">
             <img
               src="/brand/HFEI_Primary_Logo_White.png"
               alt="HFEI by Hashmar Cropex Ltd"
-              className="h-8 w-auto object-contain"
+              className="h-7 w-auto object-contain"
               draggable="false"
             />
           </div>
 
-          {/* Photo */}
+          {/* Photo — reference size for biometric capture pill width */}
           <img src={idCard.photo || DEMO_FARMER_PHOTO} alt={idCard.name}
-            className="w-28 h-28 rounded-2xl object-cover border-4 border-white/30 mb-4" />
+            className="w-28 h-28 rounded-2xl object-cover border-[3px] border-white/35 mb-3" />
 
+          <div className="text-center mb-2">
+            <p className="text-white/60 text-[11px]">Full Name</p>
+            <p className="font-display font-bold text-lg mt-0.5 leading-tight">{idCard.name}</p>
+          </div>
+          <div className="text-center mb-2">
+            <p className="text-white/60 text-[11px]">Farmer ID</p>
+            <p className="font-display font-bold text-sm tracking-widest mt-0.5 break-all px-1">{idCard.farmerID}</p>
+          </div>
           <div className="text-center mb-3">
-            <p className="text-white/60 text-xs">Full Name</p>
-            <p className="font-display font-bold text-xl mt-0.5">{idCard.name}</p>
-          </div>
-          <div className="text-center mb-3">
-            <p className="text-white/60 text-xs">Farmer ID</p>
-            <p className="font-display font-bold text-base tracking-widest mt-0.5">{idCard.farmerID}</p>
-          </div>
-          <div className="text-center mb-4">
-            <p className="text-white/60 text-xs">Corporative name</p>
-            <p className="font-display font-bold text-sm mt-0.5">{idCard.cooperative || "—"}</p>
+            <p className="text-white/60 text-[11px]">Corporative name</p>
+            <p className="font-display font-semibold text-sm mt-0.5">{idCard.cooperative || "—"}</p>
           </div>
 
-          <div className="w-full h-px bg-white/20 mb-4" />
+          <div className="w-full h-px bg-white/20 mb-3" />
 
-          <div className="grid grid-cols-2 gap-4 w-full mb-4">
-            <div><p className="text-white/60 text-xs">Agent name</p><p className="font-sans font-semibold text-sm mt-0.5">Adesipe Tomide</p></div>
-            <div><p className="text-white/60 text-xs">Agent signature</p><p className="font-sans italic text-sm mt-0.5 text-white/80">Paladise</p></div>
+          <div className="grid grid-cols-2 gap-3 w-full mb-3 text-left">
+            <div><p className="text-white/60 text-[11px]">Agent name</p><p className="font-sans font-semibold text-xs mt-0.5">Adesipe Tomide</p></div>
+            <div><p className="text-white/60 text-[11px]">Agent signature</p><p className="font-sans italic text-xs mt-0.5 text-white/85">Paladise</p></div>
           </div>
-          <div className="flex items-center justify-center gap-6 w-full">
-            <div className="text-center"><p className="text-white/60 text-xs">Issue date</p><p className="font-display font-bold text-sm mt-0.5">20/04/2026</p></div>
-            <div className="w-px h-8 bg-white/30" />
-            <div className="text-center"><p className="text-white/60 text-xs">Expiry date</p><p className="font-display font-bold text-sm mt-0.5">20/04/2027</p></div>
+          <div className="flex items-center justify-center gap-5 w-full">
+            <div className="text-center"><p className="text-white/60 text-[11px]">Issue date</p><p className="font-display font-bold text-xs mt-0.5">20/04/2026</p></div>
+            <div className="w-px h-7 bg-white/30" />
+            <div className="text-center"><p className="text-white/60 text-[11px]">Expiry date</p><p className="font-display font-bold text-xs mt-0.5">20/04/2027</p></div>
           </div>
         </div>
       </div>
 
       <div
-        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-stretch sm:items-center`}
+        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-center`}
       >
         <button
           type="button"
@@ -738,11 +738,15 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
             const msg = `Farmer ID: *${idCard.farmerID}*\nName: ${idCard.name}\nVerify: https://cropex.hashmarcropex.com/verify/${idCard.farmerID}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
           }}
-          className="order-2 sm:order-1 min-w-[160px] py-3.5 px-6 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm hover:bg-brand-green/5 transition-colors"
+          className="order-2 sm:order-1 py-3 px-8 rounded-full border-2 border-brand-green text-brand-green font-display font-semibold text-sm hover:bg-brand-green/5 transition-colors w-full sm:w-auto max-w-xs"
         >
           Share ID
         </button>
-        <button type="button" onClick={onRegisterAnother} className="order-1 sm:order-2 btn-primary min-w-[200px] w-full sm:w-auto px-8">
+        <button
+          type="button"
+          onClick={onRegisterAnother}
+          className="order-1 sm:order-2 btn-capture-pill px-8 sm:min-w-[12rem] w-full sm:w-auto max-w-xs"
+        >
           Register Another Farmer
         </button>
       </div>

@@ -45,7 +45,10 @@ export default function AgentResetPasswordNew() {
     } catch { /* ignore */ }
     setLoading(false);
     try {
-      sessionStorage.setItem("hcx_agent_login_message", "Password updated. Sign in with your new password.");
+      sessionStorage.setItem(
+        "hcx_agent_login_message",
+        "Password reset successfully. Sign in with your new password."
+      );
       if (email) sessionStorage.setItem("hcx_agent_reset_email_prefill", email);
     } catch { /* ignore */ }
     navigate("/agent/login");

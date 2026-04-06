@@ -34,20 +34,27 @@ export default function AgentDesktopShell({ active = "dashboard", children }) {
         </nav>
       </aside>
 
-      <main className="flex-1 p-8">
-        <div className="flex items-start justify-between mb-6">
+      <main className="flex-1 p-4 md:p-6 flex flex-col min-h-0 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 max-w-5xl mx-auto w-full">
           <div>
-            <h1 className="font-display font-bold text-4xl text-brand-text-primary">Welcome, Agent {agentData.name}</h1>
-            <p className="font-sans text-brand-text-secondary">Ready to manage farmer registration and track activities</p>
+            <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary">
+              Welcome, Agent {agentData.name}
+            </h1>
+            <p className="font-sans text-sm text-brand-text-secondary mt-0.5">
+              Ready to manage farmer registration and track activities
+            </p>
           </div>
           <button
+            type="button"
             onClick={() => navigate("/agent/register-farmer")}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-green text-white font-semibold"
+            className="inline-flex items-center justify-center gap-2 shrink-0 px-5 py-2.5 rounded-full bg-brand-green text-white font-sans font-semibold text-sm"
           >
-            <Plus size={16} /> Register New Farmer
+            <Plus size={16} strokeWidth={2.5} /> Register New Farmer
           </button>
         </div>
-        <div className="bg-white rounded-3xl p-6 min-h-[calc(100dvh-180px)] flex flex-col min-h-0">{children}</div>
+        <div className="bg-white rounded-2xl border border-brand-border p-4 md:p-5 max-w-5xl mx-auto w-full flex flex-col flex-1 min-h-0 min-h-[320px]">
+          {children}
+        </div>
       </main>
     </div>
   );

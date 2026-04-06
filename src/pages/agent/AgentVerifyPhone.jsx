@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
+import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 const REG_KEY = "hcx_agent_registration";
@@ -88,7 +89,7 @@ export default function AgentVerifyPhone() {
         navigate("/agent/select-location");
       }
     } else {
-      setError("Incorrect code. Try 1234 for demo.");
+      setError("Incorrect code, Try again");
       setDigits(["", "", "", ""]);
       setTimeout(() => r0.current?.focus(), 0);
     }
@@ -120,7 +121,11 @@ export default function AgentVerifyPhone() {
 
   const otpMeta = (
     <>
-      {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
+      {error && (
+        <div className="mb-4">
+          <AgentFormFeedback variant="error">{error}</AgentFormFeedback>
+        </div>
+      )}
       <p className="font-sans text-sm text-brand-text-secondary">
         I did not receive a code,{" "}
         <button type="button" className="text-brand-green font-semibold">Resend Code</button>

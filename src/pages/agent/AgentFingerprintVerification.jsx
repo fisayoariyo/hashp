@@ -255,8 +255,8 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
     : "page-container";
   const scrollPb = embedded ? "pb-4" : "pb-40";
   const bottomClass = embedded
-    ? "flex flex-col gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 px-4"
-    : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3 z-10";
+    ? "flex flex-col items-center gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 px-4"
+    : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3 z-10 flex flex-col items-center";
 
   return (
     <div className={rootClass}>
@@ -313,7 +313,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
 
       <div className={bottomClass}>
         {currentIdx === null ? (
-          <button type="button" onClick={() => setCurrentIdx(0)} className="btn-primary max-w-md mx-auto w-full md:w-auto md:min-w-[280px]">
+          <button type="button" onClick={() => setCurrentIdx(0)} className="btn-capture-pill px-8">
             Begin Fingerprint Scan
           </button>
         ) : (
@@ -321,11 +321,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             type="button"
             onClick={onSuccess}
             disabled={!allDone || !passThreshold}
-            className={`w-full max-w-md mx-auto font-display font-semibold text-base py-4 px-6 rounded-3xl transition-all active:scale-95 md:w-auto md:min-w-[200px] ${
-              allDone && passThreshold
-                ? "bg-brand-green text-white hover:opacity-95"
-                : "bg-[#8aada4] text-white cursor-not-allowed"
-            }`}
+            className="btn-capture-pill px-8 disabled:opacity-45 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             Continue
           </button>
@@ -335,7 +331,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
           <button
             type="button"
             onClick={retryFailed}
-            className="w-full max-w-md mx-auto py-3 rounded-3xl border-2 border-brand-green text-brand-green font-sans font-semibold text-sm md:w-auto md:min-w-[200px]"
+            className="py-3 px-8 rounded-full border-2 border-brand-green text-brand-green font-sans font-semibold text-sm"
           >
             Retry Failed Scans
           </button>

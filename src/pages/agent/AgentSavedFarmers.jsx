@@ -4,6 +4,8 @@ import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { agentData } from "../../mockData/agent";
 import { useAgentFarmersSync } from "../../hooks/useAgentFarmersSync";
+import AgentStatusPanel from "../../components/agent/AgentStatusPanel";
+import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 
 function FilterPill({ value, onChange, options }) {
   return (
@@ -391,15 +393,24 @@ export default function AgentSavedFarmers() {
   const toast = syncMessage && (
     <div
       role="status"
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-2xl bg-brand-green text-white text-sm font-sans font-medium shadow-lg max-w-[90vw] text-center"
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-3 rounded-2xl bg-white border border-brand-border shadow-lg max-w-[min(90vw,20rem)]"
     >
-      {syncMessage}
+      <AgentFormFeedback variant="success">{syncMessage}</AgentFormFeedback>
+    </div>
+  );
+
+  const syncOverlay = syncing && (
+    <div className="fixed inset-0 z-[95] bg-black/25 flex items-center justify-center p-4" aria-live="polite">
+      <div className="bg-white rounded-2xl border border-brand-border shadow-xl max-w-xs w-full">
+        <AgentStatusPanel variant="sync-loading" />
+      </div>
     </div>
   );
 
   if (view === "list") {
     return (
       <>
+        {syncOverlay}
         {toast}
         <ListScreen
           farmers={farmers}
@@ -423,6 +434,7 @@ export default function AgentSavedFarmers() {
   if (view === "search") {
     return (
       <>
+        {syncOverlay}
         {toast}
         <SearchScreen
           farmers={farmers}
@@ -440,6 +452,7 @@ export default function AgentSavedFarmers() {
   if (view === "detail" && selectedFarmer) {
     return (
       <>
+        {syncOverlay}
         {toast}
         <DetailScreen
           farmer={selectedFarmer}

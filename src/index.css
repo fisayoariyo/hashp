@@ -71,6 +71,15 @@
            text-base py-4 px-6 rounded-3xl transition-all duration-200 active:scale-95;
   }
 
+  /* Compact pill CTA — matches ID-card photo scale (~7rem), not full-width */
+  .btn-capture-pill {
+    @apply inline-flex items-center justify-center bg-brand-green text-white font-display font-semibold text-sm
+           py-3.5 px-10 rounded-full transition-all duration-200 min-w-[7rem]
+           active:scale-95 active:brightness-90
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+
   /* ── Cards ── */
   .card {
     @apply bg-white rounded-2xl shadow-card p-4;

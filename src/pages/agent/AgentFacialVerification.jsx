@@ -20,16 +20,19 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
   };
 
   const rootClass = embedded
-    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)] bg-brand-bg-page rounded-2xl"
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)] justify-center"
     : "page-container bg-brand-bg-page flex flex-col";
-  const scrollPb = embedded ? "pb-4" : "pb-32";
+  const scrollPb = embedded ? "pb-2" : "pb-28";
   const bottomClass = embedded
-    ? "flex flex-col gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 px-4"
-    : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-8 bg-transparent pt-3 z-10";
+    ? "flex flex-col items-center gap-3 w-full mt-auto pt-4 border-t border-brand-border/80 shrink-0 px-4"
+    : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-8 bg-transparent pt-3 z-10 flex flex-col items-center";
 
-  return (
-    <div className={rootClass}>
-      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
+  const innerCard =
+    "w-full max-w-md mx-auto rounded-2xl border border-brand-border bg-white p-5 flex flex-col min-h-0 flex-1 shadow-sm";
+
+  const content = (
+    <>
+      <div className={`flex-1 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-brand-text-secondary mb-5"
@@ -38,27 +41,28 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
           <span className="font-sans text-sm">Go back</span>
         </button>
 
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-1">
+        <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary mb-1">
           Facial Verification
         </h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">
+        <p className="font-sans text-sm text-brand-text-secondary mb-6">
           Capture face for identity verification.
         </p>
 
-        {/* Oval camera frame */}
-        <div className="flex justify-center mb-6">
-          <div className="relative w-64 h-80">
+        {/* Oval camera frame — proportional to ID card photo (~112px wide) */}
+        <div className="flex justify-center mb-4">
+          <div className="relative w-52 h-[13.5rem] max-w-[85vw]">
             {/* Dashed green oval border */}
             <svg
               viewBox="0 0 256 320"
               className="absolute inset-0 w-full h-full"
               fill="none"
+              preserveAspectRatio="xMidYMid meet"
             >
               <ellipse
                 cx="128"
                 cy="160"
-                rx="120"
-                ry="152"
+                rx="118"
+                ry="148"
                 stroke={status === "success" ? "#155235" : "#155235"}
                 strokeWidth="2.5"
                 strokeDasharray="10 7"
@@ -130,19 +134,36 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
 
       <div className={bottomClass}>
         {status === "success" ? (
-          <button onClick={handleContinue} className="btn-primary">
+          <button type="button" onClick={handleContinue} className="btn-capture-pill">
             Continue
           </button>
         ) : (
           <button
+            type="button"
             onClick={handleCapture}
             disabled={status === "scanning"}
-            className="btn-primary disabled:opacity-60"
+            className="btn-capture-pill disabled:opacity-60"
           >
             {status === "scanning" ? "Scanning..." : "Capture"}
           </button>
         )}
       </div>
+    </>
+  );
+
+  return (
+    <div className={rootClass}>
+      {embedded ? (
+        <div className={`${innerCard} max-h-full`}>
+          {content}
+        </div>
+      ) : (
+        <div className="flex flex-col flex-1 min-h-0 w-full max-w-md mx-auto px-3 pt-4 pb-4">
+          <div className="rounded-2xl border border-brand-border bg-white p-5 flex flex-col flex-1 min-h-0 shadow-sm">
+            {content}
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes scanLine {
