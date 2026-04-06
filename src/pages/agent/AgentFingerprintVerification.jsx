@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 
+/** Minimum successful finger reads required to continue (AWD partial-success flow). */
+const MIN_SUCCESS_SCANS = 7;
+
 // ── Scan order (Right Thumb first, as shown in RF05) ───────
 const SCAN_ORDER = [
   { id: "R_thumb",  label: "Right Thumb"  },
@@ -19,12 +22,12 @@ const SCAN_ORDER = [
 const FPOS = {
   L_thumb:  { cx: 11,  cy: 134, lx: 1,   ly: 120, la: "start",  dispLabel: "Left thumb"    },
   L_pinkie: { cx: 56,  cy: 38,  lx: 56,  ly: 14,  la: "middle", dispLabel: "Left pinkie"   },
-  L_ring:   { cx: 76,  cy: 24,  lx: 76,  ly: 0,   la: "middle", dispLabel: "Left index"    },
+  L_ring:   { cx: 76,  cy: 24,  lx: 76,  ly: 0,   la: "middle", dispLabel: "Left ring"     },
   L_middle: { cx: 96,  cy: 16,  lx: 96,  ly: -8,  la: "middle", dispLabel: "Middle finger" },
   L_index:  { cx: 116, cy: 24,  lx: 116, ly: 0,   la: "middle", dispLabel: "Left index"    },
   R_index:  { cx: 244, cy: 24,  lx: 244, ly: 0,   la: "middle", dispLabel: "Right index"   },
   R_middle: { cx: 264, cy: 16,  lx: 264, ly: -8,  la: "middle", dispLabel: "Middle finger" },
-  R_ring:   { cx: 284, cy: 24,  lx: 284, ly: 0,   la: "middle", dispLabel: "Right index"   },
+  R_ring:   { cx: 284, cy: 24,  lx: 284, ly: 0,   la: "middle", dispLabel: "Right ring"    },
   R_pinkie: { cx: 304, cy: 38,  lx: 304, ly: 14,  la: "middle", dispLabel: "Right pinkie"  },
   R_thumb:  { cx: 349, cy: 134, lx: 359, ly: 120, la: "end",    dispLabel: "Right thumb"   },
 };
@@ -212,19 +215,38 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
     setCurrentIdx(firstFailed >= 0 ? firstFailed : 0);
   };
 
+  const passThreshold = completed >= MIN_SUCCESS_SCANS;
+
   const statusMain = scanning && current
     ? `Scanning ${current.label}.....`
     : allDone
-      ? failedIds.length > 0 ? "Some scans failed — retry below" : "All scans complete!"
+      ? passThreshold
+        ? failedIds.length > 0
+          ? "Scan successful"
+          : "All scans complete!"
+        : `Need at least ${MIN_SUCCESS_SCANS} successful scans`
       : current
         ? `Ready: ${current.label}`
         : "Tap to begin scanning";
 
-  const statusSub = scanning ? "Hold still" : (allDone && !failedIds.length ? "Tap Continue to proceed" : "");
+  const placeNextFinger =
+    allDone || !current
+      ? ""
+      : `Place the ${current.label.toLowerCase()} on the scanner.`;
+
+  const statusSub = scanning
+    ? "Hold still"
+    : allDone && passThreshold
+      ? failedIds.length > 0
+        ? "Minimum verification met — Continue or retry failed scans."
+        : "Tap Continue to proceed"
+      : allDone && !passThreshold
+        ? "Retry failed scans or run again until at least 7 fingers verify."
+        : placeNextFinger;
 
   const LEGEND = [
     { color: COLORS.idle,    text: "Fingerprint not scanned yet" },
-    { color: COLORS.success, text: "Fingerprint scan succesful"  },
+    { color: COLORS.success, text: "Fingerprint scan successful"  },
     { color: COLORS.failed,  text: "Fingerprint scan failed"     },
   ];
 
@@ -283,6 +305,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             <span className="font-sans text-sm text-brand-text-primary">
               Completed Scans :{" "}
               <span className="font-semibold text-brand-green">{completed}/10</span>
+              <span className="text-brand-text-muted text-xs ml-1">(min. {MIN_SUCCESS_SCANS})</span>
             </span>
           </div>
         </div>
@@ -290,25 +313,30 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
 
       <div className={bottomClass}>
         {currentIdx === null ? (
-          <button onClick={() => setCurrentIdx(0)} className="btn-primary">
+          <button type="button" onClick={() => setCurrentIdx(0)} className="btn-primary max-w-md mx-auto w-full md:w-auto md:min-w-[280px]">
             Begin Fingerprint Scan
           </button>
         ) : (
-          <button onClick={onSuccess} disabled={!allDone}
-            className={`w-full font-display font-semibold text-base py-4 px-6 rounded-3xl transition-all active:scale-95 ${
-              allDone && !failedIds.length
-                ? "bg-brand-green text-white"
-                : allDone && failedIds.length
-                ? "bg-brand-green/70 text-white"
+          <button
+            type="button"
+            onClick={onSuccess}
+            disabled={!allDone || !passThreshold}
+            className={`w-full max-w-md mx-auto font-display font-semibold text-base py-4 px-6 rounded-3xl transition-all active:scale-95 md:w-auto md:min-w-[200px] ${
+              allDone && passThreshold
+                ? "bg-brand-green text-white hover:opacity-95"
                 : "bg-[#8aada4] text-white cursor-not-allowed"
-            }`}>
+            }`}
+          >
             Continue
           </button>
         )}
 
         {allDone && failedIds.length > 0 && (
-          <button onClick={retryFailed}
-            className="w-full text-center text-brand-green font-sans font-semibold text-sm py-2">
+          <button
+            type="button"
+            onClick={retryFailed}
+            className="w-full max-w-md mx-auto py-3 rounded-3xl border-2 border-brand-green text-brand-green font-sans font-semibold text-sm md:w-auto md:min-w-[200px]"
+          >
             Retry Failed Scans
           </button>
         )}

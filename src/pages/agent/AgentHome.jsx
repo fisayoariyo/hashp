@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Settings, UserPlus, Search, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { agentData } from "../../mockData/agent";
+import {
+  getFarmerSyncCountsFromStorage,
+  syncAllPendingFarmersStorage,
+} from "../../hooks/useAgentFarmersSync";
 
 // Custom tractor icon
 function TractorIcon({ size = 22, className = "" }) {
@@ -46,11 +50,28 @@ export default function AgentHome() {
   const navigate = useNavigate();
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
+  const [syncCounts, setSyncCounts] = useState(getFarmerSyncCountsFromStorage);
+
+  useEffect(() => {
+    const refresh = () => setSyncCounts(getFarmerSyncCountsFromStorage());
+    window.addEventListener("hcx-farmers-sync", refresh);
+    return () => window.removeEventListener("hcx-farmers-sync", refresh);
+  }, []);
+
+  const syncProgressPct = useMemo(() => {
+    const t = syncCounts.completed + syncCounts.pending;
+    if (t === 0) return 100;
+    return Math.round((syncCounts.completed / t) * 100);
+  }, [syncCounts]);
 
   const handleSync = async () => {
+    if (syncCounts.pending === 0) return;
     setSyncing(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setSyncing(false); setSyncDone(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    syncAllPendingFarmersStorage();
+    setSyncCounts(getFarmerSyncCountsFromStorage());
+    setSyncing(false);
+    setSyncDone(true);
     setTimeout(() => setSyncDone(false), 3000);
   };
 
@@ -91,14 +112,18 @@ export default function AgentHome() {
             <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-1">
                 <RefreshCw size={18} className="text-white/70" />
-                <button onClick={handleSync} disabled={syncing}
-                  className="flex items-center gap-1 text-brand-amber text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  disabled={syncing || syncCounts.pending === 0}
+                  className="flex items-center gap-1 text-brand-amber text-xs font-semibold disabled:opacity-40"
+                >
                   <RefreshCw size={11} className={syncing ? "animate-spin" : ""} /> Sync now
                 </button>
               </div>
               <p className="font-sans text-white/70 text-xs">Pending sync</p>
               <p className="font-display font-bold text-2xl text-white mt-1">
-                {String(agentData.pendingSync).padStart(2, "0")}
+                {String(syncCounts.pending).padStart(2, "0")}
               </p>
             </div>
           </div>
@@ -147,28 +172,32 @@ export default function AgentHome() {
               <WifiOff size={16} className="text-brand-text-secondary" />
               <p className="font-sans font-semibold text-sm text-brand-text-primary">Offline Status</p>
             </div>
-            <button onClick={handleSync} disabled={syncing}
-              className="flex items-center gap-1 text-brand-amber text-xs font-semibold">
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={syncing || syncCounts.pending === 0}
+              className="flex items-center gap-1 text-brand-amber text-xs font-semibold disabled:opacity-40"
+            >
               <RefreshCw size={12} className={syncing ? "animate-spin" : ""} /> Sync now
             </button>
           </div>
           <div className="flex items-center justify-between mb-2">
             <p className="font-sans text-sm text-brand-text-secondary">Synchronization Progress</p>
-            <p className="font-sans text-sm font-semibold">{agentData.syncProgress}%</p>
+            <p className="font-sans text-sm font-semibold">{syncProgressPct}%</p>
           </div>
           <div className="w-full h-2 bg-gray-100 rounded-full mb-3">
-            <div className="h-2 bg-brand-green rounded-full transition-all" style={{ width: `${agentData.syncProgress}%` }} />
+            <div className="h-2 bg-brand-green rounded-full transition-all" style={{ width: `${syncProgressPct}%` }} />
           </div>
           <div className="flex gap-4">
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 rounded-full bg-brand-green flex items-center justify-center">
                 <span className="text-white text-[8px]">✓</span>
               </div>
-              <span className="font-sans text-xs text-brand-text-secondary">{agentData.completedSync} Completed</span>
+              <span className="font-sans text-xs text-brand-text-secondary">{syncCounts.completed} Completed</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-brand-amber" />
-              <span className="font-sans text-xs text-brand-text-secondary">{agentData.pendingSync} Pending</span>
+              <span className="font-sans text-xs text-brand-text-secondary">{syncCounts.pending} Pending</span>
             </div>
           </div>
         </div>
@@ -192,9 +221,16 @@ export default function AgentHome() {
         <div className="bg-brand-green rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between">
             <p className="text-sm opacity-80">Pending sync</p>
-            <button onClick={handleSync} className="px-3 py-1 rounded-full bg-brand-amber text-brand-text-primary text-xs font-semibold">Sync now</button>
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={syncing || syncCounts.pending === 0}
+              className="px-3 py-1 rounded-full bg-brand-amber text-brand-text-primary text-xs font-semibold disabled:opacity-40"
+            >
+              Sync now
+            </button>
           </div>
-          <p className="font-display font-bold text-5xl mt-2">{String(agentData.pendingSync).padStart(2, "0")}</p>
+          <p className="font-display font-bold text-5xl mt-2">{String(syncCounts.pending).padStart(2, "0")}</p>
         </div>
       </div>
 
@@ -215,15 +251,22 @@ export default function AgentHome() {
           <div className="bg-white rounded-2xl border border-brand-border p-6">
             <div className="flex items-center justify-between mb-3">
               <p className="font-display font-bold text-3xl text-brand-text-primary">Synchronization</p>
-              <button onClick={handleSync} className="px-4 py-2 rounded-xl bg-brand-green text-white text-sm font-semibold">Sync now</button>
+              <button
+                type="button"
+                onClick={handleSync}
+                disabled={syncing || syncCounts.pending === 0}
+                className="px-4 py-2 rounded-xl bg-brand-green text-white text-sm font-semibold disabled:opacity-40"
+              >
+                Sync now
+              </button>
             </div>
             <p className="text-sm text-brand-text-secondary mb-2">Synchronization Progress</p>
             <div className="w-full h-2 bg-gray-100 rounded-full mb-3">
-              <div className="h-2 bg-brand-green rounded-full transition-all" style={{ width: `${agentData.syncProgress}%` }} />
+              <div className="h-2 bg-brand-green rounded-full transition-all" style={{ width: `${syncProgressPct}%` }} />
             </div>
             <div className="flex gap-6 text-sm">
-              <span>{agentData.completedSync} Completed</span>
-              <span>{agentData.pendingSync} Pending</span>
+              <span>{syncCounts.completed} Completed</span>
+              <span>{syncCounts.pending} Pending</span>
             </div>
           </div>
         </div>

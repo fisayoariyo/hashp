@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
 import { farmerData } from "../../mockData/farmer";
 import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 const SLIDES = [
   {
@@ -63,8 +64,9 @@ function MobileOnboarding({ onDone }) {
   );
 }
 
-// ── PHONE step (mobile + desktop) ─────────────────────────
+// ── PHONE step (mobile + desktop) — one input tree; avoids remount + double-input ref bugs on mobile ──
 function PhoneStep({ onSubmit, onBack }) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -77,7 +79,7 @@ function PhoneStep({ onSubmit, onBack }) {
     setLoading(false);
   };
 
-  const PhoneField = () => (
+  const phoneField = (
     <div className="flex flex-col gap-1.5 mb-6">
       <label className="font-sans text-sm font-medium text-brand-text-primary">Phone Number</label>
       <div className={`flex items-center bg-white border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${error ? "border-red-400" : "border-brand-border"}`}>
@@ -85,7 +87,10 @@ function PhoneStep({ onSubmit, onBack }) {
         <div className="w-px h-5 bg-brand-border shrink-0" />
         <span className="text-sm text-brand-text-secondary shrink-0">+234</span>
         <input
-          type="tel" inputMode="tel" value={phone}
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && handle()}
           placeholder="Input your phone number here"
@@ -96,35 +101,18 @@ function PhoneStep({ onSubmit, onBack }) {
     </div>
   );
 
-  return (
-    <>
-      {/* MOBILE */}
-      <div className="page-white flex flex-col md:hidden">
-        <div className="flex-1 px-5 pt-10">
-          <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-8 leading-tight">
-            Login to your farmer profile
-          </h1>
-          <PhoneField />
-        </div>
-        <div className="px-5 pb-8 space-y-3">
-          <button onClick={handle} disabled={loading} className="btn-primary">
-            {loading ? "Checking..." : "Continue"}
-          </button>
-          <button onClick={onBack} className="w-full text-center font-sans text-sm text-brand-text-secondary py-2">
-            I do not have an account
-          </button>
-        </div>
-      </div>
-
+  if (isDesktop) {
+    return (
       <FarmerAuthDesktopLayout
         title="Login to your farmer profile"
         heroImage="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1400&q=80"
         actions={
           <div className="space-y-3">
-            <button onClick={handle} disabled={loading} className="btn-primary">
+            <button type="button" onClick={handle} disabled={loading} className="btn-primary">
               {loading ? "Checking..." : "Continue"}
             </button>
             <button
+              type="button"
               onClick={onBack}
               className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium hover:bg-gray-100 transition-colors"
             >
@@ -133,14 +121,34 @@ function PhoneStep({ onSubmit, onBack }) {
           </div>
         }
       >
-        <PhoneField />
+        {phoneField}
       </FarmerAuthDesktopLayout>
-    </>
+    );
+  }
+
+  return (
+    <div className="page-white flex flex-col">
+      <div className="flex-1 px-5 pt-10">
+        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-8 leading-tight">
+          Login to your farmer profile
+        </h1>
+        {phoneField}
+      </div>
+      <div className="px-5 pb-8 space-y-3">
+        <button type="button" onClick={handle} disabled={loading} className="btn-primary">
+          {loading ? "Checking..." : "Continue"}
+        </button>
+        <button type="button" onClick={onBack} className="w-full text-center font-sans text-sm text-brand-text-secondary py-2">
+          I do not have an account
+        </button>
+      </div>
+    </div>
   );
 }
 
-// ── OTP step (mobile + desktop) ────────────────────────────
+// ── OTP step (mobile + desktop) — single OTP row in DOM so refs + focus stay on the visible inputs ──
 function OTPStep({ phone, onSuccess, onBack }) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [digits, setDigits] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -206,46 +214,39 @@ function OTPStep({ phone, onSuccess, onBack }) {
     setLoading(false);
   };
 
-  return (
-    <>
-      {/* MOBILE */}
-      <div className="page-white flex flex-col md:hidden">
-        <div className="flex-1 px-5 pt-5">
-          <button onClick={onBack} className="flex items-center gap-2 text-brand-text-secondary mb-6">
-            <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
-          </button>
-          <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Enter 4-Digit code</h1>
-          <p className="font-sans text-sm text-brand-text-secondary mb-8">
-            Enter the 4-digit code we sent to your registered phone number
-          </p>
-          <div className="grid grid-cols-4 gap-4 mb-4">
-            {digits.map((d, i) => (
-              <input key={i} ref={refs[i]} type="tel" inputMode="numeric" maxLength={1} value={d}
-                onChange={(e) => handleChange(i, e)}
-                onKeyDown={(e) => handleKeyDown(i, e)}
-                onPaste={i === 0 ? handlePaste : undefined}
-                autoComplete="one-time-code"
-                className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
-              />
-            ))}
-          </div>
-          {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
-          <p className="font-sans text-sm text-brand-text-secondary mb-1">
-            I did not receive a code,{" "}
-            <button className="text-brand-green font-semibold">Resend Code</button>
-          </p>
-          <p className="font-sans text-xs text-brand-text-muted mb-6">Demo OTP: <strong>1234</strong></p>
-        </div>
-        <div className="px-5 pb-8 space-y-3">
-          <button onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
-            {loading ? "Verifying..." : "Login"}
-          </button>
-          <button onClick={onBack} className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium">
-            Back
-          </button>
-        </div>
-      </div>
+  const otpGrid = (
+    <div className="grid grid-cols-4 gap-4 mb-4">
+      {digits.map((d, i) => (
+        <input
+          key={i}
+          ref={refs[i]}
+          type="tel"
+          inputMode="numeric"
+          maxLength={1}
+          value={d}
+          onChange={(e) => handleChange(i, e)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          onPaste={i === 0 ? handlePaste : undefined}
+          autoComplete="one-time-code"
+          className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
+        />
+      ))}
+    </div>
+  );
 
+  const otpFooter = (
+    <>
+      {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+      <p className="font-sans text-sm text-brand-text-secondary mb-1">
+        I did not receive a code,{" "}
+        <button type="button" className="text-brand-green font-semibold">Resend Code</button>
+      </p>
+      <p className="font-sans text-xs text-brand-text-muted mb-0 md:mb-6">Demo OTP: <strong>1234</strong></p>
+    </>
+  );
+
+  if (isDesktop) {
+    return (
       <FarmerAuthDesktopLayout
         title="Enter 4-Digit code"
         subtitle="Enter the 4-digit code we sent to your registered phone number"
@@ -254,10 +255,11 @@ function OTPStep({ phone, onSuccess, onBack }) {
         heroSub="One verified ID that proves you're a registered farmer and unlocks access to services."
         actions={
           <div className="space-y-3">
-            <button onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
+            <button type="button" onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
               {loading ? "Verifying..." : "Login"}
             </button>
             <button
+              type="button"
               onClick={onBack}
               className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium hover:bg-gray-100 transition-colors"
             >
@@ -266,30 +268,34 @@ function OTPStep({ phone, onSuccess, onBack }) {
           </div>
         }
       >
-        <div className="grid grid-cols-4 gap-4 mb-4">
-          {digits.map((d, i) => (
-            <input
-              key={i}
-              ref={refs[i]}
-              type="tel"
-              inputMode="numeric"
-              maxLength={1}
-              value={d}
-              onChange={(e) => handleChange(i, e)}
-              onKeyDown={(e) => handleKeyDown(i, e)}
-              onPaste={i === 0 ? handlePaste : undefined}
-              autoComplete="one-time-code"
-              className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
-            />
-          ))}
-        </div>
-        {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
-        <p className="font-sans text-sm text-brand-text-secondary mb-1">
-          I did not receive a code, <button className="text-brand-green font-semibold">Resend Code</button>
-        </p>
-        <p className="font-sans text-xs text-brand-text-muted mb-0">Demo OTP: <strong>1234</strong></p>
+        {otpGrid}
+        {otpFooter}
       </FarmerAuthDesktopLayout>
-    </>
+    );
+  }
+
+  return (
+    <div className="page-white flex flex-col">
+      <div className="flex-1 px-5 pt-5">
+        <button type="button" onClick={onBack} className="flex items-center gap-2 text-brand-text-secondary mb-6">
+          <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
+        </button>
+        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Enter 4-Digit code</h1>
+        <p className="font-sans text-sm text-brand-text-secondary mb-8">
+          Enter the 4-digit code we sent to your registered phone number
+        </p>
+        {otpGrid}
+        {otpFooter}
+      </div>
+      <div className="px-5 pb-8 space-y-3">
+        <button type="button" onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
+          {loading ? "Verifying..." : "Login"}
+        </button>
+        <button type="button" onClick={onBack} className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium">
+          Back
+        </button>
+      </div>
+    </div>
   );
 }
 

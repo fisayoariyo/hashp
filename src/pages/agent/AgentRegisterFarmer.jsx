@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, ChevronRight, ScanFace, Camera,
-  ChevronDown, MessageCircle, X, Plus,
+  ArrowLeft, ChevronRight, Camera,
+  ChevronDown, X, Plus, FileDown,
 } from "lucide-react";
 import { nigerianStates, nigerianLGAs } from "../../mockData/agent";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
@@ -63,29 +63,38 @@ const F = ({ label, required = false, children }) => (
     {children}
   </div>
 );
-const NavRow = ({ onBack, onNext, nextLabel = "Continue", disabled = false, layout = "fixed" }) => (
-  <div
-    className={
-      layout === "fixed"
-        ? "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex gap-3 border-t border-brand-border z-10"
-        : "flex gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0"
-    }
-  >
-    <button
-      onClick={onBack}
-      className="flex-1 flex items-center justify-center gap-1.5 py-4 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm"
+const NavRow = ({ onBack, onNext, nextLabel = "Continue", disabled = false, layout = "fixed" }) => {
+  const isFixed = layout === "fixed";
+  return (
+    <div
+      className={
+        isFixed
+          ? "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex gap-3 border-t border-brand-border z-10"
+          : "flex gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 justify-center flex-wrap"
+      }
     >
-      <ArrowLeft size={14} /> Go back
-    </button>
-    <button
-      onClick={onNext}
-      disabled={disabled}
-      className="flex-[1.35] flex items-center justify-center gap-1.5 py-4 px-8 rounded-3xl bg-brand-green text-white font-display font-semibold text-sm disabled:opacity-40"
-    >
-      {nextLabel} <ChevronRight size={14} />
-    </button>
-  </div>
-);
+      <button
+        type="button"
+        onClick={onBack}
+        className={`flex items-center justify-center gap-1.5 py-3.5 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm ${
+          isFixed ? "flex-1" : "min-w-[150px] px-8"
+        }`}
+      >
+        <ArrowLeft size={14} /> Go back
+      </button>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={disabled}
+        className={`flex items-center justify-center gap-1.5 py-3.5 px-8 rounded-3xl bg-brand-green text-white font-display font-semibold text-sm disabled:opacity-40 ${
+          isFixed ? "flex-[1.35]" : "min-w-[160px]"
+        }`}
+      >
+        {nextLabel} <ChevronRight size={14} />
+      </button>
+    </div>
+  );
+};
 
 // ── Fingerprint swirl icon (for biometric rows) ────────────
 function FPIcon({ color = "#9ca3af", size = 20 }) {
@@ -162,17 +171,17 @@ function StartScreen({ onStart, onBack, embedded }) {
       <p className="font-sans text-sm text-brand-text-secondary mb-7">
         Begin a new farmer registration by capturing their personal and biometric details to create a verified profile.
       </p>
-      <h2 className="font-display font-bold text-base text-brand-text-primary mb-5">Registration steps</h2>
-      <div>
-        {STEPS.map((s, i) => (
-          <div key={s.label} className="flex gap-4 items-start">
-            <div className="flex flex-col items-center">
-              <div className="w-11 h-11 rounded-xl bg-brand-green flex items-center justify-center shrink-0">{s.icon}</div>
-              {i < STEPS.length - 1 && <div className="w-0 border-l-2 border-dashed border-brand-border h-8 my-1" />}
-            </div>
-            <div className="pb-3 pt-1">
-              <p className="font-sans font-bold text-sm text-brand-text-primary">{s.label}</p>
-              <p className="font-sans text-xs text-brand-text-secondary mt-0.5">{s.sub}</p>
+      <h2 className="font-display font-bold text-base text-brand-text-primary mb-4">Registration steps</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        {STEPS.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl border border-brand-border bg-white p-4 shadow-sm flex gap-3 items-start"
+          >
+            <div className="w-11 h-11 rounded-xl bg-brand-green flex items-center justify-center shrink-0">{s.icon}</div>
+            <div className="min-w-0 pt-0.5">
+              <p className="font-sans font-bold text-sm text-brand-text-primary leading-snug">{s.label}</p>
+              <p className="font-sans text-xs text-brand-text-secondary mt-1 leading-relaxed">{s.sub}</p>
             </div>
           </div>
         ))}
@@ -180,14 +189,18 @@ function StartScreen({ onStart, onBack, embedded }) {
     </>
   );
 
+  const startBtn = (
+    <button type="button" onClick={onStart} className="btn-primary w-full max-w-xs px-8">
+      Start Registration
+    </button>
+  );
+
   if (embedded) {
     return (
       <div className="flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]">
         <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">{body}</div>
-        <div className="shrink-0 pt-4 border-t border-brand-border">
-          <button onClick={onStart} className="btn-primary w-full">
-            Start Registration
-          </button>
+        <div className="shrink-0 pt-4 border-t border-brand-border flex justify-center md:justify-start">
+          {startBtn}
         </div>
       </div>
     );
@@ -196,10 +209,8 @@ function StartScreen({ onStart, onBack, embedded }) {
   return (
     <div className="page-container">
       <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">{body}</div>
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3">
-        <button onClick={onStart} className="btn-primary">
-          Start Registration
-        </button>
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex justify-center">
+        {startBtn}
       </div>
     </div>
   );
@@ -613,12 +624,39 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded }) {
         ]} />
       </div>
 
-      <div className={footerClass}>
-        <button onClick={onSubmit} disabled={submitting} className="btn-primary">
-          {submitting ? "Submitting..." : "Continue and submit"}
+      <div
+        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 sm:items-center ${
+          embedded ? "sm:justify-start" : ""
+        } justify-center`}
+      >
+        <button
+          type="button"
+          onClick={onBack}
+          className="order-2 sm:order-1 min-w-[140px] py-3 px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm hover:bg-gray-50 transition-colors"
+        >
+          Edit details
         </button>
-        <button onClick={onBack} className="w-full text-center text-brand-green font-sans font-semibold text-sm py-2">
-          Edit Details
+        <button
+          type="button"
+          onClick={() => {
+            const blob = new Blob(["Demo CSV export — connect API for real data"], { type: "text/csv" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "farmer-review-demo.csv";
+            a.click();
+            URL.revokeObjectURL(a.href);
+          }}
+          className="order-3 sm:order-2 min-w-[140px] py-3 px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+        >
+          <FileDown size={16} /> Download as CSV
+        </button>
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={submitting}
+          className="order-1 sm:order-3 btn-primary min-w-[180px] w-full sm:w-auto px-8 disabled:opacity-50"
+        >
+          {submitting ? "Submitting..." : "Continue and submit"}
         </button>
       </div>
     </div>
@@ -691,18 +729,21 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
         </div>
       </div>
 
-      <div className={footerClass}>
-        <button onClick={onRegisterAnother} className="btn-primary">
-          Register Another Farmer
-        </button>
+      <div
+        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-stretch sm:items-center`}
+      >
         <button
+          type="button"
           onClick={() => {
             const msg = `Farmer ID: *${idCard.farmerID}*\nName: ${idCard.name}\nVerify: https://cropex.hashmarcropex.com/verify/${idCard.farmerID}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
           }}
-          className="w-full text-center text-brand-green font-sans font-semibold text-sm py-2"
+          className="order-2 sm:order-1 min-w-[160px] py-3.5 px-6 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm hover:bg-brand-green/5 transition-colors"
         >
           Share ID
+        </button>
+        <button type="button" onClick={onRegisterAnother} className="order-1 sm:order-2 btn-primary min-w-[200px] w-full sm:w-auto px-8">
+          Register Another Farmer
         </button>
       </div>
     </div>
