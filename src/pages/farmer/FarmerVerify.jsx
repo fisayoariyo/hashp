@@ -3,66 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
 import { farmerData } from "../../mockData/farmer";
 import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
+import FarmerOnboarding from "../../components/farmer/FarmerOnboarding";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-
-const SLIDES = [
-  {
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80",
-    title: "Welcome to your Farmer Profile",
-    sub: "You now have a digital identity that helps you access support, loans, and better opportunities.",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=80",
-    title: "Your Digital Identity",
-    sub: "One verified ID that proves you're a registered farmer and unlocks access to services.",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&q=80",
-    title: "Access Loans and Support",
-    sub: "Use your Farmer ID to apply for loans, get farm support and connect with buyers.",
-  },
-];
-
-// ── MOBILE onboarding slides ───────────────────────────────
-function MobileOnboarding({ onDone }) {
-  const [idx, setIdx] = useState(0);
-  const touchX = useRef(null);
-  const next = () => (idx < SLIDES.length - 1 ? setIdx((i) => i + 1) : onDone());
-
-  return (
-    <div
-      className="relative w-full overflow-hidden bg-black"
-      style={{ height: "100dvh" }}
-      onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
-      onTouchEnd={(e) => {
-        if (!touchX.current) return;
-        const dx = e.changedTouches[0].clientX - touchX.current;
-        if (dx < -50) next();
-        else if (dx > 50 && idx > 0) setIdx((i) => i - 1);
-        touchX.current = null;
-      }}
-    >
-      <img
-        src={SLIDES[idx].image}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover opacity-80 transition-opacity duration-500"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-10">
-        <h2 className="font-display font-bold text-3xl text-white leading-tight mb-2">{SLIDES[idx].title}</h2>
-        <p className="font-sans text-white/75 text-sm leading-relaxed mb-6">{SLIDES[idx].sub}</p>
-        <div className="flex gap-2 mb-6">
-          {SLIDES.map((_, i) => (
-            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? "w-8 bg-brand-amber" : "w-2 bg-white/40"}`} />
-          ))}
-        </div>
-        <button onClick={next} className="btn-primary">
-          {idx < SLIDES.length - 1 ? "Next" : "Login"}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ── PHONE step (mobile + desktop) — one input tree; avoids remount + double-input ref bugs on mobile ──
 function PhoneStep({ onSubmit, onBack }) {
@@ -306,21 +248,7 @@ export default function FarmerVerify() {
   const [phone, setPhone] = useState("");
 
   if (step === "onboarding") {
-    return (
-      <>
-        {/* Mobile ONLY: full-screen onboarding slides */}
-        <div className="md:hidden" style={{ height: "100dvh" }}>
-          <MobileOnboarding onDone={() => setStep("phone")} />
-        </div>
-        {/* Desktop ONLY: skip slides, go straight to login split-panel */}
-        <div className="hidden md:block">
-          <PhoneStep
-            onSubmit={(p) => { setPhone(p); setStep("otp"); }}
-            onBack={() => navigate("/")}
-          />
-        </div>
-      </>
-    );
+    return <FarmerOnboarding onDone={() => setStep("phone")} />;
   }
 
   if (step === "phone") {
