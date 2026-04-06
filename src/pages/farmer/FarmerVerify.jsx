@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
 import { farmerData } from "../../mockData/farmer";
@@ -21,24 +21,21 @@ const SLIDES = [
   },
 ];
 
-// ── Desktop photo panel ────────────────────────────────────
+// Left photo panel — reused on login and OTP desktop views
 function DesktopPhotoPanel({ image }) {
   return (
     <div className="relative w-[46%] shrink-0 rounded-2xl overflow-hidden bg-black min-h-[560px]">
       <img src={image} alt="Farm" className="absolute inset-0 w-full h-full object-cover opacity-80" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
       <div className="absolute bottom-8 left-8 right-8">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-            <svg viewBox="0 0 32 32" fill="none" className="w-5 h-5">
-              <path d="M16 3 L28 10 L28 22 L16 29 L4 22 L4 10 Z" stroke="white" strokeWidth="2" fill="none"/>
-              <ellipse cx="16" cy="16" rx="6" ry="8" stroke="white" strokeWidth="1.5" fill="none"/>
-            </svg>
-          </div>
-          <div>
-            <p className="font-display font-black text-white text-sm tracking-widest uppercase leading-none">HASHMAR</p>
-            <p className="font-sans text-[9px] text-white/70 tracking-[0.2em] uppercase">CROPEX LIMITED</p>
-          </div>
+        {/* HFEI Primary Logo White — on dark photo bg */}
+        <div className="mb-4">
+          <img
+            src="/brand/HFEI_Primary_Logo_White.png"
+            alt="HFEI by Hashmar Cropex Ltd"
+            className="h-9 w-auto object-contain drop-shadow-sm"
+            draggable="false"
+          />
         </div>
         <h2 className="font-display font-bold text-white text-2xl leading-tight mb-2">
           Welcome to your Farmer Profile
@@ -51,7 +48,7 @@ function DesktopPhotoPanel({ image }) {
   );
 }
 
-// ── Mobile onboarding slides ───────────────────────────────
+// ── MOBILE onboarding slides ───────────────────────────────
 function MobileOnboarding({ onDone }) {
   const [idx, setIdx] = useState(0);
   const touchX = useRef(null);
@@ -92,30 +89,7 @@ function MobileOnboarding({ onDone }) {
   );
 }
 
-// ── Phone step ─────────────────────────────────────────────
-// PhoneField is defined OUTSIDE PhoneStep to prevent remount on every render
-function PhoneField({ phone, setPhone, error }) {
-  return (
-    <div className="flex flex-col gap-1.5 mb-6">
-      <label className="font-sans text-sm font-medium text-brand-text-primary">Phone Number</label>
-      <div className={`flex items-center bg-white border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${error ? "border-red-400" : "border-brand-border"}`}>
-        <Smartphone size={18} className="text-brand-text-muted shrink-0" />
-        <div className="w-px h-5 bg-brand-border shrink-0" />
-        <span className="text-sm text-brand-text-secondary shrink-0">+234</span>
-        <input
-          type="tel"
-          inputMode="numeric"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-          placeholder="Input your phone number here"
-          className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
-        />
-      </div>
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-    </div>
-  );
-}
-
+// ── PHONE step (mobile + desktop) ─────────────────────────
 function PhoneStep({ onSubmit, onBack }) {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
@@ -129,6 +103,25 @@ function PhoneStep({ onSubmit, onBack }) {
     setLoading(false);
   };
 
+  const PhoneField = () => (
+    <div className="flex flex-col gap-1.5 mb-6">
+      <label className="font-sans text-sm font-medium text-brand-text-primary">Phone Number</label>
+      <div className={`flex items-center bg-white border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${error ? "border-red-400" : "border-brand-border"}`}>
+        <Smartphone size={18} className="text-brand-text-muted shrink-0" />
+        <div className="w-px h-5 bg-brand-border shrink-0" />
+        <span className="text-sm text-brand-text-secondary shrink-0">+234</span>
+        <input
+          type="tel" inputMode="numeric" value={phone}
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+          onKeyDown={(e) => e.key === "Enter" && handle()}
+          placeholder="Input your phone number here"
+          className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
+        />
+      </div>
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+    </div>
+  );
+
   return (
     <>
       {/* MOBILE */}
@@ -137,7 +130,7 @@ function PhoneStep({ onSubmit, onBack }) {
           <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-8 leading-tight">
             Login to your farmer profile
           </h1>
-          <PhoneField phone={phone} setPhone={setPhone} error={error} />
+          <PhoneField />
         </div>
         <div className="px-5 pb-8 space-y-3">
           <button onClick={handle} disabled={loading} className="btn-primary">
@@ -149,7 +142,7 @@ function PhoneStep({ onSubmit, onBack }) {
         </div>
       </div>
 
-      {/* DESKTOP */}
+      {/* DESKTOP: split panel */}
       <div className="hidden md:flex min-h-screen bg-white items-center justify-center p-8">
         <div className="flex gap-10 w-full max-w-4xl">
           <DesktopPhotoPanel image="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80" />
@@ -157,7 +150,7 @@ function PhoneStep({ onSubmit, onBack }) {
             <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-8">
               Login to your farmer profile
             </h1>
-            <PhoneField phone={phone} setPhone={setPhone} error={error} />
+            <PhoneField />
             <div className="space-y-3">
               <button onClick={handle} disabled={loading} className="btn-primary">
                 {loading ? "Checking..." : "Continue"}
@@ -173,38 +166,7 @@ function PhoneStep({ onSubmit, onBack }) {
   );
 }
 
-// ── OTP step ───────────────────────────────────────────────
-// OTPBoxes is defined OUTSIDE OTPStep to prevent remount on every render
-function OTPBoxes({ digits, refs, error, onChange, onKeyDown, onPaste }) {
-  return (
-    <>
-      <div className="grid grid-cols-4 gap-4 mb-4">
-        {digits.map((d, i) => (
-          <input
-            key={i}
-            ref={refs[i]}
-            type="tel"
-            inputMode="numeric"
-            maxLength={1}
-            value={d}
-            onChange={(e) => onChange(i, e)}
-            onKeyDown={(e) => onKeyDown(i, e)}
-            onPaste={i === 0 ? onPaste : undefined}
-            autoComplete="one-time-code"
-            className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
-          />
-        ))}
-      </div>
-      {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
-      <p className="font-sans text-sm text-brand-text-secondary mb-1">
-        I did not receive a code,{" "}
-        <button className="text-brand-green font-semibold">Resend Code</button>
-      </p>
-      <p className="font-sans text-xs text-brand-text-muted mb-6">Demo OTP: <strong>1234</strong></p>
-    </>
-  );
-}
-
+// ── OTP step (mobile + desktop) ────────────────────────────
 function OTPStep({ phone, onSuccess, onBack }) {
   const [digits, setDigits] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -218,12 +180,14 @@ function OTPStep({ phone, onSuccess, onBack }) {
 
   const handleChange = (i, e) => {
     const raw = e.target.value.replace(/\D/g, "");
+    // Take only the last character typed (handles paste and auto-fill)
     const val = raw.length > 1 ? raw[raw.length - 1] : raw;
     const next = [...digits];
     next[i] = val;
     setDigits(next);
     setError("");
     if (val && i < 3) {
+      // setTimeout 0 ensures focus happens after React re-render
       setTimeout(() => refs[i + 1].current?.focus(), 0);
     }
   };
@@ -231,10 +195,12 @@ function OTPStep({ phone, onSuccess, onBack }) {
   const handleKeyDown = (i, e) => {
     if (e.key === "Backspace") {
       if (digits[i]) {
+        // Clear current box
         const next = [...digits];
         next[i] = "";
         setDigits(next);
       } else if (i > 0) {
+        // Move to previous box
         setTimeout(() => refs[i - 1].current?.focus(), 0);
       }
     }
@@ -267,6 +233,28 @@ function OTPStep({ phone, onSuccess, onBack }) {
     setLoading(false);
   };
 
+  const OTPBoxes = () => (
+    <>
+      <div className="grid grid-cols-4 gap-4 mb-4">
+        {digits.map((d, i) => (
+          <input key={i} ref={refs[i]} type="tel" inputMode="numeric" maxLength={1} value={d}
+            onChange={(e) => handleChange(i, e)}
+            onKeyDown={(e) => handleKeyDown(i, e)}
+            onPaste={i === 0 ? handlePaste : undefined}
+            autoComplete="one-time-code"
+            className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
+          />
+        ))}
+      </div>
+      {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+      <p className="font-sans text-sm text-brand-text-secondary mb-1">
+        I did not receive a code,{" "}
+        <button className="text-brand-green font-semibold">Resend Code</button>
+      </p>
+      <p className="font-sans text-xs text-brand-text-muted mb-6">Demo OTP: <strong>1234</strong></p>
+    </>
+  );
+
   return (
     <>
       {/* MOBILE */}
@@ -279,14 +267,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
           <p className="font-sans text-sm text-brand-text-secondary mb-8">
             Enter the 4-digit code we sent to your registered phone number
           </p>
-          <OTPBoxes
-            digits={digits}
-            refs={refs}
-            error={error}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-          />
+          <OTPBoxes />
         </div>
         <div className="px-5 pb-8 space-y-3">
           <button onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
@@ -298,7 +279,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
         </div>
       </div>
 
-      {/* DESKTOP */}
+      {/* DESKTOP: split panel */}
       <div className="hidden md:flex min-h-screen bg-white items-center justify-center p-8">
         <div className="flex gap-10 w-full max-w-4xl">
           <DesktopPhotoPanel image="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=80" />
@@ -307,14 +288,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
             <p className="font-sans text-sm text-brand-text-secondary mb-10">
               Enter the 4-digit code we sent to your registered phone number
             </p>
-            <OTPBoxes
-              digits={digits}
-              refs={refs}
-              error={error}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-            />
+            <OTPBoxes />
             <div className="space-y-3">
               <button onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
                 {loading ? "Verifying..." : "Login"}
@@ -339,9 +313,11 @@ export default function FarmerVerify() {
   if (step === "onboarding") {
     return (
       <>
+        {/* Mobile ONLY: full-screen onboarding slides */}
         <div className="md:hidden" style={{ height: "100dvh" }}>
           <MobileOnboarding onDone={() => setStep("phone")} />
         </div>
+        {/* Desktop ONLY: skip slides, go straight to login split-panel */}
         <div className="hidden md:block">
           <PhoneStep
             onSubmit={(p) => { setPhone(p); setStep("otp"); }}

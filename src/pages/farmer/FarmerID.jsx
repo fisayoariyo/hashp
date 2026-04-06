@@ -6,17 +6,14 @@ import { farmerData } from "../../mockData/farmer";
 function IDCard() {
   return (
     <div className="bg-brand-green rounded-3xl p-5 flex flex-col items-center text-white">
-      <div className="flex items-center gap-2 self-start mb-5">
-        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-          <svg viewBox="0 0 32 32" fill="none" className="w-5 h-5">
-            <path d="M16 3 L28 10 L28 22 L16 29 L4 22 L4 10 Z" stroke="white" strokeWidth="2" fill="none"/>
-            <ellipse cx="16" cy="16" rx="6" ry="8" stroke="white" strokeWidth="1.5" fill="none"/>
-          </svg>
-        </div>
-        <div>
-          <p className="font-display font-black text-sm tracking-widest leading-none">HASHMAR</p>
-          <p className="font-sans text-[9px] text-white/60 tracking-[0.2em] uppercase">CROPEX LIMITED</p>
-        </div>
+      {/* HFEI Primary Logo White on green ID card */}
+      <div className="self-start mb-5">
+        <img
+          src="/brand/HFEI_Primary_Logo_White.png"
+          alt="HFEI by Hashmar Cropex Ltd"
+          className="h-8 w-auto object-contain"
+          draggable="false"
+        />
       </div>
 
       <img src={farmerData.photo} alt={farmerData.name}

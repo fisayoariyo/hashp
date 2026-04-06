@@ -169,9 +169,13 @@ function FarmerIDCard({ farmer, onBack }) {
         </button>
         <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-5">Farmer ID Card</h1>
         <div className="bg-brand-green rounded-3xl p-5 flex flex-col items-center text-white">
-          <div className="flex items-center gap-2 self-start mb-4">
-            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center"><span className="font-bold text-xs text-white">H</span></div>
-            <span className="font-display font-black text-sm tracking-widest">HASHMAR CROPEX LIMITED</span>
+          <div className="self-start mb-4">
+            <img
+              src="/brand/HFEI_Primary_Logo_White.png"
+              alt="HFEI by Hashmar Cropex Ltd"
+              className="h-8 w-auto object-contain"
+              draggable="false"
+            />
           </div>
           <img src={farmer.photo} alt={farmer.name} className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 mb-3" />
           <div className="text-center mb-2"><p className="text-white/60 text-xs">Full Name</p><p className="font-display font-bold text-base">{farmer.name}</p></div>

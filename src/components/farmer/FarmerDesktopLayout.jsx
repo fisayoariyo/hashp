@@ -7,29 +7,7 @@ const NAV = [
   { label: "Profile", path: "/farmer/profile", Icon: User },
 ];
 
-function HCXLogo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="w-10 h-10 rounded-xl border-2 border-brand-green flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 40 40" fill="none" className="w-7 h-7">
-          <path d="M20 4 L35 12 L35 28 L20 36 L5 28 L5 12 Z" stroke="#155235" strokeWidth="2" fill="none"/>
-          <ellipse cx="20" cy="20" rx="7" ry="9" stroke="#155235" strokeWidth="1.5" fill="none"/>
-          <path d="M20 11 Q25 17 20 29" stroke="#155235" strokeWidth="1.5" fill="none"/>
-          <path d="M20 11 Q15 17 20 29" stroke="#155235" strokeWidth="1.5" fill="none"/>
-          <circle cx="28" cy="14" r="2.5" fill="#d4900a"/>
-        </svg>
-      </div>
-      <div>
-        <p className="font-display font-black text-base text-brand-green tracking-widest uppercase leading-none">
-          HASHMAR
-        </p>
-        <p className="font-sans text-[9px] text-brand-text-muted tracking-[0.25em] uppercase leading-none mt-0.5">
-          CROPEX LIMITED
-        </p>
-      </div>
-    </div>
-  );
-}
+
 
 export default function FarmerDesktopLayout({ children, activeNav }) {
   const navigate = useNavigate();
@@ -44,7 +22,13 @@ export default function FarmerDesktopLayout({ children, activeNav }) {
     <div className="hidden md:flex flex-col min-h-screen bg-brand-bg-page">
       {/* ── Top header ────────────────────────────── */}
       <header className="bg-white border-b border-brand-border px-8 py-4 flex items-center justify-between shrink-0">
-        <HCXLogo />
+        {/* HFEI Primary Logo — full colour horizontal lockup */}
+        <img
+          src="/brand/HFEI_Primary_Logo_.png"
+          alt="HFEI by Hashmar Cropex Ltd"
+          className="h-10 w-auto object-contain"
+          draggable="false"
+        />
 
         {/* Welcome + ID */}
         <div className="flex flex-col items-start">

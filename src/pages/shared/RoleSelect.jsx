@@ -1,18 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-// Hashmar CropEx logo SVG — inline so no asset dependency needed
-function HCXLogo({ size = 64 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M40 4 L70 21 L70 59 L40 76 L10 59 L10 21 Z" stroke="#155235" strokeWidth="3" fill="none"/>
-      <ellipse cx="40" cy="40" rx="14" ry="18" stroke="#155235" strokeWidth="2" fill="none"/>
-      <path d="M40 22 Q52 34 40 58" stroke="#155235" strokeWidth="2" fill="none"/>
-      <path d="M40 22 Q28 34 40 58" stroke="#155235" strokeWidth="2" fill="none"/>
-      <circle cx="56" cy="30" r="3.5" fill="#d4900a"/>
-      <path d="M56 30 Q62 25 66 28" stroke="#d4900a" strokeWidth="1.5" fill="none"/>
-    </svg>
-  );
-}
+
 
 export default function RoleSelect() {
   const navigate = useNavigate();
@@ -36,17 +24,14 @@ export default function RoleSelect() {
         sm:px-10 sm:py-14
         flex flex-col items-center gap-8
       ">
-        {/* Logo + wordmark */}
-        <div className="flex flex-col items-center gap-3">
-          <HCXLogo size={72} />
-          <div className="text-center">
-            <h1 className="font-display font-black text-2xl sm:text-3xl text-brand-green tracking-wide uppercase leading-tight">
-              HASHMAR
-            </h1>
-            <p className="font-display font-semibold text-sm text-brand-amber tracking-[0.25em] uppercase">
-              CROPEX LIMITED
-            </p>
-          </div>
+        {/* Brand logo — HFEI Primary Logo (full colour on white bg) */}
+        <div className="flex flex-col items-center gap-2">
+          <img
+            src="/brand/HFEI_Primary_Logo_.png"
+            alt="HFEI by Hashmar Cropex Ltd"
+            className="h-14 w-auto object-contain"
+            draggable="false"
+          />
         </div>
 
         {/* Tagline */}
