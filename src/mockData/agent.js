@@ -3,6 +3,28 @@
 // TODO: Replace with API calls from src/services/agentApi.js
 // ============================================================
 
+/** AWM-CA-02–04 — agent onboarding before Get Started (mobile + desktop). */
+export const agentOnboardingSlides = [
+  {
+    image:
+      "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&q=80&fit=crop",
+    title: "Digitally Onboard Farmers",
+    sub: "Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1000&q=80&fit=crop",
+    title: "Work Anywhere, Sync Anytime",
+    sub: "Complete farmer registrations offline and automatically sync data when internet connection is available.",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1593113598335-c59f8fd05925?w=1000&q=80&fit=crop",
+    title: "Turn Farmer Data Into Opportunity",
+    sub: "Each registered farmer gains access to loans, financing, insurance, training, and structured market opportunities.",
+  },
+];
+
 /** Contact details shown on agent support screen (AWD-CA-11). */
 export const agentSupportContact = {
   phoneDisplay: "+234 XXX XXX XXXX",

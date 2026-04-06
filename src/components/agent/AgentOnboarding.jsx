@@ -1,15 +1,15 @@
 import { useState, useRef } from "react";
-import { farmerOnboardingSlides } from "../../mockData/farmer";
+import { agentOnboardingSlides } from "../../mockData/agent";
 
 /**
- * FWM farmer onboarding — full-bleed + bottom copy on mobile;
- * split hero + white content column on desktop (FWD).
+ * AWM agent onboarding — same pattern as FarmerOnboarding (full-bleed mobile;
+ * contained image card + copy column on desktop).
  */
-export default function FarmerOnboarding({ onDone }) {
+export default function AgentOnboarding({ onDone }) {
   const [idx, setIdx] = useState(0);
   const touchX = useRef(null);
-  const slide = farmerOnboardingSlides[idx];
-  const isLast = idx === farmerOnboardingSlides.length - 1;
+  const slide = agentOnboardingSlides[idx];
+  const isLast = idx === agentOnboardingSlides.length - 1;
 
   const next = () => {
     if (isLast) onDone();
@@ -18,7 +18,7 @@ export default function FarmerOnboarding({ onDone }) {
 
   const dots = (
     <div className="flex gap-2 mb-6 md:mb-10">
-      {farmerOnboardingSlides.map((_, i) => (
+      {agentOnboardingSlides.map((_, i) => (
         <div
           key={i}
           className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -28,6 +28,8 @@ export default function FarmerOnboarding({ onDone }) {
       ))}
     </div>
   );
+
+  const ctaLabel = isLast ? "Get Started" : "Next";
 
   return (
     <div
@@ -44,7 +46,6 @@ export default function FarmerOnboarding({ onDone }) {
       }}
     >
       <div className="relative w-full min-h-[60vh] md:min-h-0 shrink-0 md:flex md:w-full md:max-w-lg md:flex-col md:justify-center">
-        {/* Mobile full-bleed */}
         <div className="md:hidden absolute inset-0">
           <img
             src={slide.image}
@@ -53,7 +54,6 @@ export default function FarmerOnboarding({ onDone }) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/35" />
         </div>
-        {/* Desktop: inset card */}
         <div className="hidden md:block relative w-full h-[min(640px,calc(100dvh-5rem))] min-h-[440px] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
             src={slide.image}
@@ -68,7 +68,7 @@ export default function FarmerOnboarding({ onDone }) {
           <p className="font-sans text-sm text-white/80 leading-relaxed mb-6">{slide.sub}</p>
           {dots}
           <button type="button" onClick={next} className="btn-primary">
-            {isLast ? "Login" : "Next"}
+            {ctaLabel}
           </button>
         </div>
       </div>
@@ -83,7 +83,7 @@ export default function FarmerOnboarding({ onDone }) {
         {dots}
         <div className="max-w-md w-full">
           <button type="button" onClick={next} className="btn-primary">
-            {isLast ? "Login" : "Next"}
+            {ctaLabel}
           </button>
         </div>
       </div>
