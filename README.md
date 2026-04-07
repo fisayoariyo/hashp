@@ -13,7 +13,8 @@ These call the **CropEx API** using `fetch` (no axios):
 | **Farmer** — phone → OTP | `POST /otp/send`, `POST /otp/verify` |
 | **Agent** — create account | OTP (same endpoints) → state/LGA → `POST /agents/register` |
 | **Agent** — login | `POST /agents/login` → JWT stored in `sessionStorage` |
-| **Agent** — farmers list | `GET /farmers` (with Bearer token) |
+| **Agent** — farmers list | `GET /farmers` (Bearer; **auto refresh** on `401` via `POST /agents/refresh`, then one retry) |
+| **Agent** — farmer detail | `GET /farmers/{id}` when you open a farmer (merges with list row; shows a warning if the call fails) |
 | **Agent** — register farmer | `POST /farmers` (enrollment payload from the wizard) |
 
 **Still mock / UI-only:** farmer home, profile, ID screens (data from `mockData`), agent password reset demo, dashboard “sync all” as local UI, admin APIs (no screens yet).

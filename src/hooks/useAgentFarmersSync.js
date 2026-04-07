@@ -63,7 +63,7 @@ export function syncAllPendingFarmersStorage() {
 async function fetchFarmersFromApi() {
   const token = getAgentAccessToken();
   if (!token) return null;
-  const payload = await listFarmers({ page: 1, page_size: 100, token });
+  const payload = await listFarmers({ page: 1, page_size: 100 });
   const rows = extractFarmersArray(payload)
     .map(mapApiFarmerToUi)
     .filter(Boolean);

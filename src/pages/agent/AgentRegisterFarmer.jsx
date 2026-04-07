@@ -792,7 +792,7 @@ export default function AgentRegisterFarmer() {
     }
     try {
       const payload = draftToEnrollmentPayload(draft, getAgentIdFromSession());
-      const res = await enrollFarmer(payload, token);
+      const res = await enrollFarmer(payload);
       const id =
         (res && (res.id ?? res.farmer_id ?? res.uuid)) ||
         `HSH-IB-2026-${String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)}`;

@@ -1,4 +1,4 @@
-import { cropexFetch } from "./cropexHttp";
+import { cropexFetch, CropexHttpError } from "./cropexHttp";
 
 const AUTH_KEY = "hcx_agent_auth";
 
@@ -17,6 +17,62 @@ export function getAgentSession() {
 export function getAgentAccessToken() {
   const s = getAgentSession();
   return s?.accessToken || s?.access_token || null;
+}
+
+function getAgentRefreshToken() {
+  const s = getAgentSession();
+  return s?.refreshToken || s?.refresh_token || null;
+}
+
+/** After `POST /agents/refresh` — update tokens; keep agentId/email if response omits them. */
+export function mergeAgentTokensFromRefreshResponse(data) {
+  const prev = getAgentSession() || {};
+  const accessToken =
+    data?.access_token ??
+    data?.accessToken ??
+    data?.token ??
+    data?.data?.access_token ??
+    prev.accessToken;
+  const refreshToken =
+    data?.refresh_token ??
+    data?.refreshToken ??
+    data?.data?.refresh_token ??
+    prev.refreshToken;
+  sessionStorage.setItem(
+    AUTH_KEY,
+    JSON.stringify({
+      ...prev,
+      accessToken: accessToken || prev.accessToken || "",
+      refreshToken: refreshToken || prev.refreshToken || "",
+    })
+  );
+}
+
+/**
+ * Authenticated agent requests: on 401, call `/agents/refresh` once and retry.
+ */
+async function cropexAgentFetch(path, opts = {}) {
+  const { method = "GET", body } = opts;
+  let token = getAgentAccessToken();
+  if (!token) {
+    throw new CropexHttpError("Not signed in", 401, null);
+  }
+  const run = () => cropexFetch(path, { method, body, token });
+  try {
+    return await run();
+  } catch (e) {
+    if (!(e instanceof CropexHttpError) || e.status !== 401) throw e;
+    const rt = getAgentRefreshToken();
+    if (!rt) throw e;
+    const refreshed = await cropexFetch("/agents/refresh", {
+      method: "POST",
+      body: { refresh_token: rt },
+    });
+    mergeAgentTokensFromRefreshResponse(refreshed);
+    token = getAgentAccessToken();
+    if (!token) throw e;
+    return await cropexFetch(path, { method, body, token });
+  }
 }
 
 export function getAgentIdFromSession() {
@@ -81,19 +137,25 @@ export function agentRefresh(refreshToken) {
   return cropexFetch("/agents/refresh", { method: "POST", body: { refresh_token: refreshToken } });
 }
 
-// --- Farmers (Bearer) ---
+// --- Farmers (Bearer + refresh on 401) ---
 
-export function listFarmers({ page = 1, page_size = 50, token }) {
+export function listFarmers({ page = 1, page_size = 50 } = {}) {
   const q = new URLSearchParams({ page: String(page), page_size: String(page_size) });
-  return cropexFetch(`/farmers?${q.toString()}`, { method: "GET", token });
+  return cropexAgentFetch(`/farmers?${q.toString()}`, { method: "GET" });
 }
 
-export function getFarmerById(id, token) {
-  return cropexFetch(`/farmers/${encodeURIComponent(id)}`, { method: "GET", token });
+export function getFarmerById(id) {
+  return cropexAgentFetch(`/farmers/${encodeURIComponent(id)}`, { method: "GET" });
 }
 
-export function enrollFarmer(body, token) {
-  return cropexFetch("/farmers", { method: "POST", body, token });
+export function enrollFarmer(body) {
+  return cropexAgentFetch("/farmers", { method: "POST", body });
+}
+
+/** Unwrap single-farmer JSON (shape varies). */
+export function extractFarmerRecord(payload) {
+  if (payload == null || typeof payload !== "object") return payload;
+  return payload.data ?? payload.farmer ?? payload.item ?? payload;
 }
 
 // --- Normalizers (response shapes not fully specified in Swagger) ---

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ChevronDown, CreditCard, RefreshCw, Search, Share2 } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
@@ -6,6 +6,13 @@ import { agentData } from "../../mockData/agent";
 import { useAgentFarmersSync } from "../../hooks/useAgentFarmersSync";
 import AgentStatusPanel from "../../components/agent/AgentStatusPanel";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
+import {
+  extractFarmerRecord,
+  getFarmerById,
+  getAgentAccessToken,
+  mapApiFarmerToUi,
+} from "../../services/cropexApi";
+import { CropexHttpError } from "../../services/cropexHttp";
 
 function FilterPill({ value, onChange, options }) {
   return (
@@ -243,8 +250,42 @@ function tabBtnClass(active) {
 
 function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
   const [tab, setTab] = useState("details");
+  const [remote, setRemote] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+
+  useEffect(() => {
+    setRemote(null);
+    if (!farmer?.id) return;
+    if (!getAgentAccessToken()) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setDetailLoading(true);
+      setDetailError("");
+      try {
+        const raw = await getFarmerById(farmer.id);
+        const row = extractFarmerRecord(raw);
+        const ui = mapApiFarmerToUi(row);
+        if (!cancelled && ui) setRemote(ui);
+      } catch (e) {
+        if (!cancelled) {
+          setDetailError(e instanceof CropexHttpError ? e.message : "Could not load latest details.");
+        }
+      } finally {
+        if (!cancelled) setDetailLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [farmer?.id]);
+
+  const display = { ...farmer, ...(remote || {}) };
+
   const shareId = () => {
-    const msg = `Farmer ID: *${farmer.id}*\nName: ${farmer.name}\nVerify: https://cropex.hashmarcropex.com/verify/${farmer.id}`;
+    const msg = `Farmer ID: *${display.id}*\nName: ${display.name}\nVerify: https://cropex.hashmarcropex.com/verify/${display.id}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -256,10 +297,18 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         <ArrowLeft size={18} />
         <span className="font-sans text-sm">Go back</span>
       </button>
+      {detailLoading && (
+        <p className="font-sans text-xs text-brand-text-muted mb-2">Loading latest details from server…</p>
+      )}
+      {detailError && (
+        <p className="font-sans text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-3">
+          {detailError} Showing data from the list until refresh works.
+        </p>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
         <div>
           <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary mb-0.5">Farmer details</h1>
-          <p className="font-sans text-xs text-brand-text-secondary">{farmer.id}</p>
+          <p className="font-sans text-xs text-brand-text-secondary">{display.id}</p>
         </div>
         <button
           type="button"
@@ -300,12 +349,12 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
           <div className="md:grid md:grid-cols-2 md:gap-8">
             <div>
               <Section title="Online synchronization" rows={[["Status", farmer.status === "synced" ? "Synced" : "Sync pending"]]} />
-              <Section title="Biometric Information" rows={[["Face", farmer.biometric?.face ? "Captured" : "Not captured"], ["Fingerprint", farmer.biometric?.fingerprint ? "Captured" : "Not captured"]]} />
-              <Section title="Personal Information" rows={[["Full Name", farmer.name], ["Phone", farmer.phone], ["Gender", farmer.gender], ["State", farmer.state], ["LGA", farmer.lga], ["Address", farmer.address], ["NIN", farmer.nin]]} />
+              <Section title="Biometric Information" rows={[["Face", display.biometric?.face ? "Captured" : "Not captured"], ["Fingerprint", display.biometric?.fingerprint ? "Captured" : "Not captured"]]} />
+              <Section title="Personal Information" rows={[["Full Name", display.name], ["Phone", display.phone], ["Gender", display.gender], ["State", display.state], ["LGA", display.lga], ["Address", display.address], ["NIN", display.nin]]} />
             </div>
             <div>
-              <Section title="Farm Information" rows={[["Primary Crop", farmer.primaryCrop], ["Farm Size", farmer.farmSize], ["Land Ownership", farmer.landOwnership], ["Reg date", farmer.regDate]]} />
-              <Section title="Cooperative & Association" rows={[["Name", farmer.cooperative], ["Agent", agentData.fullName]]} />
+              <Section title="Farm Information" rows={[["Primary Crop", display.primaryCrop], ["Farm Size", display.farmSize], ["Land Ownership", display.landOwnership], ["Reg date", display.regDate]]} />
+              <Section title="Cooperative & Association" rows={[["Name", display.cooperative], ["Agent", agentData.fullName]]} />
             </div>
           </div>
         </>
@@ -315,18 +364,18 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
             <div className="self-start mb-4">
               <img src="/brand/HFEI_Primary_Logo_White.png" alt="HFEI by Hashmar Cropex Ltd" className="h-8 w-auto object-contain" draggable="false" />
             </div>
-            <img src={farmer.photo} alt={farmer.name} className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 mb-3" />
+            <img src={display.photo} alt={display.name} className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 mb-3" />
             <div className="text-center mb-2">
               <p className="text-white/60 text-xs">Full Name</p>
-              <p className="font-display font-bold text-base">{farmer.name}</p>
+              <p className="font-display font-bold text-base">{display.name}</p>
             </div>
             <div className="text-center mb-2">
               <p className="text-white/60 text-xs">Farmer ID</p>
-              <p className="font-display font-bold text-sm tracking-widest">{farmer.id}</p>
+              <p className="font-display font-bold text-sm tracking-widest">{display.id}</p>
             </div>
             <div className="text-center mb-4">
               <p className="text-white/60 text-xs">Cooperative name</p>
-              <p className="font-display font-bold text-sm">{farmer.cooperative}</p>
+              <p className="font-display font-bold text-sm">{display.cooperative}</p>
             </div>
             <div className="w-full h-px bg-white/20 mb-3" />
             <div className="grid grid-cols-2 gap-4 w-full mb-3">
