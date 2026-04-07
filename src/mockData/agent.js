@@ -3,9 +3,12 @@
 // TODO: Replace with API calls from src/services/agentApi.js
 // ============================================================
 import agentSplashImage from "../assets/agent-onboarding/AWM-CA-01-splash.png";
-import agentOnboard1Image from "../assets/agent-onboarding/agentonboard1_jpg.png";
-import agentOnboard2Image from "../assets/agent-onboarding/agentonboard2_jpg.png";
-import agentOnboard3Image from "../assets/agent-onboarding/agentonboard3_jpg.png";
+
+// Onboarding photos live in /public/agent-onboarding/ — no import needed.
+// Vite serves the public/ folder as-is at the root URL.
+const agentOnboard1Image = "/agent-onboarding/agent-onboard1.png";
+const agentOnboard2Image = "/agent-onboarding/agent-onboard2.png";
+const agentOnboard3Image = "/agent-onboarding/agent-onboard3.png";
 
 /** AWM-CA-01 — full-bleed brand moment after role = Agent (parity with farmer). */
 export const agentBrandSplash = {
