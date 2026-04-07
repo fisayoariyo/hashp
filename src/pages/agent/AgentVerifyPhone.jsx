@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { sendOtp, verifyOtp, formatPhoneForApi } from "../../services/cropexApi";
+import { CropexHttpError } from "../../services/cropexHttp";
 
 const REG_KEY = "hcx_agent_registration";
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
@@ -18,6 +20,33 @@ export default function AgentVerifyPhone() {
   const [digits, setDigits] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
+
+  useEffect(() => {
+    if (mode !== "register") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = sessionStorage.getItem(REG_KEY);
+        const reg = raw ? JSON.parse(raw) : {};
+        const ph = formatPhoneForApi(reg.phone);
+        if (!ph) {
+          if (!cancelled) setError("Missing phone number. Go back to create account.");
+          return;
+        }
+        setRegisterPhone(ph);
+        await sendOtp(ph);
+      } catch (e) {
+        if (!cancelled) {
+          const msg = e instanceof CropexHttpError ? e.message : "Could not send verification code.";
+          setError(msg);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
 
   const r0 = useRef(null);
   const r1 = useRef(null);
@@ -78,22 +107,71 @@ export default function AgentVerifyPhone() {
     const otp = digits.join("");
     if (otp.length < 4) { setError("Please enter the complete 4-digit code."); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    if (otp === "1234") {
+    setError("");
+    try {
       if (mode === "reset-password") {
-        try {
-          sessionStorage.setItem(RESET_FLAG, "1");
-        } catch { /* ignore */ }
-        navigate("/agent/reset-password-new", { replace: true, state: { email: emailForReset } });
-      } else {
-        navigate("/agent/select-location");
+        await new Promise((r) => setTimeout(r, 400));
+        if (otp === "1234") {
+          try {
+            sessionStorage.setItem(RESET_FLAG, "1");
+          } catch { /* ignore */ }
+          navigate("/agent/reset-password-new", { replace: true, state: { email: emailForReset } });
+        } else {
+          setError("Incorrect code, Try again");
+          setDigits(["", "", "", ""]);
+          setTimeout(() => r0.current?.focus(), 0);
+        }
+        return;
       }
-    } else {
-      setError("Incorrect code, Try again");
+      const ph = registerPhone || (() => {
+        try {
+          const raw = sessionStorage.getItem(REG_KEY);
+          const reg = raw ? JSON.parse(raw) : {};
+          return formatPhoneForApi(reg.phone);
+        } catch {
+          return "";
+        }
+      })();
+      if (!ph) {
+        setError("Missing phone number.");
+        return;
+      }
+      await verifyOtp(ph, otp);
+      navigate("/agent/select-location");
+    } catch (e) {
+      const msg = e instanceof CropexHttpError ? e.message : "Verification failed.";
+      setError(msg);
       setDigits(["", "", "", ""]);
       setTimeout(() => r0.current?.focus(), 0);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleResend = async () => {
+    if (mode !== "register") return;
+    const ph =
+      registerPhone ||
+      (() => {
+        try {
+          const raw = sessionStorage.getItem(REG_KEY);
+          const reg = raw ? JSON.parse(raw) : {};
+          return formatPhoneForApi(reg.phone);
+        } catch {
+          return "";
+        }
+      })();
+    if (!ph) return;
+    setError("");
+    setLoading(true);
+    try {
+      await sendOtp(ph);
+    } catch (e) {
+      const msg = e instanceof CropexHttpError ? e.message : "Could not resend code.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const otpGrid = (
@@ -128,11 +206,15 @@ export default function AgentVerifyPhone() {
       )}
       <p className="font-sans text-sm text-brand-text-secondary">
         I did not receive a code,{" "}
-        <button type="button" className="text-brand-green font-semibold">Resend Code</button>
+        <button type="button" onClick={handleResend} disabled={loading || mode !== "register"} className="text-brand-green font-semibold disabled:opacity-50">
+          Resend Code
+        </button>
       </p>
-      <p className="font-sans text-xs text-brand-text-muted mt-2">
-        Demo OTP: <strong>1234</strong>
-      </p>
+      {mode === "reset-password" && (
+        <p className="font-sans text-xs text-brand-text-muted mt-2">
+          Demo reset flow: use <strong>1234</strong> (no API for password reset yet).
+        </p>
+      )}
     </>
   );
 

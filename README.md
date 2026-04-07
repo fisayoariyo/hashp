@@ -1,198 +1,113 @@
-Hashmar CropEx Farmer App
+# Hashmar CropEx — Farmer & Agent App
 
-Boss, nice to work with you!
-
-This is a mobile-first React app that gives Nigerian smallholder farmers a digital identity they can carry in their pocket.
+React (Vite) app: role select → **Farmer** or **Agent** flows. Mobile-first, Tailwind, React Router.
 
 ---
 
-The Tech Stack
+## What works today (real API)
 
-| Layer | Choice |
-|---|---|
-| Framework | React 18 (Vite) |
-| Routing | React Router DOM v6 |
-| Styling | Tailwind CSS v3 |
-| Icons | Lucide React |
-| State | React Context + hooks |
-| Data | Static mock (Phase 1) — swap via src/services/api.js |
+These call the **CropEx API** using `fetch` (no axios):
+
+| Flow | What it does |
+|------|----------------|
+| **Farmer** — phone → OTP | `POST /otp/send`, `POST /otp/verify` |
+| **Agent** — create account | OTP (same endpoints) → state/LGA → `POST /agents/register` |
+| **Agent** — login | `POST /agents/login` → JWT stored in `sessionStorage` |
+| **Agent** — farmers list | `GET /farmers` (with Bearer token) |
+| **Agent** — register farmer | `POST /farmers` (enrollment payload from the wizard) |
+
+**Still mock / UI-only:** farmer home, profile, ID screens (data from `mockData`), agent password reset demo, dashboard “sync all” as local UI, admin APIs (no screens yet).
+
+**Code:** `src/services/cropexHttp.js` (base URL + `fetch` wrapper), `src/services/cropexApi.js` (endpoints + helpers).
 
 ---
 
-Start here my Oga
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Test login credentials:
-- Phone: 08012345678
-- OTP: 1234
+Open the URL Vite prints (usually `http://localhost:5173`).
 
----
+### API base URL (optional)
 
-This is the Project Structure my boss, shey you like sharwarma?
+By default the app uses:
 
-```
-src/
-├── App.jsx                     # Root router with all routes
-├── main.jsx                    # React entry point
-├── index.css                   # Tailwind base + global styles
-│
-├── constants/
-│   └── routes.js               # All route paths in one place
-│
-├── context/
-│   ├── AuthContext.jsx          # Login, logout, auth state
-│   ├── ToastContext.jsx         # Global toast notifications
-│   └── index.js
-│
-├── data/
-│   └── farmerMock.js           # All mock data lives here (Phase 1)
-│
-├── hooks/
-│   ├── useActivities.js        # Farm activities
-│   ├── useClipboard.js         # Copy to clipboard
-│   ├── useFarmer.js            # Farmer profile
-│   ├── useFarmerID.js          # Digital ID card data
-│   ├── useFarms.js             # Farm list
-│   ├── useHelp.js              # FAQs and support contacts
-│   ├── useLocalStorage.js      # Persist to localStorage
-│   ├── useNotifications.js     # Notifications + unread count
-│   ├── useScrollToTop.js       # Scroll to top on route change
-│   └── index.js
-│
-├── screens/
-│   ├── SplashScreen.jsx        # / — Logo screen, auto-advances
-│   ├── OnboardingScreen.jsx    # /onboard — 3 swipeable slides
-│   ├── VerifyScreen.jsx        # /verify — Phone number input
-│   ├── OTPScreen.jsx           # /otp — 4-digit code + resend timer
-│   ├── HomeScreen.jsx          # /home — Main dashboard
-│   ├── FarmerIDScreen.jsx      # /id-card — Digital ID + QR code
-│   ├── ProfileScreen.jsx       # /profile — Read-only farmer info
-│   ├── UpdatesScreen.jsx       # /updates — Notifications list
-│   ├── HelpScreen.jsx          # /help — FAQs + support contacts
-│   ├── FarmsScreen.jsx         # /farms — Farm list + weather
-│   ├── ActivitiesScreen.jsx    # /activities — Activity log + filter
-│   └── NotFoundScreen.jsx      # * — 404 page
-│
-├── components/
-│   ├── BottomNav.jsx           # Fixed bottom nav (Home, My Profile)
-│   ├── WelcomeHeader.jsx       # Farmer name, ID copy, bell icon
-│   ├── FarmWeatherCard.jsx     # Green weather + farm info card
-│   ├── AddFarmBanner.jsx       # CTA banner to add a farm
-│   ├── FarmCard.jsx            # Farm summary row
-│   ├── ActivityItem.jsx        # Activity row with icon and date
-│   ├── ActivityBox.jsx         # Square activity selector card
-│   ├── CropTypeCard.jsx        # Square crop selector card
-│   ├── SoilTypeCard.jsx        # Square soil selector card
-│   ├── FaceVerification.jsx    # Face capture (idle / verified)
-│   ├── QRCodeModal.jsx         # Full screen QR code view
-│   ├── ConfirmModal.jsx        # Bottom sheet confirmation dialog
-│   ├── Button.jsx              # 4 variants: amber, green, outline, dark
-│   ├── InputField.jsx          # Input with label, prefix, error state
-│   ├── PageHeader.jsx          # Back button + page title
-│   ├── EmptyState.jsx          # Empty screen with CTA
-│   ├── ProtectedRoute.jsx      # Redirects to /verify if not logged in
-│   ├── Skeleton.jsx            # Loading skeleton components
-│   └── index.js
-│
-├── services/
-│   └── api.js                  # All API contracts — backend dev works here
-│
-└── utils/
-    └── helpers.js              # formatDate, maskPhone, getCropEmoji, share URLs
+`https://hashmaramala-production.up.railway.app`
+
+To override, create a `.env` file in the project root:
+
+```env
+VITE_API_BASE_URL=https://your-api.example.com
 ```
 
----
-
-This is how Login Works
-
-```
-/ (Splash)
-  → /onboard (3 slides)
-    → /verify (phone number)
-      → /otp (4-digit code)
-        → /home (logged in)
-```
-
-Auth state is stored in localStorage under two keys:
-- hcx_token
-- hcx_farmer_id
-
-All screens after /home are protected. If someone visits them without logging in, they get sent back to /verify. Logout clears both keys.
+(No trailing slash.) See `.env.example`.
 
 ---
 
-My boss, easier for your backend work
+## How to test the integration
 
-All API functions are in src/services/api.js. Each one is a placeholder with a clear contract showing what it expects and what it should return. You only need to fill these in — no component files need to be touched.
+1. **CORS** — The API must allow your dev origin (`http://localhost:5173`). If the browser blocks requests, the backend needs to allow that origin.
 
-Example of how to replace a mock function with a real API call:
+2. **Agent — new account**  
+   Role → Agent → Get Started → Create account (password **≥ 8** characters) → Verify phone (real OTP from SMS if the backend sends it) → Select state/LGA → Submit (calls **register**).
 
-```js
-export const getFarmerByPhone = async (phone) => {
-  const res = await fetch(`${API_BASE}/auth/request-otp`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone }),
-  });
-  return res.json(); // { farmerID, name, status }
-};
-```
+3. **Agent — login**  
+   Use an account that already exists on the server (email + password). Opens **home** and attaches the access token to **farmers** calls.
 
-Mock data is only in src/data/farmerMock.js and is only imported by src/services/api.js. No screen or component touches mock data directly.
+4. **Agent — farmers**  
+   After login: **Saved farmers** should load from **`GET /farmers`**. If the call fails, a red banner shows the error; the app may fall back to cached/mock list.
 
----
+5. **Agent — enroll farmer**  
+   From home → Register farmer → complete steps → submit (calls **`POST /farmers`**). Needs valid token and fields the API requires (NIN, BVN, etc.).
 
-Boss, Security Notes
+6. **Farmer — OTP**  
+   Role → Farmer → through onboarding → enter phone → enter OTP from SMS (**not** a fixed demo code anymore).
 
-> hcx_token and hcx_farmer_id are currently stored in localStorage.
-> This is fine for Phase 1 (mock data, no real auth).
-> Before going live with real authentication, the backend dev must migrate tokens to httpOnly cookies.
-> localStorage is readable by any JavaScript running on the page and should never hold real auth tokens in production.
+7. **Logout (agent)**  
+   Settings → log out clears agent session and cached farmer list key used for the API.
+
+If something fails, open **DevTools → Network** and check status codes and response bodies.
 
 ---
 
-Check out the Design System my oga
+## Note for backend developer
 
-Brand colors:
+Hi — the frontend is wired to the **Swagger** base paths: `/otp/send`, `/otp/verify`, `/agents/register`, `/agents/login`, `/agents/refresh` (exported but **not** auto-called yet), `/farmers`, `/farmers/{id}` (**GET by id** not used in UI yet).
 
-| Token | Hex | Used For |
-|---|---|---|
-| brand-green | #155235 | Buttons, nav active state, primary brand |
-| brand-green-dark | #0d3d27 | Hover states |
-| brand-green-light | #1a6645 | Secondary accents |
-| brand-green-muted | #e8f4ee | Icon backgrounds, subtle fills |
-| brand-amber | #d4900a | CTA buttons like Add Farm |
-| brand-bg-page | #f2f2f0 | App background |
-| brand-border | #e5e7eb | Input and card borders |
+**Please confirm or share sample JSON for:**
 
-Fonts:
-- Outfit — headings, labels, buttons
-- DM Sans — body text, inputs, metadata
+- Login / refresh responses (exact field names for access and refresh tokens, and agent id if available).
+- `GET /farmers` — pagination wrapper and each farmer object shape.
+- `POST /farmers` — 201 response body (e.g. farmer `id` / UUID).
+- After `POST /otp/verify` for a **farmer** — is there a farmer session token or only agent-facing farmer APIs?
+
+**CORS:** Allow our web origins for local dev and production.
+
+Thanks.
 
 ---
 
- What Is NOT in Phase 1, as per wetin deh prd
-
-Per PRD, these are intentionally left out:
-
-- Self-registration (farmers are enrolled by field agents only)
-- Farm mapping
-- Loan applications
-- Marketplace
-- Profile editing by the farmer
-
-All screens are read-only. Any profile updates go through a field agent.
-
----
-
-Here lies Scripts, you like poetry?
+## Scripts
 
 ```bash
-npm run dev       # Start dev server at http://localhost:5173
-npm run build     # Build for production
-npm run preview   # Preview production build locally
+npm run dev      # Dev server
+npm run build    # Production build
+npm run preview  # Preview build locally
 ```
+
+---
+
+## Stack (short)
+
+| Item | Choice |
+|------|--------|
+| UI | React 18, Vite, Tailwind, Lucide |
+| Routing | React Router v6 |
+| API client | `fetch` — `src/services/cropexHttp.js` |
+
+Main routes live in **`src/App.jsx`**. Screens under **`src/pages/`** (farmer / agent / shared). Mock data: **`src/mockData/`**.
+
+Older **`src/screens/`** + **`src/services/api.js`** are legacy placeholders and are **not** what the current router uses for CropEx API calls.

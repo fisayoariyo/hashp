@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
-import { agentData } from "../../mockData/agent";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { agentLogin, setAgentSessionFromAuthResponse } from "../../services/cropexApi";
+import { CropexHttpError } from "../../services/cropexHttp";
 
 export default function AgentLogin() {
   const navigate = useNavigate();
@@ -34,14 +35,16 @@ export default function AgentLogin() {
   const handleLogin = async () => {
     if (!email || !password) { setError("Please enter your email and password."); return; }
     setError(""); setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    if (email === agentData.email && password === "password123") {
-      sessionStorage.setItem("hcx_agent_auth", JSON.stringify({ agentId: agentData.id }));
+    try {
+      const data = await agentLogin({ email: email.trim(), password });
+      setAgentSessionFromAuthResponse(data);
       navigate("/agent/home");
-    } else {
-      setError("Incorrect Password");
+    } catch (e) {
+      const msg = e instanceof CropexHttpError ? e.message : "Login failed. Try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const formBody = (

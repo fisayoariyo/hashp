@@ -93,6 +93,7 @@ function ListScreen({
   syncing,
   completedCount,
   pendingCount,
+  listError,
 }) {
   const listData = useMemo(() => {
     let arr = [...farmers];
@@ -109,6 +110,11 @@ function ListScreen({
 
   const HeaderBlock = () => (
     <>
+      {listError && (
+        <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-800">
+          Could not refresh list from server: {listError}
+        </div>
+      )}
       <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary mb-1">Registered Farmers</h1>
       <p className="font-sans text-sm text-brand-text-secondary mb-4">View all registered farmers and their sync status.</p>
       <div className="flex items-center justify-between mb-4 md:mb-5">
@@ -380,7 +386,8 @@ export default function AgentSavedFarmers() {
   const [sortBy, setSortBy] = useState("date-desc");
   const [lastRootView, setLastRootView] = useState("list");
 
-  const { farmers, syncing, syncMessage, syncFarmer, syncAllPending, counts } = useAgentFarmersSync();
+  const { farmers, syncing, syncMessage, listError, syncFarmer, syncAllPending, counts } =
+    useAgentFarmersSync();
 
   const openDetail = (farmer) => {
     setSelectedId(farmer.id);
@@ -427,6 +434,7 @@ export default function AgentSavedFarmers() {
           syncing={syncing}
           completedCount={counts.completed}
           pendingCount={counts.pending}
+          listError={listError}
         />
       </>
     );

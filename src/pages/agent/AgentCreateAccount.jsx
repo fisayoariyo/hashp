@@ -35,6 +35,7 @@ export default function AgentCreateAccount() {
           phone: form.phone,
           email: form.email,
           gender: form.gender,
+          password: form.password,
         })
       );
     } catch { /* ignore */ }

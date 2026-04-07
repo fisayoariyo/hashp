@@ -6,6 +6,13 @@ import {
 } from "lucide-react";
 import { nigerianStates, nigerianLGAs } from "../../mockData/agent";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
+import {
+  draftToEnrollmentPayload,
+  enrollFarmer,
+  getAgentAccessToken,
+  getAgentIdFromSession,
+} from "../../services/cropexApi";
+import { CropexHttpError } from "../../services/cropexHttp";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
 
@@ -555,7 +562,7 @@ function CoopStep({ onNext, onBack, embedded }) {
 }
 
 // ── RF12: Review — flat label:bold-value list (no cards) ───
-function ReviewStep({ onSubmit, onBack, submitting, embedded }) {
+function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
   const d = getDraft();
   const p = d.personal   || {};
   const f = d.farm       || {};
@@ -590,6 +597,11 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded }) {
         <p className="font-sans text-sm text-brand-text-secondary mb-6">
           Please review all information before submitting.
         </p>
+        {submitError && (
+          <p className="font-sans text-sm text-red-600 mb-4" role="alert">
+            {submitError}
+          </p>
+        )}
 
         <Section title="Biometric Information" rows={[
           ["Fingerprint", "Captured"],
@@ -759,6 +771,7 @@ export default function AgentRegisterFarmer() {
   const navigate  = useNavigate();
   const [step, setStep]           = useState("start");
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [idCard, setIdCard]         = useState(null);
 
   // Biometric state LIFTED — survives sub-screen navigation
@@ -769,18 +782,36 @@ export default function AgentRegisterFarmer() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setSubmitError("");
     const draft = getDraft();
-    await new Promise((r) => setTimeout(r, 1200));
-    const id = `HSH-IB-2026-${String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)}`;
-    setIdCard({
-      farmerID: id,
-      name: draft.personal?.fullName || "New Farmer",
-      photo: DEMO_FARMER_PHOTO,
-      cooperative: draft.cooperative?.name || "—",
-    });
-    clearDraft();
-    setSubmitting(false);
-    setStep("done");
+    const token = getAgentAccessToken();
+    if (!token) {
+      setSubmitError("Your session expired. Log in again from Settings.");
+      setSubmitting(false);
+      return;
+    }
+    try {
+      const payload = draftToEnrollmentPayload(draft, getAgentIdFromSession());
+      const res = await enrollFarmer(payload, token);
+      const id =
+        (res && (res.id ?? res.farmer_id ?? res.uuid)) ||
+        `HSH-IB-2026-${String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)}`;
+      setIdCard({
+        farmerID: String(id),
+        name: draft.personal?.fullName || res?.full_name || "New Farmer",
+        photo: DEMO_FARMER_PHOTO,
+        cooperative: draft.cooperative?.name || "—",
+      });
+      clearDraft();
+      setStep("done");
+      window.dispatchEvent(new CustomEvent("hcx-farmers-refresh"));
+      window.dispatchEvent(new CustomEvent("hcx-farmers-sync"));
+    } catch (e) {
+      const msg = e instanceof CropexHttpError ? e.message : "Enrollment failed. Check required fields.";
+      setSubmitError(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Biometric sub-screens (inline — no route change)
@@ -902,10 +933,21 @@ export default function AgentRegisterFarmer() {
     return (
       <>
         <div className="md:hidden">
-          <ReviewStep onSubmit={handleSubmit} onBack={() => setStep("coop")} submitting={submitting} />
+          <ReviewStep
+            onSubmit={handleSubmit}
+            onBack={() => setStep("coop")}
+            submitting={submitting}
+            submitError={submitError}
+          />
         </div>
         <AgentDesktopShell active="farmers">
-          <ReviewStep embedded onSubmit={handleSubmit} onBack={() => setStep("coop")} submitting={submitting} />
+          <ReviewStep
+            embedded
+            onSubmit={handleSubmit}
+            onBack={() => setStep("coop")}
+            submitting={submitting}
+            submitError={submitError}
+          />
         </AgentDesktopShell>
       </>
     );

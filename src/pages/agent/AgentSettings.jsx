@@ -354,6 +354,7 @@ export default function AgentSettings() {
       sessionStorage.removeItem("hcx_agent_registration");
       sessionStorage.removeItem("hcx_agent_review_refresh_count");
       sessionStorage.removeItem("hcx_agent_reset_otp_ok");
+      localStorage.removeItem("hcx_agent_farmers_list");
     } catch { /* ignore */ }
     navigate("/agent/login");
   };

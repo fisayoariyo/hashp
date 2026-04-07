@@ -1,9 +1,28 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { agentRegisteredFarmers } from "../mockData/agent";
+import {
+  getAgentAccessToken,
+  listFarmers,
+  extractFarmersArray,
+  mapApiFarmerToUi,
+} from "../services/cropexApi";
+import { CropexHttpError } from "../services/cropexHttp";
 
 export const FARMERS_SYNC_STORAGE_KEY = "hcx_agent_farmers_sync";
+const FARMERS_LIST_CACHE_KEY = "hcx_agent_farmers_list";
 
 export function loadFarmersFromStorage() {
+  try {
+    const listRaw = localStorage.getItem(FARMERS_LIST_CACHE_KEY);
+    if (listRaw) {
+      const parsed = JSON.parse(listRaw);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch {
+    /* fall through */
+  }
   try {
     const raw = localStorage.getItem(FARMERS_SYNC_STORAGE_KEY);
     const map = raw ? JSON.parse(raw) : {};
@@ -33,7 +52,7 @@ export function getFarmerSyncCountsFromStorage() {
   };
 }
 
-/** Used from dashboard so list + counts stay aligned (mock). */
+/** Local mock: mark all pending as synced (dashboard “Sync now”). */
 export function syncAllPendingFarmersStorage() {
   const next = loadFarmersFromStorage().map((f) =>
     f.status === "pending" ? { ...f, status: "synced" } : f
@@ -41,17 +60,55 @@ export function syncAllPendingFarmersStorage() {
   saveFarmerStatuses(next);
 }
 
-/** Local mutable copy of registered farmers + mock sync actions (UI only). */
+async function fetchFarmersFromApi() {
+  const token = getAgentAccessToken();
+  if (!token) return null;
+  const payload = await listFarmers({ page: 1, page_size: 100, token });
+  const rows = extractFarmersArray(payload)
+    .map(mapApiFarmerToUi)
+    .filter(Boolean);
+  return rows;
+}
+
+/** Local mutable copy + optional API list; mock sync actions when using demo data. */
 export function useAgentFarmersSync() {
   const [farmers, setFarmers] = useState(loadFarmersFromStorage);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState(null);
+  const [listError, setListError] = useState(null);
+
+  const refreshFromApi = useCallback(async () => {
+    setListError(null);
+    try {
+      const rows = await fetchFarmersFromApi();
+      if (rows) {
+        try {
+          localStorage.setItem(FARMERS_LIST_CACHE_KEY, JSON.stringify(rows));
+        } catch { /* ignore */ }
+        setFarmers(rows);
+        saveFarmerStatuses(rows);
+        return;
+      }
+    } catch (e) {
+      if (e instanceof CropexHttpError) {
+        setListError(e.message);
+      }
+    }
+    setFarmers(loadFarmersFromStorage());
+  }, []);
 
   useEffect(() => {
-    const onExternal = () => setFarmers(loadFarmersFromStorage());
+    refreshFromApi();
+    const onExternal = () => {
+      refreshFromApi();
+    };
     window.addEventListener("hcx-farmers-sync", onExternal);
-    return () => window.removeEventListener("hcx-farmers-sync", onExternal);
-  }, []);
+    window.addEventListener("hcx-farmers-refresh", onExternal);
+    return () => {
+      window.removeEventListener("hcx-farmers-sync", onExternal);
+      window.removeEventListener("hcx-farmers-refresh", onExternal);
+    };
+  }, [refreshFromApi]);
 
   const showMessage = useCallback((text) => {
     setSyncMessage(text);
@@ -92,8 +149,10 @@ export function useAgentFarmersSync() {
     farmers,
     syncing,
     syncMessage,
+    listError,
     syncFarmer,
     syncAllPending,
     counts,
+    refreshFromApi,
   };
 }
