@@ -3,9 +3,9 @@
 // TODO: Replace with API calls from src/services/agentApi.js
 // ============================================================
 import agentSplashImage from "../assets/agent-onboarding/AWM-CA-01-splash.png";
-import agentOnboard1Image from "../assets/agent-onboarding/AWM-CA-02-onboard1.png";
-import agentOnboard2Image from "../assets/agent-onboarding/AWM-CA-03-onboard2.png";
-import agentOnboard3Image from "../assets/agent-onboarding/AWM-CA-04-onboard3.png";
+import agentOnboard1Image from "../assets/agent-onboarding/agentonboard1_jpg.png";
+import agentOnboard2Image from "../assets/agent-onboarding/agentonboard2_jpg.png";
+import agentOnboard3Image from "../assets/agent-onboarding/agentonboard3_jpg.png";
 
 /** AWM-CA-01 — full-bleed brand moment after role = Agent (parity with farmer). */
 export const agentBrandSplash = {
