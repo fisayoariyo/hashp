@@ -17,12 +17,12 @@ export default function AgentOnboarding({ onDone }) {
   };
 
   const dots = (
-    <div className="flex gap-2 mb-6 md:mb-10">
+    <div className="flex gap-2">
       {agentOnboardingSlides.map((_, i) => (
         <div
           key={i}
           className={`h-1.5 rounded-full transition-all duration-300 ${
-            i === idx ? "w-8 bg-brand-amber" : "w-2 bg-white/40 md:bg-brand-border"
+            i <= idx ? "w-8 bg-[#00634f]" : "w-8 bg-[#e8efec]"
           }`}
         />
       ))}
@@ -45,16 +45,45 @@ export default function AgentOnboarding({ onDone }) {
         touchX.current = null;
       }}
     >
-      <div className="relative w-full h-dvh min-h-dvh shrink-0 md:h-auto md:min-h-0 md:flex md:min-w-0 md:items-stretch">
-        {/* Mobile: full-viewport bleed (AWM) — image fills entire screen */}
-        <div className="md:hidden absolute inset-0 h-full w-full">
-          <img
-            src={slide.image}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/35" />
+      <div className="relative w-full min-h-dvh shrink-0 md:h-auto md:min-h-0 md:flex md:min-w-0 md:items-stretch">
+        {/* Mobile: strict AWM onboarding layout */}
+        <div className="md:hidden w-full min-h-dvh bg-white px-5 pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            {dots}
+            {!isLast ? (
+              <button
+                type="button"
+                onClick={onDone}
+                className="font-sans text-[#00634f] text-xl font-medium"
+              >
+                Skip
+              </button>
+            ) : (
+              <span className="w-10" />
+            )}
+          </div>
+          <div className="rounded-[2rem] overflow-hidden mb-8">
+            <img
+              src={slide.image}
+              alt=""
+              className="w-full h-[56vh] object-cover"
+            />
+          </div>
+          <h2 className="font-display font-bold text-[3rem] leading-[1.02] text-[#005646] mb-4">
+            {slide.title}
+          </h2>
+          <p className="font-sans text-[2.1rem] leading-[1.25] text-[#404040] mb-10">
+            {slide.sub}
+          </p>
+          <button
+            type="button"
+            onClick={next}
+            className="mt-auto w-full h-16 rounded-[1.5rem] bg-[#005646] text-white font-sans font-semibold text-2xl"
+          >
+            {ctaLabel}
+          </button>
         </div>
+
         <div className="hidden md:block relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
             src={slide.image}
@@ -62,15 +91,6 @@ export default function AgentOnboarding({ onDone }) {
             className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/15 to-black/50" />
-        </div>
-
-        <div className="md:hidden relative z-10 flex h-full min-h-dvh flex-col justify-end px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-24">
-          <h2 className="font-display font-bold text-3xl text-white leading-tight mb-2">{slide.title}</h2>
-          <p className="font-sans text-sm text-white/80 leading-relaxed mb-6">{slide.sub}</p>
-          {dots}
-          <button type="button" onClick={next} className="btn-primary">
-            {ctaLabel}
-          </button>
         </div>
       </div>
 

@@ -2,28 +2,32 @@
 // HASHMAR CROPEX — AGENT MOCK DATA
 // TODO: Replace with API calls from src/services/agentApi.js
 // ============================================================
+import agentSplashImage from "../assets/agent-onboarding/AWM-CA-01-splash.png";
+import agentOnboard1Image from "../assets/agent-onboarding/AWM-CA-02-onboard1.png";
+import agentOnboard2Image from "../assets/agent-onboarding/AWM-CA-03-onboard2.png";
+import agentOnboard3Image from "../assets/agent-onboarding/AWM-CA-04-onboard3.png";
 
 /** AWM-CA-01 — full-bleed brand moment after role = Agent (parity with farmer). */
 export const agentBrandSplash = {
-  image: "/onboarding/brand-field.jpg",
+  image: agentSplashImage,
 };
 
 /** AWM-CA-02–04 — agent onboarding before Get Started (mobile + desktop). */
 export const agentOnboardingSlides = [
   {
-    image: "/onboarding/agent-1.jpg",
+    image: agentOnboard1Image,
     title: "Digitally Onboard Farmers",
     sub: "Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.",
   },
   {
-    image: "/onboarding/agent-2.jpg",
-    title: "Work Anywhere, Sync Anytime",
-    sub: "Complete farmer registrations offline and automatically sync data when internet connection is available.",
-  },
-  {
-    image: "/onboarding/agent-3.jpg",
+    image: agentOnboard2Image,
     title: "Turn Farmer Data Into Opportunity",
     sub: "Each registered farmer gains access to loans, financing, insurance, training, and structured market opportunities.",
+  },
+  {
+    image: agentOnboard3Image,
+    title: "Work Anywhere, Sync Anytime",
+    sub: "Complete farmer registrations offline and automatically sync data when internet connection is available.",
   },
 ];
 
