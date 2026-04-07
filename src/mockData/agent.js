@@ -2,7 +2,7 @@
 // HASHMAR CROPEX — AGENT MOCK DATA
 // TODO: Replace with API calls from src/services/agentApi.js
 // ============================================================
-import agentSplashImage from "../assets/agent-onboarding/AWM-CA-01-splash.png";
+const agentSplashImage = "/onboarding/agent-splash.png";
 
 // Onboarding photos served from /public/agent-onboarding/
 const agentOnboard1Image = "/onboarding/agent-onboard1.png";
