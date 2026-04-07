@@ -13,9 +13,13 @@ export default function AgentSplash() {
     return () => clearTimeout(t);
   }, [phase]);
 
+  /* ── Brand splash ── */
   if (phase === "brand") {
     return (
-      <div className="relative min-h-dvh w-full overflow-hidden bg-black">
+      <div
+        className="relative w-full overflow-hidden bg-black"
+        style={{ minHeight: "100dvh" }}
+      >
         <img
           src={agentBrandSplash.image}
           alt=""
@@ -25,71 +29,59 @@ export default function AgentSplash() {
     );
   }
 
+  /* ── Onboarding slides ── */
   if (phase === "onboarding") {
     return <AgentOnboarding onDone={() => setPhase("menu")} />;
   }
 
+  /* ── Get Started menu ── */
   return (
-    <div className="relative w-full overflow-hidden min-h-dvh flex flex-col bg-white md:grid md:grid-cols-2 md:min-h-dvh md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch">
-      {/* Mobile: full-bleed hero */}
-      <div className="relative md:hidden min-h-[40vh] bg-black shrink-0">
+    <div className="w-full flex flex-col bg-white" style={{ minHeight: "100dvh" }}>
+
+      {/* Hero image — mobile only */}
+      <div className="relative h-[45vh] bg-black shrink-0">
         <img
           src="/onboarding/agent-1.jpg"
-          alt="Field agents supporting farmers"
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/35" />
-        <div className="relative z-10 flex flex-col justify-end h-full min-h-[40vh] p-6 text-white">
+        <div className="absolute inset-0 bg-black/45" />
+        <div className="absolute inset-x-5 bottom-6 text-white">
           <img
             src="/brand/HFEI_Primary_Logo_White.png"
-            alt="HFEI by Hashmar Cropex Ltd"
-            className="h-12 w-auto object-contain mb-6"
+            alt="HFEI"
+            className="h-10 w-auto object-contain mb-4"
             draggable="false"
           />
-          <h2 className="font-display font-bold text-2xl leading-tight mb-2">Digitally Onboard Farmers</h2>
-          <p className="font-sans text-sm text-white/90 max-w-md">
-            Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.
+          <h2 className="font-display font-bold text-2xl leading-tight mb-1">
+            Welcome, Agent
+          </h2>
+          <p className="font-sans text-sm text-white/80 leading-snug">
+            Register farmers and manage their digital identities.
           </p>
         </div>
       </div>
 
-      {/* Desktop: ~50% column — match Create Account hero size */}
-      <div className="hidden md:flex md:min-w-0 items-stretch">
-        <div className="relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
-          <img
-            src="/onboarding/agent-1.jpg"
-            alt="Field agents supporting farmers"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/35" />
-          <div className="absolute left-8 right-8 bottom-8 text-white">
-            <img
-              src="/brand/HFEI_Primary_Logo_White.png"
-              alt="HFEI by Hashmar Cropex Ltd"
-              className="h-12 w-auto object-contain mb-6"
-              draggable="false"
-            />
-            <h2 className="font-display font-bold text-3xl xl:text-4xl leading-tight mb-2">Digitally Onboard Farmers</h2>
-            <p className="font-sans text-base lg:text-lg text-white/90 max-w-md leading-snug">
-              Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 min-w-0 flex flex-col items-center justify-center px-6 py-10 md:py-8 lg:py-10 md:max-w-xl md:mx-auto lg:mx-0 lg:max-w-none lg:pr-8">
+      {/* CTA content */}
+      <div className="flex-1 flex flex-col justify-center px-5 py-10 w-full max-w-[480px] mx-auto">
         <img
           src="/brand/HFEI_Primary_Logo_.png"
-          alt="HFEI by Hashmar Cropex Ltd"
-          className="h-12 w-auto object-contain mb-6 md:hidden"
+          alt="HFEI"
+          className="h-12 w-auto object-contain mx-auto mb-6"
           draggable="false"
         />
-        <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary text-center mb-2">Get Started</h1>
-        <p className="font-sans text-sm text-brand-text-secondary text-center max-w-sm mb-10">
-          Tell us how you&apos;ll be using Hashmar. Create a new agent account or sign in if you already have one.
+        <h1 className="font-display font-bold text-2xl text-brand-text-primary text-center mb-2">
+          Get Started
+        </h1>
+        <p className="font-sans text-sm text-brand-text-secondary text-center leading-relaxed mb-10">
+          Create a new agent account or sign in if you already have one.
         </p>
-        <div className="w-full max-w-sm space-y-3">
-          <button type="button" onClick={() => navigate("/agent/create-account")} className="btn-primary w-full">
+        <div className="w-full space-y-3">
+          <button
+            type="button"
+            onClick={() => navigate("/agent/create-account")}
+            className="btn-primary"
+          >
             Create account
           </button>
           <button
@@ -101,6 +93,7 @@ export default function AgentSplash() {
           </button>
         </div>
       </div>
+
     </div>
   );
 }
