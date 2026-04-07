@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
+import { farmerData } from "../../mockData/farmer";
 import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
 import FarmerOnboarding from "../../components/farmer/FarmerOnboarding";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { sendOtp, verifyOtp, formatPhoneForApi } from "../../services/cropexApi";
-import { CropexHttpError } from "../../services/cropexHttp";
 
 // ── PHONE step (mobile + desktop) — one input tree; avoids remount + double-input ref bugs on mobile ──
 function PhoneStep({ onSubmit, onBack }) {
@@ -17,15 +16,9 @@ function PhoneStep({ onSubmit, onBack }) {
   const handle = async () => {
     if (phone.trim().length < 10) { setError("Please enter a valid phone number."); return; }
     setError(""); setLoading(true);
-    try {
-      await sendOtp(formatPhoneForApi(phone));
-      onSubmit(phone.trim());
-    } catch (e) {
-      const msg = e instanceof CropexHttpError ? e.message : "Could not send code. Try again.";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
+    await new Promise((r) => setTimeout(r, 700));
+    onSubmit(phone.trim());
+    setLoading(false);
   };
 
   const phoneField = (
@@ -151,24 +144,16 @@ function OTPStep({ phone, onSuccess, onBack }) {
     const otp = digits.join("");
     if (otp.length < 4) { setError("Enter the complete 4-digit code."); return; }
     setLoading(true);
-    setError("");
-    try {
-      await verifyOtp(formatPhoneForApi(phone), otp);
-      try {
-        sessionStorage.setItem(
-          "hcx_farmer_auth",
-          JSON.stringify({ phone: formatPhoneForApi(phone), verified: true })
-        );
-      } catch { /* ignore */ }
+    await new Promise((r) => setTimeout(r, 800));
+    if (otp === "1234") {
+      sessionStorage.setItem("hcx_farmer_auth", JSON.stringify({ phone, farmerId: farmerData.id }));
       onSuccess();
-    } catch (e) {
-      const msg = e instanceof CropexHttpError ? e.message : "Invalid or expired code.";
-      setError(msg);
+    } else {
+      setError("Incorrect code. Try 1234 for demo.");
       setDigits(["", "", "", ""]);
       r0.current?.focus();
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const otpGrid = (
@@ -198,7 +183,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
         I did not receive a code,{" "}
         <button type="button" className="text-brand-green font-semibold">Resend Code</button>
       </p>
-      <p className="font-sans text-xs text-brand-text-muted mb-0 md:mb-6">Use the code sent to your phone.</p>
+      <p className="font-sans text-xs text-brand-text-muted mb-0 md:mb-6">Demo OTP: <strong>1234</strong></p>
     </>
   );
 
