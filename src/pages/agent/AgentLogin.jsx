@@ -26,7 +26,7 @@ export default function AgentLogin() {
     setError(""); setLoading(true);
     setTimeout(() => {
       if (email === agentData.email && password === "password123") {
-        try { sessionStorage.setItem("hcx_agent_session", JSON.stringify({ id: agentData.id, email })); } catch { /* ignore */ }
+        try { sessionStorage.setItem("hcx_agent_auth", JSON.stringify({ accessToken: "mock-token", agentId: agentData.id, email })); } catch { /* ignore */ }
         navigate("/agent/home");
       } else {
         setError("Invalid email or password.");
