@@ -47,14 +47,14 @@ export default function AgentOnboarding({ onDone }) {
     >
       <div className="relative w-full min-h-dvh shrink-0 md:h-auto md:min-h-0 md:flex md:min-w-0 md:items-stretch">
         {/* Mobile: strict AWM onboarding layout */}
-        <div className="md:hidden w-full min-h-dvh bg-white px-5 pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] flex flex-col">
-          <div className="flex items-center justify-between mb-8">
+        <div className="md:hidden w-full h-dvh bg-white px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between mb-5">
             {dots}
             {!isLast ? (
               <button
                 type="button"
                 onClick={onDone}
-                className="font-sans text-[#00634f] text-xl font-medium"
+                className="font-sans text-[#00634f] text-sm font-medium"
               >
                 Skip
               </button>
@@ -62,17 +62,17 @@ export default function AgentOnboarding({ onDone }) {
               <span className="w-10" />
             )}
           </div>
-          <div className="rounded-[2rem] overflow-hidden mb-8">
+          <div className="rounded-[2rem] overflow-hidden mb-5">
             <img
               src={slide.image}
               alt=""
-              className="w-full h-[56vh] object-cover"
+              className="w-full h-[50vh] object-cover"
             />
           </div>
-          <h2 className="font-display font-bold text-[3rem] leading-[1.02] text-[#005646] mb-4">
+          <h2 className="font-display font-bold text-[2.75rem] leading-[1.05] text-[#005646] mb-3">
             {slide.title}
           </h2>
-          <p className="font-sans text-[2.1rem] leading-[1.25] text-[#404040] mb-10">
+          <p className="font-sans text-[0.95rem] leading-[1.32] text-[#404040] mb-6">
             {slide.sub}
           </p>
           <button
