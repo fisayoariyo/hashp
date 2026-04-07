@@ -6,9 +6,9 @@ import agentSplashImage from "../assets/agent-onboarding/AWM-CA-01-splash.png";
 
 // Onboarding photos live in /public/agent-onboarding/ — no import needed.
 // Vite serves the public/ folder as-is at the root URL.
-const agentOnboard1Image = "/agent-onboarding/agent-onboard1.png";
-const agentOnboard2Image = "/agent-onboarding/agent-onboard2.png";
-const agentOnboard3Image = "/agent-onboarding/agent-onboard3.png";
+const agentOnboard1Image = "/onboarding/agent-1.jpg";
+const agentOnboard2Image = "/onboarding/agent-2.jpg";
+const agentOnboard3Image = "/onboarding/agent-3.jpg";
 
 /** AWM-CA-01 — full-bleed brand moment after role = Agent (parity with farmer). */
 export const agentBrandSplash = {
