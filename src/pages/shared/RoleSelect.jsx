@@ -184,7 +184,7 @@ function MobileRoleSelect() {
         {/* Role buttons */}
         <div className="w-full flex flex-col sm:flex-row gap-4">
           <button
-            onClick={() => navigate("/farmer/verify")}
+            onClick={() => navigate("/farmer/splash")}
             className="flex-1 flex flex-col items-center gap-3 bg-brand-green text-white rounded-2xl px-6 py-6 hover:bg-brand-green-dark active:scale-[0.97] transition-all duration-200 shadow-card"
           >
             <span className="text-4xl select-none">🌾</span>

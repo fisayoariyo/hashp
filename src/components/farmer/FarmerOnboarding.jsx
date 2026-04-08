@@ -67,8 +67,8 @@ export default function FarmerOnboarding({ onDone }) {
           <h2 className="font-display font-bold text-3xl text-white leading-tight mb-2">{slide.title}</h2>
           <p className="font-sans text-sm text-white/80 leading-relaxed mb-6">{slide.sub}</p>
           {dots}
-          <button type="button" onClick={next} className="btn-primary">
-            {isLast ? "Login" : "Next"}
+          <button type="button" onClick={onDone} className="btn-primary">
+            Login
           </button>
         </div>
       </div>
@@ -82,8 +82,8 @@ export default function FarmerOnboarding({ onDone }) {
         </p>
         {dots}
         <div className="max-w-md w-full">
-          <button type="button" onClick={next} className="btn-primary">
-            {isLast ? "Login" : "Next"}
+          <button type="button" onClick={onDone} className="btn-primary">
+            Login
           </button>
         </div>
       </div>

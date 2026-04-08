@@ -22,7 +22,7 @@ export default function FarmerSplash() {
         <img
           src="/brand/HFEI_Primary_Logo_White.png"
           alt="HFEI by Hashmar Cropex Ltd"
-          className="h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-lg"
+          className="block h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-lg"
           draggable={false}
         />
       </div>
