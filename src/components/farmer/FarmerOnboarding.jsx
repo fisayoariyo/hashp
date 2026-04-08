@@ -75,11 +75,11 @@ export default function FarmerOnboarding({ onDone }) {
         </div>
       </div>
 
-      <div className="hidden md:flex min-w-0 flex-col justify-center px-4 lg:px-8 py-8 lg:py-10 w-full max-w-xl mx-auto lg:max-w-none lg:mx-0 lg:pr-10">
-        <h2 className="font-display font-bold text-4xl lg:text-5xl text-brand-text-primary leading-tight mb-4">
+      <div className="hidden md:flex min-w-0 flex-col justify-center px-4 lg:px-8 py-8 lg:py-10 w-full max-w-[34rem] mx-auto lg:max-w-[36rem] lg:mx-0 lg:pr-10">
+        <h2 className="font-display font-bold text-3xl lg:text-4xl text-brand-text-primary leading-[1.15] mb-4">
           {slide.title}
         </h2>
-        <p className="font-sans text-lg lg:text-xl text-brand-text-secondary leading-relaxed mb-10 max-w-lg">
+        <p className="font-sans text-base lg:text-lg text-brand-text-secondary leading-[1.45] mb-9 max-w-[32rem]">
           {slide.sub}
         </p>
         {dots}

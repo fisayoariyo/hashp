@@ -6,6 +6,10 @@ import { farmerBrandSplash } from "../../mockData/farmer";
 export default function FarmerSplash() {
   const navigate = useNavigate();
   useEffect(() => {
+    if (window.matchMedia("(min-width: 768px)").matches) {
+      navigate("/farmer/verify", { replace: true });
+      return;
+    }
     const t = setTimeout(() => navigate("/farmer/verify", { replace: true }), 2600);
     return () => clearTimeout(t);
   }, [navigate]);

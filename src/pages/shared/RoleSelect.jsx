@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import fwdSrFarmerImage from "../../assets/farmer-onboarding/FWD-SR-farmer.png";
+import awdSrAgentImage from "../../assets/agent-onboarding/AWD-SR-agent.png";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DESKTOP — split panel  (hidden on mobile via `hidden md:flex`)
@@ -87,7 +89,7 @@ function DesktopRoleSelect() {
               {/* photo — upper ~75% of card */}
               <div className="w-full h-52 lg:h-56 overflow-hidden">
                 <img
-                  src="/onboarding/farmer-2.jpg"
+                  src={fwdSrFarmerImage}
                   alt="Farmer"
                   className="w-full h-full object-cover"
                 />
@@ -116,7 +118,7 @@ function DesktopRoleSelect() {
             >
               <div className="w-full h-52 lg:h-56 overflow-hidden">
                 <img
-                  src="/onboarding/agent-1.jpg"
+                  src={awdSrAgentImage}
                   alt="Agent"
                   className="w-full h-full object-cover"
                 />
