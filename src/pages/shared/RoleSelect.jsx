@@ -12,7 +12,7 @@ function DesktopRoleSelect() {
 
   const handleContinue = () => {
     if (selected === "farmer") navigate("/farmer/verify");
-    else navigate("/agent/splash");
+    else navigate("/agent/create-account");
   };
 
   return (

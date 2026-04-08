@@ -1,3 +1,5 @@
+import agentDesktopHeroImage from "../../assets/agent-onboarding/AWM-CA-02-onboard1.png";
+
 export default function AgentAuthDesktopLayout({ title, subtitle, children, actions, centerTitle = false, leading = null }) {
   return (
     <div className="hidden md:grid md:grid-cols-2 md:min-h-dvh md:bg-white md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch">
@@ -5,7 +7,7 @@ export default function AgentAuthDesktopLayout({ title, subtitle, children, acti
       <div className="flex min-w-0 min-h-0 items-stretch">
         <div className="relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
-            src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1400&q=80"
+            src={agentDesktopHeroImage}
             alt="Farmers"
             className="absolute inset-0 w-full h-full object-cover"
           />
