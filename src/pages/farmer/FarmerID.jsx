@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Smartphone } from "lucide-react";
 import FarmerDesktopLayout from "../../components/farmer/FarmerDesktopLayout";
 import { farmerData } from "../../mockData/farmer";
+import farmerIdLogo from "../../assets/HFEI Primary Logo_White.png";
 
 function IDCard() {
   return (
@@ -9,7 +10,7 @@ function IDCard() {
       {/* HFEI Primary Logo White on green ID card */}
       <div className="self-start mb-5">
         <img
-          src="/HFEI Logomark.svg"
+          src={farmerIdLogo}
           alt="HFEI by Hashmar Cropex Ltd"
           className="h-8 w-auto object-contain"
           draggable="false"
