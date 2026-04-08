@@ -8,6 +8,7 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHONE STEP
+// Screen: FWD-CA-01 / 02 / 03  (left panel cycles, right panel identical)
 // ─────────────────────────────────────────────────────────────────────────────
 function PhoneStep({ onSubmit, onBack }) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -27,22 +28,27 @@ function PhoneStep({ onSubmit, onBack }) {
     setLoading(false);
   };
 
-  // Phone input — shared between mobile and desktop
+  // ── Phone input — shared markup used in both mobile and desktop ──
   const phoneField = (
     <div className="flex flex-col gap-1.5">
       <label className="font-sans text-sm font-medium text-brand-text-primary">
         Phone Number
       </label>
-      {/* Input row — matches design: icon | divider | +234 | divider | text */}
+      {/*
+        Container: thin gray border, moderate rounding — matches design exactly.
+        Inside: phone icon | divider | +234 | divider | text field
+      */}
       <div
         className={`flex items-center bg-white border rounded-xl px-4 py-3.5 gap-3
           focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent
           transition-all ${error ? "border-red-400" : "border-gray-300"}`}
       >
         <Smartphone size={18} className="text-brand-text-muted shrink-0" />
-        <div className="w-px h-5 bg-gray-200 shrink-0" />
-        <span className="text-sm text-brand-text-secondary shrink-0">+234</span>
-        <div className="w-px h-5 bg-gray-200 shrink-0" />
+        <div className="w-px h-5 bg-gray-300 shrink-0" />
+        <span className="font-sans text-sm text-brand-text-secondary shrink-0 select-none">
+          +234
+        </span>
+        <div className="w-px h-5 bg-gray-300 shrink-0" />
         <input
           type="tel"
           inputMode="numeric"
@@ -51,10 +57,10 @@ function PhoneStep({ onSubmit, onBack }) {
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && handle()}
           placeholder="Input your phone number here"
-          className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
+          className="flex-1 bg-transparent font-sans text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
         />
       </div>
-      {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
+      {error && <p className="font-sans text-xs text-red-500 mt-0.5">{error}</p>}
     </div>
   );
 
@@ -63,8 +69,10 @@ function PhoneStep({ onSubmit, onBack }) {
     return (
       <FarmerAuthDesktopLayout
         title="Login to your farmer profile"
+        // No fixedImage → left panel cycles through all 3 hero images
         actions={
           <div className="space-y-3">
+            {/* Continue — green pill */}
             <button
               type="button"
               onClick={handle}
@@ -73,11 +81,11 @@ function PhoneStep({ onSubmit, onBack }) {
             >
               {loading ? "Checking..." : "Continue"}
             </button>
-            {/* "I do not have an account" — teal text, very light bg */}
+            {/* "I do not have an account" — teal text, very light gray bg */}
             <button
               type="button"
               onClick={onBack}
-              className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-green font-sans text-sm font-medium hover:bg-gray-100 transition-colors"
+              className="w-full py-3.5 rounded-2xl bg-gray-50 font-sans text-sm font-medium text-brand-green hover:bg-gray-100 transition-colors"
             >
               I do not have an account
             </button>
@@ -121,6 +129,7 @@ function PhoneStep({ onSubmit, onBack }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OTP STEP
+// Screen: FWD-CA-04  (left panel FIXED on farmer-3 / corn field)
 // ─────────────────────────────────────────────────────────────────────────────
 function OTPStep({ phone, onSuccess, onBack }) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -174,8 +183,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
       next[idx] = ch;
     });
     setDigits(next);
-    const lastIdx = Math.min(pasted.length, 3);
-    setTimeout(() => refs[lastIdx].current?.focus(), 0);
+    setTimeout(() => refs[Math.min(pasted.length, 3)].current?.focus(), 0);
   };
 
   const handleLogin = async () => {
@@ -200,11 +208,13 @@ function OTPStep({ phone, onSuccess, onBack }) {
     setLoading(false);
   };
 
-  // ── OTP grid: 4 large boxes ──
-  // Design: white bg, thin border (border), rounded-xl, tall (h-20), big text
-  // Selected/filled: green border + green text
+  /*
+    OTP boxes: white bg, thin gray border (border), rounded-xl, h-[4.5rem].
+    When a digit is filled → border turns brand-green + text brand-green.
+    gap-4 between boxes. No explicit width — grid fills the container equally.
+  */
   const otpGrid = (
-    <div className="grid grid-cols-4 gap-5">
+    <div className="grid grid-cols-4 gap-4">
       {digits.map((d, i) => (
         <input
           key={i}
@@ -217,12 +227,11 @@ function OTPStep({ phone, onSuccess, onBack }) {
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={i === 0 ? handlePaste : undefined}
           autoComplete="one-time-code"
-          className={`w-full h-20 text-center text-2xl font-bold font-display
-            bg-white border rounded-xl focus:outline-none transition-colors
-            ${
-              d
-                ? "border-brand-green text-brand-green"
-                : "border-gray-200 text-brand-text-primary"
+          className={`w-full h-[4.5rem] text-center text-2xl font-bold font-display
+            bg-white rounded-xl focus:outline-none transition-colors
+            border ${d
+              ? "border-brand-green text-brand-green"
+              : "border-gray-200 text-brand-text-primary"
             }
             focus:border-brand-green`}
         />
@@ -230,20 +239,18 @@ function OTPStep({ phone, onSuccess, onBack }) {
     </div>
   );
 
+  /* "I did not receive a code, Resend Code" row */
   const resendRow = (
     <>
-      {error && <p className="text-xs text-red-500 mt-3">{error}</p>}
+      {error && (
+        <p className="font-sans text-xs text-red-500 mt-3">{error}</p>
+      )}
       <p className="font-sans text-sm text-brand-text-secondary mt-4">
         I did not receive a code,{" "}
         <button type="button" className="text-brand-green font-semibold">
           Resend Code
         </button>
       </p>
-      {!isDesktop && (
-        <p className="font-sans text-xs text-brand-text-muted mt-1">
-          Demo OTP: <strong>1234</strong>
-        </p>
-      )}
     </>
   );
 
@@ -253,9 +260,11 @@ function OTPStep({ phone, onSuccess, onBack }) {
       <FarmerAuthDesktopLayout
         title="Enter 4-Digit code"
         subtitle="Enter the 4-digit code we sent to your registered phone number"
-        // Keep last image (corn field feel) — no fixedImage → cycling continues
+        // OTP screen stays fixed on the corn-field image (farmer-3) — matches FWD-CA-04
+        fixedImage="/onboarding/farmer-3.jpg"
         actions={
           <div className="space-y-3">
+            {/* Login — green pill */}
             <button
               type="button"
               onClick={handleLogin}
@@ -264,11 +273,11 @@ function OTPStep({ phone, onSuccess, onBack }) {
             >
               {loading ? "Verifying..." : "Login"}
             </button>
-            {/* "Back" — teal text, very light bg, matches design */}
+            {/* Back — teal text, very light gray bg */}
             <button
               type="button"
               onClick={onBack}
-              className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-green font-sans text-sm font-medium hover:bg-gray-100 transition-colors"
+              className="w-full py-3.5 rounded-2xl bg-gray-50 font-sans text-sm font-medium text-brand-green hover:bg-gray-100 transition-colors"
             >
               Back
             </button>
@@ -328,8 +337,21 @@ function OTPStep({ phone, onSuccess, onBack }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function FarmerVerify() {
   const navigate = useNavigate();
-  const [step, setStep] = useState("onboarding");
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  /*
+    Desktop: start at "phone" — skip the mobile onboarding slides entirely.
+    Mobile:  start at "onboarding" — shows the 3 swipe slides first.
+  */
+  const [step, setStep] = useState(isDesktop ? "phone" : "onboarding");
   const [phone, setPhone] = useState("");
+
+  // "I do not have an account" on desktop goes back to role select.
+  // On mobile it goes back to the onboarding slides.
+  const handlePhoneBack = () => {
+    if (isDesktop) navigate("/");
+    else setStep("onboarding");
+  };
 
   if (step === "onboarding") {
     return <FarmerOnboarding onDone={() => setStep("phone")} />;
@@ -342,7 +364,7 @@ export default function FarmerVerify() {
           setPhone(p);
           setStep("otp");
         }}
-        onBack={() => setStep("onboarding")}
+        onBack={handlePhoneBack}
       />
     );
   }

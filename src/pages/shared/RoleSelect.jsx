@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Role card photo images — already in /public/onboarding/
-const FARMER_IMG = "/onboarding/farmer-2.jpg";
-const AGENT_IMG  = "/onboarding/agent-1.jpg";
-
 // ─────────────────────────────────────────────────────────────────────────────
-// DESKTOP: split panel (hidden on mobile)
+// DESKTOP — split panel  (hidden on mobile via `hidden md:flex`)
+// Matches the Select Role design screen exactly.
 // ─────────────────────────────────────────────────────────────────────────────
 function DesktopRoleSelect() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState("farmer"); // 'farmer' | 'agent'
+  // Farmer is pre-selected per design
+  const [selected, setSelected] = useState("farmer");
 
   const handleContinue = () => {
     if (selected === "farmer") navigate("/farmer/verify");
@@ -21,24 +19,32 @@ function DesktopRoleSelect() {
     <div className="hidden md:flex min-h-dvh bg-white p-5 lg:p-6 gap-5 lg:gap-6">
 
       {/* ── LEFT: hero photo card ─────────────────────────────── */}
+      {/*
+        Same image as Login screen 1 (farmer-1.jpg = woman with
+        leaves/basket on head).
+      */}
       <div className="relative w-[45%] shrink-0 rounded-3xl overflow-hidden">
         <img
           src="/onboarding/farmer-1.jpg"
-          alt="Hashmar farmer"
+          alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* bottom gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+        {/* dark gradient from bottom */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-        {/* brand + text */}
+        {/* brand block */}
         <div className="absolute bottom-8 left-8 right-8 lg:bottom-10 lg:left-10 lg:right-10">
+          {/*
+            block + max-w-[200px]: prevents the inline-baseline white-line
+            artefact under the logo PNG.
+          */}
           <img
             src="/brand/HFEI_Primary_Logo_White.png"
-            alt="HFEI by Hashmar Cropex"
-            className="h-10 w-auto object-contain object-left mb-4"
+            alt="HFEI by Hashmar Cropex Ltd"
+            className="block h-10 w-auto max-w-[200px] object-contain object-left mb-4"
             draggable="false"
           />
-          <h2 className="font-display font-bold text-[1.85rem] lg:text-[2.2rem] text-white leading-tight mb-2">
+          <h2 className="font-display font-bold text-[1.85rem] lg:text-[2.1rem] text-white leading-tight mb-2">
             Welcome to your Farmer Profile
           </h2>
           <p className="font-sans text-base lg:text-[1.05rem] text-white/85 leading-snug">
@@ -48,12 +54,16 @@ function DesktopRoleSelect() {
         </div>
       </div>
 
-      {/* ── RIGHT: role selection panel ──────────────────────── */}
+      {/* ── RIGHT: role selection ──────────────────────────────── */}
+      {/*
+        justify-between: heading+cards sit at the top,
+        Continue button pins to the bottom.
+      */}
       <div className="flex-1 flex flex-col justify-between py-14 lg:py-16 px-6 lg:px-14 xl:px-20">
 
-        {/* top: heading + subtitle + role cards */}
+        {/* top: title + subtitle + role cards */}
         <div className="flex flex-col items-center">
-          <h1 className="font-display font-bold text-[2rem] lg:text-[2.3rem] text-brand-text-primary text-center mb-2">
+          <h1 className="font-display font-bold text-[2rem] lg:text-[2.3rem] text-brand-text-primary text-center mb-3">
             Get Started
           </h1>
           <p className="font-sans text-sm text-brand-text-secondary text-center leading-relaxed mb-10 max-w-xs">
@@ -61,35 +71,33 @@ function DesktopRoleSelect() {
             describes your role
           </p>
 
-          {/* Role cards row */}
+          {/* ── Role cards ── */}
           <div className="flex gap-4 w-full">
 
             {/* Farmer card */}
             <button
               type="button"
               onClick={() => setSelected("farmer")}
-              className={`flex-1 rounded-xl overflow-hidden transition-all duration-200 text-left
-                ${
-                  selected === "farmer"
-                    ? "border-2 border-brand-green shadow-md"
-                    : "border border-gray-200 shadow-sm"
+              className={`flex-1 rounded-xl overflow-hidden text-left transition-all duration-200
+                ${selected === "farmer"
+                  ? "border-2 border-brand-green shadow-md"
+                  : "border border-gray-200 shadow-sm"
                 }`}
             >
-              {/* photo */}
+              {/* photo — upper ~75% of card */}
               <div className="w-full h-52 lg:h-56 overflow-hidden">
                 <img
-                  src={FARMER_IMG}
+                  src="/onboarding/farmer-2.jpg"
                   alt="Farmer"
                   className="w-full h-full object-cover"
                 />
               </div>
-              {/* label */}
+              {/* label — lower ~25% */}
               <div
-                className={`py-3.5 text-center font-sans font-medium text-sm transition-colors
-                  ${
-                    selected === "farmer"
-                      ? "bg-brand-green text-white"
-                      : "bg-white text-brand-text-primary"
+                className={`py-4 text-center font-sans font-medium text-sm transition-colors
+                  ${selected === "farmer"
+                    ? "bg-brand-green text-white"
+                    : "bg-white text-brand-text-primary"
                   }`}
               >
                 Farmer
@@ -100,28 +108,24 @@ function DesktopRoleSelect() {
             <button
               type="button"
               onClick={() => setSelected("agent")}
-              className={`flex-1 rounded-xl overflow-hidden transition-all duration-200 text-left
-                ${
-                  selected === "agent"
-                    ? "border-2 border-brand-green shadow-md"
-                    : "border border-gray-200 shadow-sm"
+              className={`flex-1 rounded-xl overflow-hidden text-left transition-all duration-200
+                ${selected === "agent"
+                  ? "border-2 border-brand-green shadow-md"
+                  : "border border-gray-200 shadow-sm"
                 }`}
             >
-              {/* photo */}
               <div className="w-full h-52 lg:h-56 overflow-hidden">
                 <img
-                  src={AGENT_IMG}
+                  src="/onboarding/agent-1.jpg"
                   alt="Agent"
                   className="w-full h-full object-cover"
                 />
               </div>
-              {/* label */}
               <div
-                className={`py-3.5 text-center font-sans font-medium text-sm transition-colors
-                  ${
-                    selected === "agent"
-                      ? "bg-brand-green text-white"
-                      : "bg-white text-brand-text-primary"
+                className={`py-4 text-center font-sans font-medium text-sm transition-colors
+                  ${selected === "agent"
+                    ? "bg-brand-green text-white"
+                    : "bg-white text-brand-text-primary"
                   }`}
               >
                 Agent
@@ -131,7 +135,7 @@ function DesktopRoleSelect() {
           </div>
         </div>
 
-        {/* bottom: Continue button */}
+        {/* bottom: Continue button — full-width green pill */}
         <button
           type="button"
           onClick={handleContinue}
@@ -146,27 +150,20 @@ function DesktopRoleSelect() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOBILE: existing card layout (kept as-is — was already great)
+// MOBILE — existing card layout, unchanged  (hidden on md+ via `md:hidden`)
 // ─────────────────────────────────────────────────────────────────────────────
 function MobileRoleSelect() {
   const navigate = useNavigate();
 
   return (
-    <div className="
-      md:hidden min-h-dvh w-full flex items-center justify-center
-      bg-brand-bg-page px-4 py-8
-    ">
-      <div className="
-        w-full max-w-role
-        bg-white rounded-3xl shadow-card-lg
-        px-6 py-10 sm:px-10 sm:py-14
-        flex flex-col items-center gap-8
-      ">
+    <div className="md:hidden min-h-dvh w-full flex items-center justify-center bg-brand-bg-page px-4 py-8">
+      <div className="w-full max-w-role bg-white rounded-3xl shadow-card-lg px-6 py-10 sm:px-10 sm:py-14 flex flex-col items-center gap-8">
+
         {/* Logo */}
         <img
           src="/brand/HFEI_Primary_Logo_.png"
           alt="HFEI by Hashmar Cropex Ltd"
-          className="h-14 w-auto object-contain"
+          className="block h-14 w-auto object-contain"
           draggable="false"
         />
 
@@ -188,13 +185,7 @@ function MobileRoleSelect() {
         <div className="w-full flex flex-col sm:flex-row gap-4">
           <button
             onClick={() => navigate("/farmer/verify")}
-            className="
-              flex-1 flex flex-col items-center gap-3
-              bg-brand-green text-white
-              rounded-2xl px-6 py-6
-              hover:bg-brand-green-dark active:scale-[0.97]
-              transition-all duration-200 shadow-card
-            "
+            className="flex-1 flex flex-col items-center gap-3 bg-brand-green text-white rounded-2xl px-6 py-6 hover:bg-brand-green-dark active:scale-[0.97] transition-all duration-200 shadow-card"
           >
             <span className="text-4xl select-none">🌾</span>
             <div className="text-center">
@@ -207,13 +198,7 @@ function MobileRoleSelect() {
 
           <button
             onClick={() => navigate("/agent/splash")}
-            className="
-              flex-1 flex flex-col items-center gap-3
-              bg-brand-amber text-white
-              rounded-2xl px-6 py-6
-              hover:brightness-95 active:scale-[0.97]
-              transition-all duration-200 shadow-card
-            "
+            className="flex-1 flex flex-col items-center gap-3 bg-brand-amber text-white rounded-2xl px-6 py-6 hover:brightness-95 active:scale-[0.97] transition-all duration-200 shadow-card"
           >
             <span className="text-4xl select-none">🪪</span>
             <div className="text-center">
@@ -235,7 +220,8 @@ function MobileRoleSelect() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXPORT: renders one or the other based on viewport (CSS media query approach)
+// EXPORT
+// Both render in DOM — CSS controls which is visible at each breakpoint.
 // ─────────────────────────────────────────────────────────────────────────────
 export default function RoleSelect() {
   return (
