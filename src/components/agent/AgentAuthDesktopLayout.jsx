@@ -3,7 +3,7 @@ import agentDesktopHeroImage from "../../assets/agent-onboarding/AWM-CA-02-onboa
 export default function AgentAuthDesktopLayout({ title, subtitle, children, actions, centerTitle = false, leading = null }) {
   return (
     <div className="hidden md:grid md:grid-cols-2 md:min-h-dvh md:bg-white md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch">
-      {/* Left ~50% — same visual weight as Create Account (AWD-CA-02) */}
+      {/* Left ~50% — agent auth reference style */}
       <div className="flex min-w-0 min-h-0 items-stretch">
         <div className="relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
@@ -11,16 +11,18 @@ export default function AgentAuthDesktopLayout({ title, subtitle, children, acti
             alt="Farmers"
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="absolute left-7 right-7 bottom-7 lg:left-8 lg:right-8 lg:bottom-8 text-white">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/18 to-transparent" />
+          <div className="absolute left-6 right-6 bottom-6 lg:left-8 lg:right-8 lg:bottom-8 text-white">
             <img
               src="/brand/HFEI_Primary_Logo_White.png"
               alt="HFEI by Hashmar Cropex Ltd"
-              className="h-10 w-auto object-contain mb-4"
+              className="block h-11 w-auto object-contain mb-4"
               draggable="false"
             />
-            <h2 className="font-display font-bold text-4xl xl:text-5xl leading-tight mb-3">Digitally Onboard Farmers</h2>
-            <p className="font-sans text-lg xl:text-xl text-white/90 leading-snug">
+            <h2 className="font-display font-bold text-4xl xl:text-[2.6rem] leading-tight mb-2 max-w-[24rem]">
+              Digitally Onboard Farmers
+            </h2>
+            <p className="font-sans text-[0.95rem] lg:text-[1.05rem] text-white/90 leading-[1.35] max-w-[27rem]">
               Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.
             </p>
           </div>
