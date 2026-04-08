@@ -29,6 +29,8 @@ export default function FarmerOnboarding({ onDone }) {
     </div>
   );
 
+  const ctaLabel = isLast ? "Login" : "Next";
+
   return (
     <div
       className="min-h-dvh w-full flex flex-col bg-black md:grid md:grid-cols-2 md:min-h-dvh md:bg-white md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch"
@@ -67,8 +69,8 @@ export default function FarmerOnboarding({ onDone }) {
           <h2 className="font-display font-bold text-3xl text-white leading-tight mb-2">{slide.title}</h2>
           <p className="font-sans text-sm text-white/80 leading-relaxed mb-6">{slide.sub}</p>
           {dots}
-          <button type="button" onClick={onDone} className="btn-primary">
-            Login
+          <button type="button" onClick={next} className="btn-primary">
+            {ctaLabel}
           </button>
         </div>
       </div>
@@ -82,8 +84,8 @@ export default function FarmerOnboarding({ onDone }) {
         </p>
         {dots}
         <div className="max-w-md w-full">
-          <button type="button" onClick={onDone} className="btn-primary">
-            Login
+          <button type="button" onClick={next} className="btn-primary">
+            {ctaLabel}
           </button>
         </div>
       </div>
