@@ -3,9 +3,9 @@
 // TODO: Replace with API calls from src/services/api.js
 // ============================================================
 import farmerSplashImage from "../assets/farmer-onboarding/FWM-CA-01-splash.png";
-import farmerOnboard1Image from "../assets/farmer-onboarding/FWM-CA-02-onboard1.png";
-import farmerOnboard2Image from "../assets/farmer-onboarding/FWM-CA-03-onboard2.png";
-import farmerOnboard3Image from "../assets/farmer-onboarding/FWM-CA-04-onboard3.png";
+import farmerOnboard1Image from "../assets/farmer-onboarding/FWM-CA-02-onboard1.jpg";
+import farmerOnboard2Image from "../assets/farmer-onboarding/FWM-CA-03-onboard2.jpg";
+import farmerOnboard3Image from "../assets/farmer-onboarding/FWM-CA-04-onboard3.jpg";
 
 /** FWM-CA-01 — full-bleed brand moment after role = Farmer (mobile + desktop). */
 export const farmerBrandSplash = {
