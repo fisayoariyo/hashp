@@ -1,4 +1,4 @@
-import agentDesktopHeroImage from "../../assets/agent-onboarding/AWM-CA-02-onboard1.png";
+import agentDesktopHeroImage from "../../assets/agent-onboarding/AWD-pic.png";
 
 export default function AgentAuthDesktopLayout({ title, subtitle, children, actions, centerTitle = false, leading = null }) {
   return (
