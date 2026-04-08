@@ -9,7 +9,7 @@ function IDCard() {
       {/* HFEI Primary Logo White on green ID card */}
       <div className="self-start mb-5">
         <img
-          src="/brand/HFEI_Primary_Logo_White.png"
+          src="/HFEI Logomark.svg"
           alt="HFEI by Hashmar Cropex Ltd"
           className="h-8 w-auto object-contain"
           draggable="false"
