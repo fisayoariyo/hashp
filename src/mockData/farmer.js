@@ -2,26 +2,30 @@
 // HASHMAR CROPEX — FARMER MOCK DATA
 // TODO: Replace with API calls from src/services/api.js
 // ============================================================
+import farmerSplashImage from "../assets/farmer-onboarding/FWM-CA-01-splash.png";
+import farmerOnboard1Image from "../assets/farmer-onboarding/FWM-CA-02-onboard1.png";
+import farmerOnboard2Image from "../assets/farmer-onboarding/FWM-CA-03-onboard2.png";
+import farmerOnboard3Image from "../assets/farmer-onboarding/FWM-CA-04-onboard3.png";
 
 /** FWM-CA-01 — full-bleed brand moment after role = Farmer (mobile + desktop). */
 export const farmerBrandSplash = {
-  image: "/onboarding/brand-field.jpg",
+  image: farmerSplashImage,
 };
 
 /** FWM-CA-02–04 — three onboarding slides before phone login. */
 export const farmerOnboardingSlides = [
   {
-    image: "/onboarding/farmer-1.jpg",
+    image: farmerOnboard1Image,
     title: "Welcome to your Farmer Profile",
     sub: "You now have a digital identity that helps you access support, loans, and better opportunities.",
   },
   {
-    image: "/onboarding/farmer-2.jpg",
+    image: farmerOnboard2Image,
     title: "Your Identity Matters",
     sub: "Your Farmer ID makes you visible and verified. It helps you access financial services, insurance, and government support.",
   },
   {
-    image: "/onboarding/farmer-3.jpg",
+    image: farmerOnboard3Image,
     title: "Access More with Ease",
     sub: "View your profile, get farming support, access markets, and explore opportunities all in one place.",
   },
