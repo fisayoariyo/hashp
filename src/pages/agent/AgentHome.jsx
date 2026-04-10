@@ -17,8 +17,10 @@ import userSearchIcon from "../../assets/comps/user-search-01.svg";
 import wifiOffIcon from "../../assets/comps/wifi-off-02.svg";
 import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.svg";
 import cardPatternMobile from "../../assets/comps/card-pattern-mobile.svg";
-import badgeSuccessIcon from "../../assets/comps/badge-success.svg";
-import badgeErrorIcon from "../../assets/comps/badge-error.svg";
+import loadingIdle from "../../assets/comps/Loading.png";
+import loadingProgress from "../../assets/comps/Loading-progress.png";
+import loadingSuccess from "../../assets/comps/Loading-successful.png";
+import loadingFailed from "../../assets/comps/Loading-failed.png";
 
 const DASHBOARD_PREV_PERIOD_KEY = "hcx-agent-dashboard-prev-period";
 
@@ -164,22 +166,22 @@ export default function AgentHome() {
 
     const contentMap = {
       loading: {
-        icon: "spinner",
+        image: loadingIdle,
         title: "Loading.....",
         subtitle: "Please wait",
       },
       "loading-progress": {
-        icon: "sync",
+        image: loadingProgress,
         title: "Synchronization in progress",
         subtitle: "Please wait",
       },
       successful: {
-        icon: badgeSuccessIcon,
+        image: loadingSuccess,
         title: "Synchronization successful",
         subtitle: "",
       },
       failed: {
-        icon: badgeErrorIcon,
+        image: loadingFailed,
         title: "Synchronization failed",
         subtitle: "Try again",
       },
@@ -188,19 +190,7 @@ export default function AgentHome() {
     const config = contentMap[syncState];
     return (
       <div className="bg-white border border-brand-border rounded-2xl px-4 py-3 flex items-center gap-3">
-        {config.icon === "spinner" ? (
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-amber/20">
-            <RefreshCw size={16} className="animate-spin text-brand-amber" />
-          </span>
-        ) : config.icon === "sync" ? (
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-amber/15">
-            <RefreshCw size={16} className="text-brand-amber" />
-          </span>
-        ) : (
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-amber/15">
-            <img src={config.icon} alt="" className="w-5 h-5 object-contain" />
-          </span>
-        )}
+        <img src={config.image} alt="" className="w-9 h-9 object-contain" />
         <div>
           <p className="font-sans text-sm font-semibold text-brand-text-primary">{config.title}</p>
           {config.subtitle ? (
@@ -212,7 +202,7 @@ export default function AgentHome() {
   }, [syncState]);
 
   const mobileContent = (
-    <div className="page-container md:hidden bg-[#f5f5f0]">
+    <div className="page-container md:hidden">
       <div className="bg-brand-green px-4 pt-6 pb-5">
         <div className="flex items-start justify-between mb-2">
           <h1 className="font-display font-bold text-xl text-white">Welcome, Agent {agentData.name}</h1>
@@ -369,7 +359,7 @@ export default function AgentHome() {
 
   const desktopContent = (
     <AgentDesktopShell active="dashboard">
-      <section className="mb-6">
+      <section className="bg-white rounded-3xl border border-brand-border shadow-sm p-5 md:p-6 mb-6">
         <h2 className="font-display font-bold text-3xl text-brand-text-primary mb-4">Registration stats</h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="relative overflow-hidden rounded-2xl bg-brand-green p-5 text-white min-h-40">
@@ -435,13 +425,13 @@ export default function AgentHome() {
           <div>
             <h3 className="font-display font-bold text-4xl text-brand-text-primary mb-3">Register new farmer</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#fdfdfc] rounded-2xl border border-brand-border p-6">
+              <div className="bg-white rounded-2xl border border-brand-border p-6">
                 <img src={userAddIcon} alt="" className="w-8 h-8 mb-3" />
                 <p className="font-display font-bold text-2xl mb-1">Register new farmer</p>
                 <p className="text-sm text-brand-text-secondary mb-5">Capture biometric and personal data</p>
                 <button onClick={() => navigate("/agent/register-farmer")} className="btn-amber py-3 text-sm">+ Start Registration</button>
               </div>
-              <div className="bg-[#fdfdfc] rounded-2xl border border-brand-border p-6">
+              <div className="bg-white rounded-2xl border border-brand-border p-6">
                 <img src={userSearchIcon} alt="" className="w-8 h-8 mb-3" />
                 <p className="font-display font-bold text-2xl mb-1">Farmer lookup</p>
                 <p className="text-sm text-brand-text-secondary mb-5">Search by ID or name</p>
@@ -450,7 +440,7 @@ export default function AgentHome() {
             </div>
           </div>
 
-          <div className="bg-[#fdfdfc] rounded-2xl border border-brand-border p-6">
+          <div className="bg-white rounded-2xl border border-brand-border p-6">
             <div className="flex items-center justify-between mb-3">
               <p className="font-display font-bold text-3xl text-brand-text-primary">Synchronization</p>
               <button
@@ -479,7 +469,7 @@ export default function AgentHome() {
           </div>
         </div>
 
-        <div className="bg-[#fdfdfc] rounded-2xl border border-brand-border p-4">
+        <div className="bg-white rounded-2xl border border-brand-border p-4">
           <p className="font-display font-bold text-3xl text-brand-text-primary mb-3">Recently Registered</p>
           <div className="space-y-3">
             {agentRegisteredFarmers.slice(0, 4).map((farmer) => (
