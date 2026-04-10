@@ -14,7 +14,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
   return (
     <div className="hidden md:block min-h-dvh bg-brand-bg-page p-6">
       <div className="max-w-[1400px] mx-auto min-h-[calc(100dvh-3rem)] bg-white rounded-[28px] border border-[#e5e7eb] shadow-[0_8px_24px_rgba(15,23,42,0.06)] overflow-hidden flex">
-      <aside className="w-64 bg-white border-r border-brand-border px-6 py-8">
+      <aside className="w-64 bg-white px-6 py-8">
         <img src="/brand/HFEI_Primary_Logo_.png" alt="HFEI by Hashmar Cropex Ltd" className="h-10 w-auto object-contain mb-12" />
         <nav className="space-y-2">
           {links.map((link) => {
@@ -37,7 +37,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
       </aside>
 
       <main className="flex-1 p-6 flex flex-col min-h-0 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 max-w-5xl mx-auto w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 w-full">
           <div>
             <div className="flex items-center gap-3">
               <h1 className="font-display font-bold text-2xl text-brand-text-primary">Welcome, Agent {agentData.name}</h1>
@@ -58,7 +58,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
             <Plus size={16} strokeWidth={2.5} /> Register New Farmer
           </button>
         </div>
-        <div className="max-w-5xl mx-auto w-full flex flex-col flex-1 min-h-0 min-h-[320px]">
+        <div className="w-full flex flex-col flex-1 min-h-0 min-h-[320px]">
           {children}
         </div>
       </main>
