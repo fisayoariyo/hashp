@@ -1,4 +1,4 @@
-git import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
 import { farmerData } from "../../mockData/farmer";
