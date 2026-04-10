@@ -31,7 +31,7 @@ export default function AgentDesktopShell({ active = "dashboard", children }) {
   ];
 
   return (
-    <div className="hidden md:flex min-h-dvh bg-brand-bg-page">
+    <div className="hidden md:flex min-h-dvh bg-white">
       <aside className="w-64 bg-white border-r border-brand-border px-6 py-8">
         <img src="/brand/HFEI_Primary_Logo_.png" alt="HFEI by Hashmar Cropex Ltd" className="h-10 w-auto object-contain mb-12" />
         <nav className="space-y-2">
@@ -62,7 +62,7 @@ export default function AgentDesktopShell({ active = "dashboard", children }) {
         </nav>
       </aside>
 
-      <main className="flex-1 p-4 md:p-6 flex flex-col min-h-0 min-w-0">
+      <main className="flex-1 p-4 md:p-6 flex flex-col min-h-0 min-w-0 bg-white">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 max-w-5xl mx-auto w-full">
           <div className="flex items-start gap-3">
             <div>

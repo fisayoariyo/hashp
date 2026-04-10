@@ -359,7 +359,7 @@ export default function AgentHome() {
 
   const desktopContent = (
     <AgentDesktopShell active="dashboard">
-      <section className="bg-white rounded-3xl border border-brand-border shadow-sm p-5 md:p-6 mb-6">
+      <section className="bg-brand-bg-page rounded-3xl border border-brand-border/70 p-5 md:p-6 mb-6">
         <h2 className="font-display font-bold text-3xl text-brand-text-primary mb-4">Registration stats</h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="relative overflow-hidden rounded-2xl bg-brand-green p-5 text-white min-h-40">
