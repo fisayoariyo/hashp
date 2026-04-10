@@ -51,6 +51,8 @@ export const agentData = {
   photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop",
   totalFarmersRegistered: 543,
   syncedFarmers: 1100,
+  previousPeriodFarmersRegistered: 485,
+  previousPeriodDigitalIdsIssued: 982,
   pendingSync: 8,
   completedSync: 42,
   syncProgress: 8,

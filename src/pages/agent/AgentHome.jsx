@@ -2,11 +2,18 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Settings, UserPlus, Search, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
-import { agentData } from "../../mockData/agent";
+import { agentData, agentRegisteredFarmers } from "../../mockData/agent";
 import {
   getFarmerSyncCountsFromStorage,
   syncAllPendingFarmersStorage,
 } from "../../hooks/useAgentFarmersSync";
+import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.svg";
+import statFarmersIcon from "../../assets/comps/tractor.svg";
+import statIdIcon from "../../assets/comps/id.svg";
+import statSyncIcon from "../../assets/comps/arrow-reload-vertical.svg";
+import registerActionIcon from "../../assets/comps/user-add-01.svg";
+import lookupActionIcon from "../../assets/comps/user-search-01.svg";
+import wifiOffStatusIcon from "../../assets/comps/wifi-off-02.svg";
 
 // Custom tractor icon
 function TractorIcon({ size = 22, className = "" }) {
@@ -16,6 +23,37 @@ function TractorIcon({ size = 22, className = "" }) {
       <circle cx="7" cy="17" r="2.5" /><circle cx="17" cy="18" r="1.5" />
       <path d="M5 17H3V9l4-4h8l2 4h2v4h-2" /><path d="M9 5v8" /><path d="M3 13h12" />
     </svg>
+  );
+}
+
+function getChangePct(current, previous) {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous <= 0) return 0;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+function formatChangePct(value) {
+  return `${value >= 0 ? "+" : ""}${value}%`;
+}
+
+function DesktopStatCard({ icon, label, value, badge, action }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-brand-green px-4 py-3.5 text-white min-h-[128px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+      <img
+        src={cardPatternDesktop}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-color pointer-events-none"
+      />
+      <div className="relative z-10">
+        <div className="mb-2 flex items-center justify-between">
+          <img src={icon} alt="" aria-hidden="true" className="h-5 w-5 opacity-95" />
+          {badge}
+          {action}
+        </div>
+        <p className="font-sans text-[18px] leading-tight text-white/85">{label}</p>
+        <p className="mt-2 font-display text-[40px] leading-none font-bold tracking-tight">{value}</p>
+      </div>
+    </div>
   );
 }
 
@@ -51,6 +89,7 @@ export default function AgentHome() {
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
   const [syncCounts, setSyncCounts] = useState(getFarmerSyncCountsFromStorage);
+  const [isOnline, setIsOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
 
   useEffect(() => {
     const refresh = () => setSyncCounts(getFarmerSyncCountsFromStorage());
@@ -58,11 +97,31 @@ export default function AgentHome() {
     return () => window.removeEventListener("hcx-farmers-sync", refresh);
   }, []);
 
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   const syncProgressPct = useMemo(() => {
     const t = syncCounts.completed + syncCounts.pending;
     if (t === 0) return 100;
     return Math.round((syncCounts.completed / t) * 100);
   }, [syncCounts]);
+
+  const registeredFarmersChange = useMemo(
+    () => getChangePct(agentData.totalFarmersRegistered, agentData.previousPeriodFarmersRegistered),
+    []
+  );
+  const idsIssuedChange = useMemo(
+    () => getChangePct(agentData.syncedFarmers, agentData.previousPeriodDigitalIdsIssued),
+    []
+  );
 
   const handleSync = async () => {
     if (syncCounts.pending === 0) return;
@@ -207,84 +266,140 @@ export default function AgentHome() {
   );
 
   const desktopContent = (
-    <AgentDesktopShell active="dashboard">
-      <h2 className="font-display font-bold text-3xl text-brand-text-primary mb-4">Registration stats</h2>
-      <div className="grid grid-cols-3 gap-4 mb-7">
-        <div className="bg-brand-green rounded-2xl p-5 text-white">
-          <p className="text-sm opacity-80">Registered Farmers</p>
-          <p className="font-display font-bold text-5xl mt-2">{agentData.totalFarmersRegistered}</p>
-        </div>
-        <div className="bg-brand-green rounded-2xl p-5 text-white">
-          <p className="text-sm opacity-80">Digital IDs Issued</p>
-          <p className="font-display font-bold text-5xl mt-2">{agentData.syncedFarmers}</p>
-        </div>
-        <div className="bg-brand-green rounded-2xl p-5 text-white">
-          <div className="flex items-center justify-between">
-            <p className="text-sm opacity-80">Pending sync</p>
-            <button
-              type="button"
-              onClick={handleSync}
-              disabled={syncing || syncCounts.pending === 0}
-              className="px-3 py-1 rounded-full bg-brand-amber text-brand-text-primary text-xs font-semibold disabled:opacity-40"
-            >
-              Sync now
-            </button>
-          </div>
-          <p className="font-display font-bold text-5xl mt-2">{String(syncCounts.pending).padStart(2, "0")}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-5">
-        <div className="col-span-2 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-2xl border border-brand-border p-6">
-              <p className="font-display font-bold text-2xl mb-1">Register new farmer</p>
-              <p className="text-sm text-brand-text-secondary mb-5">Capture biometric and personal data</p>
-              <button onClick={() => navigate("/agent/register-farmer")} className="btn-amber py-3 text-sm">+ Start Registration</button>
-            </div>
-            <div className="bg-white rounded-2xl border border-brand-border p-6">
-              <p className="font-display font-bold text-2xl mb-1">Farmer lookup</p>
-              <p className="text-sm text-brand-text-secondary mb-5">Search by ID or name</p>
-              <button onClick={() => navigate("/agent/saved-farmers")} className="btn-amber py-3 text-sm">Search</button>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-brand-border p-6">
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-display font-bold text-3xl text-brand-text-primary">Synchronization</p>
+    <AgentDesktopShell active="dashboard" isOnline={isOnline}>
+      <div className="rounded-[22px] border border-[#dadada] bg-[#efefef] shadow-[0_8px_20px_rgba(15,23,42,0.03)] p-5">
+        <h2 className="font-display font-bold text-[34px] leading-none text-brand-text-primary mb-4">Registration stats</h2>
+        <div className="grid grid-cols-3 gap-4 mb-5">
+          <DesktopStatCard
+            icon={statFarmersIcon}
+            label="Registered Farmers"
+            value={agentData.totalFarmersRegistered}
+            badge={<span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/95">{formatChangePct(registeredFarmersChange)}</span>}
+          />
+          <DesktopStatCard
+            icon={statIdIcon}
+            label="Digital IDs Issued"
+            value={agentData.syncedFarmers.toLocaleString()}
+            badge={<span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/95">{formatChangePct(idsIssuedChange)}</span>}
+          />
+          <DesktopStatCard
+            icon={statSyncIcon}
+            label="Pending sync"
+            value={String(syncCounts.pending).padStart(2, "0")}
+            action={
               <button
                 type="button"
                 onClick={handleSync}
                 disabled={syncing || syncCounts.pending === 0}
-                className="px-4 py-2 rounded-xl bg-brand-green text-white text-sm font-semibold disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-full bg-brand-amber px-3 py-1 text-xs font-semibold text-brand-text-primary disabled:opacity-40"
               >
+                <img src={statSyncIcon} alt="" aria-hidden="true" className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
                 Sync now
               </button>
-            </div>
-            <p className="text-sm text-brand-text-secondary mb-2">Synchronization Progress</p>
-            <div className="w-full h-2 bg-gray-100 rounded-full mb-3">
-              <div className="h-2 bg-brand-green rounded-full transition-all" style={{ width: `${syncProgressPct}%` }} />
-            </div>
-            <div className="flex gap-6 text-sm">
-              <span>{syncCounts.completed} Completed</span>
-              <span>{syncCounts.pending} Pending</span>
-            </div>
-          </div>
+            }
+          />
         </div>
 
-        <div className="bg-white rounded-2xl border border-brand-border p-4">
-          <p className="font-display font-bold text-3xl text-brand-text-primary mb-3">Recently Registered</p>
-          <div className="space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-brand-border">
-                <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=120&q=80&fit=crop" alt="Farmer" className="w-14 h-14 rounded-xl object-cover" />
-                <div className="text-xs">
-                  <p className="text-brand-text-muted">ID : HSH-IB-2026-000123</p>
-                  <p className="font-semibold text-brand-text-primary">Name : Adebayo Oluwaseun</p>
-                  <button onClick={() => navigate("/agent/saved-farmers")} className="text-brand-green font-semibold mt-1">View Details</button>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2 space-y-5">
+            <section>
+              <h3 className="font-display font-bold text-[38px] leading-none text-brand-text-primary mb-3">Register new farmer</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-3xl border border-[#e4e4e4] bg-white p-6 text-center">
+                  <img src={registerActionIcon} alt="" aria-hidden="true" className="mx-auto mb-3 h-7 w-7" />
+                  <p className="font-display font-bold text-[30px] leading-none text-brand-text-primary">Register new farmer</p>
+                  <p className="mt-2 text-sm text-brand-text-secondary">Capture biometric and personal data</p>
+                  <button onClick={() => navigate("/agent/register-farmer")} className="btn-amber mt-4 py-3 text-sm">
+                    + Start Registration
+                  </button>
+                </div>
+                <div className="rounded-3xl border border-[#e4e4e4] bg-white p-6 text-center">
+                  <img src={lookupActionIcon} alt="" aria-hidden="true" className="mx-auto mb-3 h-7 w-7" />
+                  <p className="font-display font-bold text-[30px] leading-none text-brand-text-primary">Farmer lookup</p>
+                  <p className="mt-2 text-sm text-brand-text-secondary">Search by ID or name</p>
+                  <button onClick={() => navigate("/agent/saved-farmers")} className="btn-amber mt-4 py-3 text-sm">
+                    <span className="inline-flex items-center gap-1">⌕ Search</span>
+                  </button>
                 </div>
               </div>
-            ))}
+            </section>
+
+            <section className="rounded-3xl border border-[#e4e4e4] bg-white p-5">
+              <h3 className="font-display font-bold text-[38px] leading-none text-brand-text-primary mb-4">Synchronization</h3>
+              {syncDone && (
+                <div className="mb-3 rounded-xl border border-brand-green/25 bg-brand-green/10 px-3 py-2 text-xs font-semibold text-brand-green">
+                  Sync complete — all records uploaded
+                </div>
+              )}
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <img src={wifiOffStatusIcon} alt="" aria-hidden="true" className="h-4 w-4" />
+                  <p className="font-sans text-[30px] leading-none font-semibold text-brand-text-primary">Offline Status</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  disabled={syncing || syncCounts.pending === 0}
+                  className="inline-flex items-center gap-1 rounded-full bg-brand-green px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                >
+                  <img src={statSyncIcon} alt="" aria-hidden="true" className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+                  Sync now
+                </button>
+              </div>
+
+              <div className="mb-2 flex items-center justify-between">
+                <p className="font-sans text-[30px] leading-none text-brand-text-primary">Synchronization Progress</p>
+                <p className="font-sans text-[30px] leading-none font-semibold text-brand-text-primary">{syncProgressPct}%</p>
+              </div>
+              <div className="h-4 w-full rounded-full bg-[#dfe8e3] p-0.5 mb-4">
+                <div className="relative h-full overflow-hidden rounded-full bg-brand-green transition-all" style={{ width: `${syncProgressPct}%` }}>
+                  <img
+                    src={cardPatternDesktop}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-color pointer-events-none"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-8">
+                <div className="flex items-center gap-2 text-base text-brand-text-primary">
+                  <span className="text-brand-green">✅</span>
+                  <span>{syncCounts.completed} Completed</span>
+                </div>
+                <div className="flex items-center gap-2 text-base text-brand-text-primary">
+                  <span className="text-brand-amber">🟡</span>
+                  <span>{syncCounts.pending} Pending</span>
+                </div>
+              </div>
+            </section>
           </div>
+
+          <aside className="rounded-3xl border border-[#e4e4e4] bg-white p-4 flex flex-col">
+            <h3 className="font-display font-bold text-[40px] leading-none text-brand-text-primary mb-4">Recently Registered</h3>
+            <div className="space-y-3 flex-1">
+              {agentRegisteredFarmers.slice(0, 4).map((farmer) => (
+                <div key={farmer.id} className="rounded-2xl border border-[#ececec] bg-[#f8f8f8] p-3">
+                  <div className="flex items-center gap-2">
+                    <img src={farmer.photo} alt={farmer.name} className="h-14 w-14 rounded-xl object-cover" />
+                    <div className="text-[11px] leading-4">
+                      <p className="text-brand-text-secondary">ID : {farmer.id}</p>
+                      <p className="font-semibold text-brand-text-primary">Name : {farmer.name}</p>
+                      <button onClick={() => navigate("/agent/saved-farmers")} className="mt-1 text-brand-green font-semibold">
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/agent/saved-farmers")}
+              className="btn-amber mt-4 py-3 text-sm"
+            >
+              See Registered Farmers
+            </button>
+          </aside>
         </div>
       </div>
     </AgentDesktopShell>
