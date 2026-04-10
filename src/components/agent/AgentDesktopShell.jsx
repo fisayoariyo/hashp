@@ -37,7 +37,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
       </aside>
 
       <main className="flex-1 p-6 flex flex-col min-h-0 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 w-full max-w-[1180px] mx-auto">
           <div>
             <div className="flex items-center gap-3">
               <h1 className="font-display font-bold text-2xl text-brand-text-primary">Welcome, Agent {agentData.name}</h1>
@@ -58,7 +58,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
             <Plus size={16} strokeWidth={2.5} /> Register New Farmer
           </button>
         </div>
-        <div className="w-full flex flex-col flex-1 min-h-0 min-h-[320px]">
+        <div className="w-full max-w-[1180px] mx-auto flex flex-col flex-1 min-h-0 min-h-[320px]">
           {children}
         </div>
       </main>

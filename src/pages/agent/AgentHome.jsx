@@ -37,7 +37,7 @@ function formatChangePct(value) {
 
 function DesktopStatCard({ icon, label, value, badge, action }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-brand-green px-4 py-3.5 text-white min-h-[128px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+    <div className="relative overflow-hidden rounded-2xl bg-brand-green px-4 py-3 text-white min-h-[118px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
       <img
         src={cardPatternDesktop}
         alt=""
@@ -50,7 +50,7 @@ function DesktopStatCard({ icon, label, value, badge, action }) {
           {badge}
           {action}
         </div>
-        <p className="font-sans text-[18px] leading-tight text-white/85">{label}</p>
+        <p className="font-sans text-base leading-tight text-white/85">{label}</p>
         <p className="mt-2 font-display text-[40px] leading-none font-bold tracking-tight">{value}</p>
       </div>
     </div>
@@ -268,7 +268,7 @@ export default function AgentHome() {
   const desktopContent = (
     <AgentDesktopShell active="dashboard" isOnline={isOnline}>
       <div className="rounded-[22px] border border-[#dadada] bg-[#efefef] shadow-[0_8px_20px_rgba(15,23,42,0.03)] p-5">
-        <h2 className="font-display font-bold text-[34px] leading-none text-brand-text-primary mb-4">Registration stats</h2>
+        <h2 className="font-display font-bold text-[20px] leading-none text-brand-text-primary mb-4">Registration stats</h2>
         <div className="grid grid-cols-3 gap-4 mb-5">
           <DesktopStatCard
             icon={statFarmersIcon}
@@ -303,19 +303,19 @@ export default function AgentHome() {
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2 space-y-5">
             <section>
-              <h3 className="font-display font-bold text-[38px] leading-none text-brand-text-primary mb-3">Register new farmer</h3>
+              <h3 className="font-display font-bold text-[20px] leading-none text-brand-text-primary mb-3">Register new farmer</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-3xl border border-[#e4e4e4] bg-white p-6 text-center">
+                <div className="rounded-3xl border border-[#e4e4e4] bg-white p-5 text-center">
                   <img src={registerActionIcon} alt="" aria-hidden="true" className="mx-auto mb-3 h-7 w-7" />
-                  <p className="font-display font-bold text-[30px] leading-none text-brand-text-primary">Register new farmer</p>
+                  <p className="font-display font-bold text-[18px] leading-tight text-brand-text-primary">Register new farmer</p>
                   <p className="mt-2 text-sm text-brand-text-secondary">Capture biometric and personal data</p>
                   <button onClick={() => navigate("/agent/register-farmer")} className="btn-amber mt-4 py-3 text-sm">
                     + Start Registration
                   </button>
                 </div>
-                <div className="rounded-3xl border border-[#e4e4e4] bg-white p-6 text-center">
+                <div className="rounded-3xl border border-[#e4e4e4] bg-white p-5 text-center">
                   <img src={lookupActionIcon} alt="" aria-hidden="true" className="mx-auto mb-3 h-7 w-7" />
-                  <p className="font-display font-bold text-[30px] leading-none text-brand-text-primary">Farmer lookup</p>
+                  <p className="font-display font-bold text-[18px] leading-tight text-brand-text-primary">Farmer lookup</p>
                   <p className="mt-2 text-sm text-brand-text-secondary">Search by ID or name</p>
                   <button onClick={() => navigate("/agent/saved-farmers")} className="btn-amber mt-4 py-3 text-sm">
                     <span className="inline-flex items-center gap-1">⌕ Search</span>
@@ -325,7 +325,7 @@ export default function AgentHome() {
             </section>
 
             <section className="rounded-3xl border border-[#e4e4e4] bg-white p-5">
-              <h3 className="font-display font-bold text-[38px] leading-none text-brand-text-primary mb-4">Synchronization</h3>
+              <h3 className="font-display font-bold text-[20px] leading-none text-brand-text-primary mb-4">Synchronization</h3>
               {syncDone && (
                 <div className="mb-3 rounded-xl border border-brand-green/25 bg-brand-green/10 px-3 py-2 text-xs font-semibold text-brand-green">
                   Sync complete — all records uploaded
@@ -334,7 +334,7 @@ export default function AgentHome() {
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <img src={wifiOffStatusIcon} alt="" aria-hidden="true" className="h-4 w-4" />
-                  <p className="font-sans text-[30px] leading-none font-semibold text-brand-text-primary">Offline Status</p>
+                  <p className="font-sans text-[16px] leading-none font-semibold text-brand-text-primary">Offline Status</p>
                 </div>
                 <button
                   type="button"
@@ -348,8 +348,8 @@ export default function AgentHome() {
               </div>
 
               <div className="mb-2 flex items-center justify-between">
-                <p className="font-sans text-[30px] leading-none text-brand-text-primary">Synchronization Progress</p>
-                <p className="font-sans text-[30px] leading-none font-semibold text-brand-text-primary">{syncProgressPct}%</p>
+                <p className="font-sans text-[16px] leading-none text-brand-text-primary">Synchronization Progress</p>
+                <p className="font-sans text-[16px] leading-none font-semibold text-brand-text-primary">{syncProgressPct}%</p>
               </div>
               <div className="h-4 w-full rounded-full bg-[#dfe8e3] p-0.5 mb-4">
                 <div className="relative h-full overflow-hidden rounded-full bg-brand-green transition-all" style={{ width: `${syncProgressPct}%` }}>
@@ -375,7 +375,7 @@ export default function AgentHome() {
           </div>
 
           <aside className="rounded-3xl border border-[#e4e4e4] bg-white p-4 flex flex-col">
-            <h3 className="font-display font-bold text-[40px] leading-none text-brand-text-primary mb-4">Recently Registered</h3>
+            <h3 className="font-display font-bold text-[20px] leading-none text-brand-text-primary mb-4 whitespace-nowrap">Recently Registered</h3>
             <div className="space-y-3 flex-1">
               {agentRegisteredFarmers.slice(0, 4).map((farmer) => (
                 <div key={farmer.id} className="rounded-2xl border border-[#ececec] bg-[#f8f8f8] p-3">
