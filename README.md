@@ -85,9 +85,10 @@ Hi — the frontend is wired to the **Swagger** base paths: `/otp/send`, `/otp/v
 - `POST /farmers` — 201 response body (e.g. farmer `id` / UUID).
 - After `POST /otp/verify` for a **farmer** — is there a farmer session token or only agent-facing farmer APIs?
 
-**CORS:** Allow our web origins for local dev and production.
+**CORS:** Allow our web origins for local dev and production....
 
-Thanks.
+
+Thanks boss.
 
 ---
 

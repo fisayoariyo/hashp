@@ -1,47 +1,31 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Headset, RefreshCw } from "lucide-react";
+import { Home, Settings, UserPlus, Search, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
-import { agentData, agentRegisteredFarmers } from "../../mockData/agent";
+import { agentData } from "../../mockData/agent";
 import {
   getFarmerSyncCountsFromStorage,
   syncAllPendingFarmersStorage,
 } from "../../hooks/useAgentFarmersSync";
-import homeIcon from "../../assets/comps/home-11.svg";
-import tractorIcon from "../../assets/comps/tractor.svg";
-import settingsIcon from "../../assets/comps/settings-03.svg";
-import idIcon from "../../assets/comps/id.svg";
-import syncIcon from "../../assets/comps/arrow-reload-vertical.svg";
-import userAddIcon from "../../assets/comps/user-add-01.svg";
-import userSearchIcon from "../../assets/comps/user-search-01.svg";
-import wifiOffIcon from "../../assets/comps/wifi-off-02.svg";
-import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.svg";
-import cardPatternMobile from "../../assets/comps/card-pattern-mobile.svg";
-import loadingIdle from "../../assets/comps/Loading.png";
-import loadingProgress from "../../assets/comps/Loading-progress.png";
-import loadingSuccess from "../../assets/comps/Loading-successful.png";
-import loadingFailed from "../../assets/comps/Loading-failed.png";
 
-const DASHBOARD_PREV_PERIOD_KEY = "hcx-agent-dashboard-prev-period";
-
-function calcGrowthPct(current, previous) {
-  if (!previous || previous <= 0) return 0;
-  return ((current - previous) / previous) * 100;
-}
-
-function formatGrowthBadge(value) {
-  const rounded = Math.round(value);
-  return `${rounded >= 0 ? "+" : ""}${rounded}%`;
+// Custom tractor icon
+function TractorIcon({ size = 22, className = "" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="7" cy="17" r="2.5" /><circle cx="17" cy="18" r="1.5" />
+      <path d="M5 17H3V9l4-4h8l2 4h2v4h-2" /><path d="M9 5v8" /><path d="M3 13h12" />
+    </svg>
+  );
 }
 
 export function AgentBottomNav() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const tabs = [
-    { label: "Dashboard", icon: homeIcon, path: "/agent/home" },
-    { label: "Farmers", icon: tractorIcon, path: "/agent/saved-farmers" },
-    { label: "Settings", icon: settingsIcon, path: "/agent/settings" },
-    { label: "Help", icon: null, path: "/agent/contact-support" },
+    { label: "Dashboard", icon: <Home size={22} strokeWidth={1.8} />, path: "/agent/home" },
+    { label: "Farmers", icon: <TractorIcon />, path: "/agent/saved-farmers" },
+    { label: "Settings", icon: <Settings size={22} strokeWidth={1.8} />, path: "/agent/settings" },
   ];
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile z-50">
@@ -51,11 +35,7 @@ export function AgentBottomNav() {
           return (
             <button key={path} onClick={() => navigate(path)} className="flex-1 flex flex-col items-center">
               <div className={`flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all ${active ? "bg-brand-green" : ""}`}>
-                {icon ? (
-                  <img src={icon} alt="" className={`w-[18px] h-[18px] ${active ? "brightness-0 invert" : ""}`} />
-                ) : (
-                  <Headset size={18} className={active ? "text-white" : "text-brand-green"} />
-                )}
+                <span className={active ? "text-white" : "text-brand-green"}>{icon}</span>
                 <span className={`text-xs font-sans font-medium ${active ? "text-white" : "text-brand-text-secondary"}`}>{label}</span>
               </div>
             </button>
@@ -69,24 +49,8 @@ export function AgentBottomNav() {
 export default function AgentHome() {
   const navigate = useNavigate();
   const [syncing, setSyncing] = useState(false);
-  const [syncState, setSyncState] = useState("idle");
+  const [syncDone, setSyncDone] = useState(false);
   const [syncCounts, setSyncCounts] = useState(getFarmerSyncCountsFromStorage);
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
-  const [prevPeriodCounts] = useState(() => {
-    try {
-      const raw = localStorage.getItem(DASHBOARD_PREV_PERIOD_KEY);
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (parsed && typeof parsed.registered === "number" && typeof parsed.digitalIds === "number") {
-        return parsed;
-      }
-    } catch {
-      /* ignore storage parse errors */
-    }
-    return {
-      registered: agentData.totalFarmersRegistered,
-      digitalIds: agentData.syncedFarmers,
-    };
-  });
 
   useEffect(() => {
     const refresh = () => setSyncCounts(getFarmerSyncCountsFromStorage());
@@ -94,204 +58,86 @@ export default function AgentHome() {
     return () => window.removeEventListener("hcx-farmers-sync", refresh);
   }, []);
 
-  useEffect(() => {
-    const onOnline = () => setIsOnline(true);
-    const onOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        DASHBOARD_PREV_PERIOD_KEY,
-        JSON.stringify({
-          registered: agentData.totalFarmersRegistered,
-          digitalIds: agentData.syncedFarmers,
-        })
-      );
-    } catch {
-      /* ignore storage write errors */
-    }
-  }, [syncCounts.completed, syncCounts.pending]);
-
   const syncProgressPct = useMemo(() => {
     const t = syncCounts.completed + syncCounts.pending;
     if (t === 0) return 100;
     return Math.round((syncCounts.completed / t) * 100);
   }, [syncCounts]);
 
-  const registeredGrowth = useMemo(
-    () => calcGrowthPct(agentData.totalFarmersRegistered, prevPeriodCounts.registered),
-    [prevPeriodCounts.registered]
-  );
-
-  const digitalIdsGrowth = useMemo(
-    () => calcGrowthPct(agentData.syncedFarmers, prevPeriodCounts.digitalIds),
-    [prevPeriodCounts.digitalIds]
-  );
-
   const handleSync = async () => {
     if (syncCounts.pending === 0) return;
-    const currentSyncState = isOnline ? "loading" : "failed";
-    setSyncState(currentSyncState);
-    if (!isOnline) {
-      setTimeout(() => setSyncState("idle"), 2600);
-      return;
-    }
     setSyncing(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      setSyncState("loading-progress");
-      await new Promise((resolve) => setTimeout(resolve, 900));
-      syncAllPendingFarmersStorage();
-      setSyncCounts(getFarmerSyncCountsFromStorage());
-      setSyncState("successful");
-      setTimeout(() => setSyncState("idle"), 2600);
-    } catch {
-      setSyncState("failed");
-      setTimeout(() => setSyncState("idle"), 2600);
-    } finally {
-      setSyncing(false);
-    }
+    await new Promise((r) => setTimeout(r, 1200));
+    syncAllPendingFarmersStorage();
+    setSyncCounts(getFarmerSyncCountsFromStorage());
+    setSyncing(false);
+    setSyncDone(true);
+    setTimeout(() => setSyncDone(false), 3000);
   };
-
-  const syncStatusPanel = useMemo(() => {
-    if (syncState === "idle") return null;
-
-    const contentMap = {
-      loading: {
-        image: loadingIdle,
-        title: "Loading.....",
-        subtitle: "Please wait",
-      },
-      "loading-progress": {
-        image: loadingProgress,
-        title: "Synchronization in progress",
-        subtitle: "Please wait",
-      },
-      successful: {
-        image: loadingSuccess,
-        title: "Synchronization successful",
-        subtitle: "",
-      },
-      failed: {
-        image: loadingFailed,
-        title: "Synchronization failed",
-        subtitle: "Try again",
-      },
-    };
-
-    const config = contentMap[syncState];
-    return (
-      <div className="bg-white border border-brand-border rounded-2xl px-4 py-3 flex items-center gap-3">
-        <img src={config.image} alt="" className="w-9 h-9 object-contain" />
-        <div>
-          <p className="font-sans text-sm font-semibold text-brand-text-primary">{config.title}</p>
-          {config.subtitle ? (
-            <p className="font-sans text-xs text-brand-text-secondary">{config.subtitle}</p>
-          ) : null}
-        </div>
-      </div>
-    );
-  }, [syncState]);
 
   const mobileContent = (
     <div className="page-container md:hidden">
-      <div className="bg-brand-green px-4 pt-6 pb-5">
-        <div className="flex items-start justify-between mb-2">
+      {/* Dark green header */}
+      <div className="bg-brand-green px-4 pt-6 pb-6">
+        <div className="flex items-center justify-between mb-1">
           <h1 className="font-display font-bold text-xl text-white">Welcome, Agent {agentData.name}</h1>
-          {isOnline ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">
-              Online <span aria-hidden="true">✓</span>
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-brand-text-secondary">
-              <img src={wifiOffIcon} alt="" className="w-3.5 h-3.5" />
-              Offline
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20">
+            <Wifi size={12} className="text-white" />
+            <span className="text-xs font-sans font-semibold text-white">{agentData.status}</span>
+          </div>
         </div>
         <p className="font-sans text-white/70 text-sm mb-5">
           Ready to manage farmer registration and track activities
         </p>
-      </div>
-
-      <div className="flex-1 px-4 -mt-3 pb-28 overflow-y-auto scrollbar-hide space-y-4">
-        <section className="bg-white rounded-2xl border border-brand-border shadow-sm p-3.5">
-          <h2 className="font-display font-bold text-xl text-brand-text-primary mb-3">Registration stats</h2>
+        <div className="space-y-3">
+          {/* Registered Farmers — wide card */}
+          <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-2xl">🚜</span>
+              <span className="text-xs font-sans font-semibold text-brand-amber bg-brand-amber/20 px-2 py-0.5 rounded-full">+12%</span>
+            </div>
+            <p className="font-sans text-white/70 text-sm">Registered Farmers</p>
+            <p className="font-display font-bold text-4xl text-white mt-1">{agentData.totalFarmersRegistered}</p>
+          </div>
+          {/* Two half-width cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="relative col-span-2 overflow-hidden rounded-2xl bg-brand-green p-4 text-white">
-              <div className="absolute inset-0 pointer-events-none">
-                <img src={cardPatternMobile} alt="" className="absolute right-0 top-0 h-32 w-[273.94px] object-cover opacity-20 mix-blend-color" />
+            <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xl">🪪</span>
+                <span className="text-xs font-sans font-semibold text-brand-amber bg-brand-amber/20 px-2 py-0.5 rounded-full">+12%</span>
               </div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between">
-                  <img src={tractorIcon} alt="" className="w-5 h-5 brightness-0 invert" />
-                  <span className="text-[11px] font-semibold rounded-full bg-white/10 px-2 py-0.5">
-                    {formatGrowthBadge(registeredGrowth)}
-                  </span>
-                </div>
-                <p className="text-white/80 text-sm mt-3">Registered Farmers</p>
-                <p className="font-display font-bold text-4xl mt-1">
-                  {agentData.totalFarmersRegistered.toLocaleString()}
-                </p>
-              </div>
+              <p className="font-sans text-white/70 text-xs">Digital IDs Issued</p>
+              <p className="font-display font-bold text-2xl text-white mt-1">{agentData.syncedFarmers}</p>
             </div>
-
-            <div className="relative overflow-hidden rounded-2xl bg-brand-green p-4 text-white">
-              <div className="absolute inset-0 pointer-events-none">
-                <img src={cardPatternMobile} alt="" className="absolute right-0 top-0 h-32 w-[273.94px] object-cover opacity-20 mix-blend-color" />
+            <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-1">
+                <RefreshCw size={18} className="text-white/70" />
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  disabled={syncing || syncCounts.pending === 0}
+                  className="flex items-center gap-1 text-brand-amber text-xs font-semibold disabled:opacity-40"
+                >
+                  <RefreshCw size={11} className={syncing ? "animate-spin" : ""} /> Sync now
+                </button>
               </div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between">
-                  <img src={idIcon} alt="" className="w-5 h-5 brightness-0 invert" />
-                  <span className="text-[11px] font-semibold rounded-full bg-white/10 px-2 py-0.5">
-                    {formatGrowthBadge(digitalIdsGrowth)}
-                  </span>
-                </div>
-                <p className="text-white/80 text-xs mt-3">Digital IDs Issued</p>
-                <p className="font-display font-bold text-2xl mt-1">
-                  {agentData.syncedFarmers.toLocaleString()}
-                </p>
-              </div>
-            </div>
-
-            <div className="relative overflow-hidden rounded-2xl bg-brand-green p-4 text-white">
-              <div className="absolute inset-0 pointer-events-none">
-                <img src={cardPatternMobile} alt="" className="absolute right-0 top-0 h-32 w-[273.94px] object-cover opacity-20 mix-blend-color" />
-              </div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between">
-                  <img src={syncIcon} alt="" className="w-5 h-5 brightness-0 invert" />
-                  <button
-                    type="button"
-                    onClick={handleSync}
-                    disabled={syncing || syncCounts.pending === 0}
-                    className="rounded-full bg-brand-amber px-2.5 py-1 text-[11px] font-semibold text-brand-text-primary disabled:opacity-40"
-                  >
-                    Sync now
-                  </button>
-                </div>
-                <p className="text-white/80 text-xs mt-3">Pending sync</p>
-                <p className="font-display font-bold text-2xl mt-1">
-                  {String(syncCounts.pending).padStart(2, "0")}
-                </p>
-              </div>
+              <p className="font-sans text-white/70 text-xs">Pending sync</p>
+              <p className="font-display font-bold text-2xl text-white mt-1">
+                {String(syncCounts.pending).padStart(2, "0")}
+              </p>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <section className="space-y-2">
-          <h3 className="font-display font-bold text-xl text-brand-text-primary">Register new farmer</h3>
+      {/* White body */}
+      <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide space-y-4">
+        {/* Action cards */}
         <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-2xl border border-brand-border p-4 flex flex-col gap-3">
-              <img src={userAddIcon} alt="" className="w-8 h-8" />
+          <div className="bg-white rounded-2xl p-4 flex flex-col gap-3">
+            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center">
+              <UserPlus size={22} className="text-brand-green" strokeWidth={1.8} />
+            </div>
             <div>
               <p className="font-display font-bold text-sm text-brand-text-primary">Register new farmer</p>
               <p className="font-sans text-xs text-brand-text-muted mt-0.5">Capture biometric and personal data</p>
@@ -300,24 +146,30 @@ export default function AgentHome() {
               + Start Registration
             </button>
           </div>
-            <div className="bg-white rounded-2xl border border-brand-border p-4 flex flex-col gap-3">
-              <img src={userSearchIcon} alt="" className="w-8 h-8" />
+          <div className="bg-white rounded-2xl p-4 flex flex-col gap-3">
+            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center">
+              <Search size={22} className="text-brand-green" strokeWidth={1.8} />
+            </div>
             <div>
               <p className="font-display font-bold text-sm text-brand-text-primary">Farmer lookup</p>
               <p className="font-sans text-xs text-brand-text-muted mt-0.5">Search by ID or name</p>
             </div>
             <button onClick={() => navigate("/agent/saved-farmers")} className="btn-amber py-2.5 text-xs">
-              Search
+              🔍 Search
             </button>
           </div>
         </div>
-        </section>
 
-        <section className="bg-white rounded-2xl border border-brand-border p-4 space-y-3">
-          <h3 className="font-display font-bold text-xl text-brand-text-primary">Synchronization</h3>
+        {/* Sync status */}
+        {syncDone && (
+          <div className="bg-brand-green/10 border border-brand-green/20 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <span className="text-brand-green text-xs font-semibold">✓ Sync complete — all records uploaded</span>
+          </div>
+        )}
+        <div className="bg-white rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <img src={wifiOffIcon} alt="" className="w-4 h-4" />
+              <WifiOff size={16} className="text-brand-text-secondary" />
               <p className="font-sans font-semibold text-sm text-brand-text-primary">Offline Status</p>
             </div>
             <button
@@ -333,15 +185,13 @@ export default function AgentHome() {
             <p className="font-sans text-sm text-brand-text-secondary">Synchronization Progress</p>
             <p className="font-sans text-sm font-semibold">{syncProgressPct}%</p>
           </div>
-          <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden mb-3">
-            <div className="relative h-full bg-brand-green rounded-full transition-all overflow-hidden" style={{ width: `${syncProgressPct}%` }}>
-              <img src={cardPatternMobile} alt="" className="absolute right-0 top-0 h-full w-full opacity-20 mix-blend-color object-cover" />
-            </div>
+          <div className="w-full h-2 bg-gray-100 rounded-full mb-3">
+            <div className="h-2 bg-brand-green rounded-full transition-all" style={{ width: `${syncProgressPct}%` }} />
           </div>
           <div className="flex gap-4">
             <div className="flex items-center gap-1.5">
-              <div className="w-4 h-4 rounded-full bg-brand-green flex items-center justify-center text-white text-[8px]">
-                ✓
+              <div className="w-4 h-4 rounded-full bg-brand-green flex items-center justify-center">
+                <span className="text-white text-[8px]">✓</span>
               </div>
               <span className="font-sans text-xs text-brand-text-secondary">{syncCounts.completed} Completed</span>
             </div>
@@ -350,8 +200,7 @@ export default function AgentHome() {
               <span className="font-sans text-xs text-brand-text-secondary">{syncCounts.pending} Pending</span>
             </div>
           </div>
-          {syncStatusPanel}
-        </section>
+        </div>
       </div>
       <AgentBottomNav />
     </div>
@@ -359,87 +208,46 @@ export default function AgentHome() {
 
   const desktopContent = (
     <AgentDesktopShell active="dashboard">
-      <section className="bg-brand-bg-page rounded-3xl border border-brand-border/70 p-5 md:p-6 mb-6">
-        <h2 className="font-display font-bold text-3xl text-brand-text-primary mb-4">Registration stats</h2>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="relative overflow-hidden rounded-2xl bg-brand-green p-5 text-white min-h-40">
-            <div className="absolute inset-0 pointer-events-none">
-              <img src={cardPatternMobile} alt="" className="absolute right-0 top-0 h-32 w-[273.94px] object-cover opacity-20 mix-blend-color md:hidden" />
-              <img src={cardPatternDesktop} alt="" className="absolute right-0 top-0 h-32 w-[353px] object-cover opacity-20 mix-blend-color hidden md:block" />
-            </div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <img src={tractorIcon} alt="" className="w-6 h-6 brightness-0 invert" />
-                <span className="text-xs font-semibold rounded-full bg-white/10 px-2.5 py-1">
-                  {formatGrowthBadge(registeredGrowth)}
-                </span>
-              </div>
-              <p className="text-base opacity-80">Registered Farmers</p>
-              <p className="font-display font-bold text-5xl mt-2">{agentData.totalFarmersRegistered.toLocaleString()}</p>
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-2xl bg-brand-green p-5 text-white min-h-40">
-            <div className="absolute inset-0 pointer-events-none">
-              <img src={cardPatternMobile} alt="" className="absolute right-0 top-0 h-32 w-[273.94px] object-cover opacity-20 mix-blend-color md:hidden" />
-              <img src={cardPatternDesktop} alt="" className="absolute right-0 top-0 h-32 w-[353px] object-cover opacity-20 mix-blend-color hidden md:block" />
-            </div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <img src={idIcon} alt="" className="w-6 h-6 brightness-0 invert" />
-                <span className="text-xs font-semibold rounded-full bg-white/10 px-2.5 py-1">
-                  {formatGrowthBadge(digitalIdsGrowth)}
-                </span>
-              </div>
-              <p className="text-base opacity-80">Digital IDs Issued</p>
-              <p className="font-display font-bold text-5xl mt-2">{agentData.syncedFarmers.toLocaleString()}</p>
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-2xl bg-brand-green p-5 text-white min-h-40">
-            <div className="absolute inset-0 pointer-events-none">
-              <img src={cardPatternMobile} alt="" className="absolute right-0 top-0 h-32 w-[273.94px] object-cover opacity-20 mix-blend-color md:hidden" />
-              <img src={cardPatternDesktop} alt="" className="absolute right-0 top-0 h-32 w-[353px] object-cover opacity-20 mix-blend-color hidden md:block" />
-            </div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <img src={syncIcon} alt="" className="w-6 h-6 brightness-0 invert" />
-                <button
-                  type="button"
-                  onClick={handleSync}
-                  disabled={syncing || syncCounts.pending === 0}
-                  className="px-3 py-1 rounded-full bg-brand-amber text-brand-text-primary text-xs font-semibold disabled:opacity-40"
-                >
-                  Sync now
-                </button>
-              </div>
-              <p className="text-base opacity-80">Pending sync</p>
-              <p className="font-display font-bold text-5xl mt-2">{String(syncCounts.pending).padStart(2, "0")}</p>
-            </div>
-          </div>
+      <h2 className="font-display font-bold text-3xl text-brand-text-primary mb-4">Registration stats</h2>
+      <div className="grid grid-cols-3 gap-4 mb-7">
+        <div className="bg-brand-green rounded-2xl p-5 text-white">
+          <p className="text-sm opacity-80">Registered Farmers</p>
+          <p className="font-display font-bold text-5xl mt-2">{agentData.totalFarmersRegistered}</p>
         </div>
-      </section>
+        <div className="bg-brand-green rounded-2xl p-5 text-white">
+          <p className="text-sm opacity-80">Digital IDs Issued</p>
+          <p className="font-display font-bold text-5xl mt-2">{agentData.syncedFarmers}</p>
+        </div>
+        <div className="bg-brand-green rounded-2xl p-5 text-white">
+          <div className="flex items-center justify-between">
+            <p className="text-sm opacity-80">Pending sync</p>
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={syncing || syncCounts.pending === 0}
+              className="px-3 py-1 rounded-full bg-brand-amber text-brand-text-primary text-xs font-semibold disabled:opacity-40"
+            >
+              Sync now
+            </button>
+          </div>
+          <p className="font-display font-bold text-5xl mt-2">{String(syncCounts.pending).padStart(2, "0")}</p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-3 gap-5">
         <div className="col-span-2 space-y-5">
-          <div>
-            <h3 className="font-display font-bold text-4xl text-brand-text-primary mb-3">Register new farmer</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-2xl border border-brand-border p-6">
-                <img src={userAddIcon} alt="" className="w-8 h-8 mb-3" />
-                <p className="font-display font-bold text-2xl mb-1">Register new farmer</p>
-                <p className="text-sm text-brand-text-secondary mb-5">Capture biometric and personal data</p>
-                <button onClick={() => navigate("/agent/register-farmer")} className="btn-amber py-3 text-sm">+ Start Registration</button>
-              </div>
-              <div className="bg-white rounded-2xl border border-brand-border p-6">
-                <img src={userSearchIcon} alt="" className="w-8 h-8 mb-3" />
-                <p className="font-display font-bold text-2xl mb-1">Farmer lookup</p>
-                <p className="text-sm text-brand-text-secondary mb-5">Search by ID or name</p>
-                <button onClick={() => navigate("/agent/saved-farmers")} className="btn-amber py-3 text-sm">Search</button>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl border border-brand-border p-6">
+              <p className="font-display font-bold text-2xl mb-1">Register new farmer</p>
+              <p className="text-sm text-brand-text-secondary mb-5">Capture biometric and personal data</p>
+              <button onClick={() => navigate("/agent/register-farmer")} className="btn-amber py-3 text-sm">+ Start Registration</button>
+            </div>
+            <div className="bg-white rounded-2xl border border-brand-border p-6">
+              <p className="font-display font-bold text-2xl mb-1">Farmer lookup</p>
+              <p className="text-sm text-brand-text-secondary mb-5">Search by ID or name</p>
+              <button onClick={() => navigate("/agent/saved-farmers")} className="btn-amber py-3 text-sm">Search</button>
             </div>
           </div>
-
           <div className="bg-white rounded-2xl border border-brand-border p-6">
             <div className="flex items-center justify-between mb-3">
               <p className="font-display font-bold text-3xl text-brand-text-primary">Synchronization</p>
@@ -452,44 +260,31 @@ export default function AgentHome() {
                 Sync now
               </button>
             </div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-brand-text-secondary">Synchronization Progress</p>
-              <p className="text-sm font-semibold text-brand-text-primary">{syncProgressPct}%</p>
-            </div>
-            <div className="w-full h-3 bg-gray-100 rounded-full mb-3 overflow-hidden">
-              <div className="relative h-full bg-brand-green rounded-full transition-all overflow-hidden" style={{ width: `${syncProgressPct}%` }}>
-                <img src={cardPatternDesktop} alt="" className="absolute right-0 top-0 h-full w-full opacity-20 mix-blend-color object-cover" />
-              </div>
+            <p className="text-sm text-brand-text-secondary mb-2">Synchronization Progress</p>
+            <div className="w-full h-2 bg-gray-100 rounded-full mb-3">
+              <div className="h-2 bg-brand-green rounded-full transition-all" style={{ width: `${syncProgressPct}%` }} />
             </div>
             <div className="flex gap-6 text-sm">
-              <span className="inline-flex items-center gap-2"><span aria-hidden="true">✅</span> {syncCounts.completed} Completed</span>
-              <span className="inline-flex items-center gap-2"><span aria-hidden="true">🟡</span> {syncCounts.pending} Pending</span>
+              <span>{syncCounts.completed} Completed</span>
+              <span>{syncCounts.pending} Pending</span>
             </div>
-            <div className="mt-4">{syncStatusPanel}</div>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-brand-border p-4">
           <p className="font-display font-bold text-3xl text-brand-text-primary mb-3">Recently Registered</p>
           <div className="space-y-3">
-            {agentRegisteredFarmers.slice(0, 4).map((farmer) => (
-              <div key={farmer.id} className="flex items-center gap-3 p-3 rounded-xl border border-brand-border">
-                <img src={farmer.photo} alt={farmer.name} className="w-14 h-14 rounded-xl object-cover" />
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-brand-border">
+                <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=120&q=80&fit=crop" alt="Farmer" className="w-14 h-14 rounded-xl object-cover" />
                 <div className="text-xs">
-                  <p className="text-brand-text-muted">ID : {farmer.id}</p>
-                  <p className="font-semibold text-brand-text-primary">Name : {farmer.name}</p>
+                  <p className="text-brand-text-muted">ID : HSH-IB-2026-000123</p>
+                  <p className="font-semibold text-brand-text-primary">Name : Adebayo Oluwaseun</p>
                   <button onClick={() => navigate("/agent/saved-farmers")} className="text-brand-green font-semibold mt-1">View Details</button>
                 </div>
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/agent/saved-farmers")}
-            className="btn-amber mt-4 py-3 text-sm"
-          >
-            See Registered Farmers
-          </button>
         </div>
       </div>
     </AgentDesktopShell>
