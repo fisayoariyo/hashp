@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, CreditCard, RefreshCw, Search, Share2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, CreditCard, LayoutGrid, List, MoreVertical, RefreshCw, Search, Share2 } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { agentData } from "../../mockData/agent";
@@ -35,7 +35,7 @@ function FilterPill({ value, onChange, options }) {
 
 function FarmerCard({ farmer, onView, onSyncFarmer }) {
   return (
-    <div className="relative rounded-2xl bg-white p-3 md:h-[200px] md:rounded-[10px] md:border md:border-[#E6E6E6] md:bg-[#FFFFFF] md:px-[9px] md:pb-[10px] md:pt-[8px]">
+    <div className="relative rounded-[36px] bg-[#F6F6F6] p-6 md:h-[200px] md:w-[167px] md:flex-none md:rounded-[10px] md:bg-[#FFFFFF] md:pl-[9px] md:pr-[7px] md:pt-[8px] md:pb-[10px]">
       {farmer.status === "pending" && (
         <button
           type="button"
@@ -49,14 +49,14 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
           <span className="text-[10px] font-sans font-semibold text-brand-amber">Sync now</span>
         </button>
       )}
-      <div className="h-28 w-28 overflow-hidden rounded-xl mb-3 md:h-[61px] md:w-[61px] md:rounded-[11px]">
+      <div className="mb-5 h-[120px] w-[120px] overflow-hidden rounded-[28px] md:mb-1.5 md:h-[61px] md:w-[61px] md:rounded-[11px]">
         <img src={farmer.photo} alt={farmer.name} className="w-full h-full object-cover" />
       </div>
-      <div className="space-y-0.5 min-h-[78px] md:min-h-[88px]">
-        <p className="font-sans text-xs text-brand-text-primary"><span className="text-brand-text-muted">Name : </span>{farmer.name}</p>
-        <p className="font-sans text-xs text-brand-text-primary"><span className="text-brand-text-muted">ID : </span>{farmer.id}</p>
-        <p className="font-sans text-xs text-brand-text-primary"><span className="text-brand-text-muted">Reg date: </span>{farmer.regDate}</p>
-        <p className="font-sans text-xs font-semibold">
+      <div className="min-h-[130px] space-y-2 md:min-h-0 md:space-y-0">
+        <p className="font-sans text-[20px] leading-[1.25] text-brand-text-primary md:truncate md:text-[10px] md:leading-[12px]"><span className="text-brand-text-muted">Name : </span>{farmer.name}</p>
+        <p className="font-sans text-[20px] leading-[1.25] text-brand-text-primary md:truncate md:text-[10px] md:leading-[12px]"><span className="text-brand-text-muted">ID : </span>{farmer.id}</p>
+        <p className="font-sans text-[20px] leading-[1.25] text-brand-text-primary md:text-[10px] md:leading-[12px]"><span className="text-brand-text-muted">Reg date: </span>{farmer.regDate}</p>
+        <p className="font-sans text-[20px] leading-[1.25] font-semibold md:text-[10px] md:leading-[12px]">
           <span className="text-brand-text-muted font-normal">Status : </span>
           <span className={farmer.status === "synced" ? "text-brand-green" : "text-brand-amber"}>
             {farmer.status === "synced" ? "Synced" : "Sync pending"}
@@ -65,7 +65,7 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
       </div>
       <button
         onClick={onView}
-        className="mt-3 w-full rounded-xl bg-brand-green py-2.5 font-sans text-xs font-semibold text-white md:h-[23px] md:rounded-[10px] md:py-0 md:text-[10px]"
+        className="mt-6 h-[64px] w-full rounded-full bg-brand-green py-2.5 font-sans text-[20px] font-medium text-white md:mt-2 md:h-[29px] md:rounded-[8px] md:py-0 md:text-[10px] md:leading-[12px]"
       >
         View Details
       </button>
@@ -75,15 +75,64 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
 
 function FarmersGrid({ farmers, onSelect, onSyncFarmer }) {
   return (
-    <div className="grid grid-cols-2 gap-3 px-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-4 md:px-0">
+    <div className="grid grid-cols-1 gap-4 px-4 md:grid-cols-5 md:gap-[10px] md:px-0">
       {farmers.map((f) => (
         <FarmerCard key={f.id} farmer={f} onView={() => onSelect(f)} onSyncFarmer={onSyncFarmer} />
       ))}
       {farmers.length === 0 && (
-        <div className="col-span-2 md:col-span-3 py-10 text-center font-sans text-sm text-brand-text-muted">
+        <div className="col-span-2 py-10 text-center font-sans text-sm text-brand-text-muted md:col-span-5">
           No farmers found
         </div>
       )}
+    </div>
+  );
+}
+
+function DesktopFarmersTable({ farmers, onSelect, visibleCount, onLoadMore }) {
+  const visibleRows = farmers.slice(0, visibleCount);
+  const hasMore = visibleCount < farmers.length;
+
+  return (
+    <div className="hidden md:block">
+      <div className="mb-2 grid grid-cols-[1.15fr_1fr_0.8fr_0.7fr_0.5fr_34px] px-3 text-[14px] font-medium text-[#111827]">
+        <span>Name</span>
+        <span>Farmer ID</span>
+        <span>Reg date</span>
+        <span>Status</span>
+        <span>Gender</span>
+        <span />
+      </div>
+      <div className="space-y-2">
+        {visibleRows.map((farmer) => (
+          <button
+            key={`${farmer.id}-row`}
+            type="button"
+            onClick={() => onSelect(farmer)}
+            className="grid h-[42px] w-full grid-cols-[1.15fr_1fr_0.8fr_0.7fr_0.5fr_34px] items-center rounded-[6px] bg-[#F1F1F1] px-3 text-left text-[13px] text-[#111827]"
+          >
+            <span className="truncate">{farmer.name}</span>
+            <span className="truncate">{farmer.id}</span>
+            <span>{farmer.regDate}</span>
+            <span className={farmer.status === "synced" ? "font-medium text-brand-green" : "font-medium text-brand-amber"}>
+              {farmer.status === "synced" ? "Synced" : "Pending"}
+            </span>
+            <span>{farmer.gender || "Male"}</span>
+            <span className="flex justify-center">
+              <MoreVertical size={16} />
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-8 flex justify-center">
+        <button
+          type="button"
+          onClick={onLoadMore}
+          disabled={!hasMore}
+          className="h-[40px] min-w-[130px] rounded-[16px] bg-white px-7 text-[14px] font-medium text-brand-green disabled:opacity-55"
+        >
+          Load more
+        </button>
+      </div>
     </div>
   );
 }
@@ -105,6 +154,9 @@ function ListScreen({
   pendingCount,
   listError,
 }) {
+  const [desktopViewMode, setDesktopViewMode] = useState("list");
+  const [visibleCount, setVisibleCount] = useState(7);
+
   const listData = useMemo(() => {
     let arr = [...farmers];
     if (statusFilter !== "all") arr = arr.filter((f) => f.status === statusFilter);
@@ -117,6 +169,10 @@ function ListScreen({
     if (sortBy === "date-asc") arr.sort((a, b) => a.regDate.localeCompare(b.regDate));
     return arr;
   }, [farmers, query, statusFilter, sortBy]);
+
+  useEffect(() => {
+    setVisibleCount(7);
+  }, [query, statusFilter, sortBy, farmers.length]);
 
   const HeaderBlock = () => (
     <>
@@ -160,9 +216,49 @@ function ListScreen({
         </div>
         <button onClick={onOpenSearch} className="rounded-2xl bg-brand-green px-4 py-3 font-sans text-sm font-semibold text-white md:h-[47px] md:rounded-[15px] md:px-6 md:py-0">Search</button>
       </div>
-      <div className="mb-4 flex gap-2 md:mb-5">
+      <div className="mb-4 flex gap-2 md:mb-5 md:hidden">
         <FilterPill value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "Status" }, { value: "synced", label: "Synced" }, { value: "pending", label: "Sync pending" }]} />
         <FilterPill value={sortBy} onChange={setSortBy} options={[{ value: "date-desc", label: "Sort by" }, { value: "date-desc", label: "Newest" }, { value: "date-asc", label: "Oldest" }, { value: "name", label: "Name" }]} />
+      </div>
+      <div className="mb-5 hidden items-center gap-2 md:flex">
+        <div className="relative">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-[32px] w-[95px] appearance-none rounded-[10px] border border-[#E6E6E6] bg-white pl-3 pr-8 text-[14px] text-[#737373]"
+          >
+            <option value="all">Status</option>
+            <option value="synced">Synced</option>
+            <option value="pending">Sync pending</option>
+          </select>
+          <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#111827]" />
+        </div>
+        <div className="relative">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="h-[32px] w-[95px] appearance-none rounded-[10px] border border-[#E6E6E6] bg-white pl-3 pr-8 text-[14px] text-[#737373]"
+          >
+            <option value="date-desc">Sort by</option>
+            <option value="date-desc">Newest</option>
+            <option value="date-asc">Oldest</option>
+            <option value="name">Name</option>
+          </select>
+          <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#111827]" />
+        </div>
+        <button
+          type="button"
+          onClick={() => setDesktopViewMode((v) => (v === "list" ? "grid" : "list"))}
+          className="inline-flex h-[32px] w-[130px] items-center justify-between rounded-[10px] border border-[#E6E6E6] bg-white px-3 text-[14px] text-[#737373]"
+          aria-label={`View mode: ${desktopViewMode === "list" ? "List" : "Grid"}`}
+        >
+          <span>View :</span>
+          <span className="inline-flex items-center gap-1.5 text-[#374151]">
+            <span className="text-[#737373]">{desktopViewMode === "list" ? "List" : "Grid"}</span>
+            {desktopViewMode === "list" ? <List size={14} /> : <LayoutGrid size={14} />}
+            <ChevronDown size={14} className="text-[#111827]" />
+          </span>
+        </button>
       </div>
     </>
   );
@@ -182,9 +278,18 @@ function ListScreen({
       </div>
 
       <AgentDesktopShell active="farmers">
-        <div className="mx-auto w-full max-w-[862.81px]">
+        <div className="mx-auto w-full max-w-[1040px]">
           <HeaderBlock />
-          <FarmersGrid farmers={listData} onSelect={onSelect} onSyncFarmer={onSyncFarmer} />
+          {desktopViewMode === "list" ? (
+            <DesktopFarmersTable
+              farmers={listData}
+              onSelect={onSelect}
+              visibleCount={visibleCount}
+              onLoadMore={() => setVisibleCount((c) => c + 5)}
+            />
+          ) : (
+            <FarmersGrid farmers={listData} onSelect={onSelect} onSyncFarmer={onSyncFarmer} />
+          )}
         </div>
       </AgentDesktopShell>
     </>
@@ -230,7 +335,7 @@ function SearchScreen({ farmers, query, setQuery, statusFilter, setStatusFilter,
         <AgentBottomNav />
       </div>
       <AgentDesktopShell active="farmers">
-        <div className="mx-auto w-full max-w-[862.81px]">
+        <div className="mx-auto w-full max-w-[1040px]">
           <SearchContent />
         </div>
       </AgentDesktopShell>
@@ -431,7 +536,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">{content}</div>
       </div>
       <AgentDesktopShell active="farmers">
-        <div className="mx-auto w-full max-w-[862.81px]">{content}</div>
+        <div className="mx-auto w-full max-w-[1040px]">{content}</div>
       </AgentDesktopShell>
       <div className="md:hidden">
         <AgentBottomNav />
