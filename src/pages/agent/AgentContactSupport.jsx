@@ -1,85 +1,124 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Mail, Phone } from "lucide-react";
-import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
-import { agentSupportContact } from "../../mockData/agent";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { Phone, User } from "lucide-react";
+import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
+import { AgentBottomNav } from "./AgentHome";
+import { agentData } from "../../mockData/agent";
 
 export default function AgentContactSupport() {
   const navigate = useNavigate();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [issueType, setIssueType] = useState("Profile Update");
+  const [farmerId, setFarmerId] = useState("");
+  const [issueDescription, setIssueDescription] = useState("");
 
-  const body = (
-    <div className="w-full max-w-md space-y-6">
-      <p className="font-sans text-sm text-brand-text-secondary">
-        We&apos;re here to support you. Reach out if you&apos;re having issues with registration, verification, or syncing data.
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  };
+
+  const content = (
+    <div className="w-full md:mx-auto md:max-w-[862.81px]">
+      <h1 className="font-display text-[40px] md:text-[40px] font-bold leading-[48px] text-[#030F0F]">
+        Help &amp; Support
+      </h1>
+      <p className="mt-2 max-w-[760px] text-[14px] leading-[20px] text-[#030F0F]/80">
+        Having issues on the field? Reach out to the Hashmar support team for support with farmer
+        registration, your profile, or any other concerns.
       </p>
-      <div>
-        <p className="font-sans font-semibold text-brand-text-primary mb-1">Customer Support</p>
-        <p className="font-sans text-xs text-brand-text-secondary mb-4">Get help from our support team.</p>
-        <div className="space-y-3">
-          <a
-            href={agentSupportContact.phoneHref}
-            className="flex items-center gap-3 p-4 rounded-2xl border border-brand-border bg-white hover:bg-brand-green/5 transition-colors"
-          >
-            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center shrink-0">
-              <Phone className="text-brand-green" size={20} />
+
+      <form onSubmit={handleSubmit} className="mt-8 max-w-[760px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+          <label className="block">
+            <span className="mb-2 block text-[28px] md:text-[20px] font-bold leading-6 text-[#030F0F]">
+              Type of issue
+            </span>
+            <div className="relative">
+              <select
+                value={issueType}
+                onChange={(e) => setIssueType(e.target.value)}
+                className="h-[52px] w-full appearance-none rounded-[15px] border border-[#E6E6E6] bg-white px-4 pr-10 text-[14px] text-[#030F0F] outline-none focus:border-[#03624D]"
+              >
+                <option>Profile Update</option>
+                <option>Farmer Sync Issue</option>
+                <option>Registration Issue</option>
+                <option>Login Issue</option>
+              </select>
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#030F0F]/60">
+                &#9662;
+              </span>
             </div>
-            <div>
-              <p className="font-sans text-xs text-brand-text-muted">Phone</p>
-              <p className="font-sans font-semibold text-brand-text-primary">{agentSupportContact.phoneDisplay}</p>
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-[28px] md:text-[20px] font-bold leading-6 text-[#030F0F]">
+              Farmer ID
+            </span>
+            <div className="relative">
+              <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#030F0F]/55" />
+              <input
+                value={farmerId}
+                onChange={(e) => setFarmerId(e.target.value)}
+                placeholder="Enter farmer ID"
+                className="h-[52px] w-full rounded-[15px] border border-[#E6E6E6] bg-white pl-10 pr-4 text-[14px] text-[#030F0F] outline-none placeholder:text-[#030F0F]/40 focus:border-[#03624D]"
+              />
             </div>
-          </a>
-          <a
-            href={`mailto:${agentSupportContact.email}`}
-            className="flex items-center gap-3 p-4 rounded-2xl border border-brand-border bg-white hover:bg-brand-green/5 transition-colors"
-          >
-            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center shrink-0">
-              <Mail className="text-brand-green" size={20} />
-            </div>
-            <div>
-              <p className="font-sans text-xs text-brand-text-muted">Email</p>
-              <p className="font-sans font-semibold text-brand-text-primary">{agentSupportContact.email}</p>
-            </div>
-          </a>
+          </label>
+        </div>
+
+        <label className="mt-5 block">
+          <span className="mb-2 block text-[28px] md:text-[20px] font-bold leading-6 text-[#030F0F]">
+            Issue description
+          </span>
+          <textarea
+            value={issueDescription}
+            onChange={(e) => setIssueDescription(e.target.value)}
+            placeholder="Description of the issue"
+            className="h-[153px] w-full resize-none rounded-[15px] border border-[#E6E6E6] bg-white px-4 py-3 text-[14px] text-[#030F0F] outline-none placeholder:text-[#030F0F]/40 focus:border-[#03624D]"
+          />
+        </label>
+
+        <button
+          type="submit"
+          className="mt-5 inline-flex h-[47px] w-[187px] items-center justify-center rounded-[15px] bg-[#03624D] text-[20px] font-medium leading-6 text-white"
+        >
+          Submit
+        </button>
+      </form>
+
+      <div className="mt-8 w-full max-w-[520px] rounded-[20px] bg-[#FFFFFF] p-5">
+        <p className="text-[14px] leading-6 text-[#030F0F]">
+          If you experience network issues, contact Hashmar support directly at these phone numbers.
+        </p>
+        <div className="mt-4 space-y-3 text-[14px] leading-5 text-[#030F0F]">
+          <p className="flex items-center gap-2">
+            <User size={14} className="text-[#030F0F]" />
+            <span>Agent Name: {agentData.fullName}</span>
+          </p>
+          <p className="flex items-center gap-2">
+            <Phone size={14} className="text-[#030F0F]" />
+            <span>Phone Number: {agentData.phone}</span>
+          </p>
         </div>
       </div>
     </div>
   );
 
-  const desktopLeading = (
-    <button
-      type="button"
-      onClick={() => navigate(-1)}
-      className="flex items-center gap-2 text-brand-text-secondary mb-6 font-sans text-sm"
-    >
-      <ArrowLeft size={18} />
-      Go back
-    </button>
-  );
-
-  if (isDesktop) {
-    return (
-      <AgentAuthDesktopLayout
-        leading={desktopLeading}
-        title="Need Help?"
-        subtitle="We're here to support you."
-        actions={null}
-      >
-        {body}
-      </AgentAuthDesktopLayout>
-    );
-  }
-
   return (
-    <div className="page-white flex flex-col min-h-dvh">
-      <div className="flex-1 px-5 pt-6">
-        <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-2 text-brand-text-secondary mb-6">
-          <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
-        </button>
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Need Help?</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">We&apos;re here to support you.</p>
-        {body}
+    <>
+      <div className="md:hidden min-h-dvh bg-brand-bg-page">
+        <div className="px-4 pt-5 pb-28">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mb-4 text-sm text-[#030F0F]/70"
+          >
+            Back
+          </button>
+          {content}
+        </div>
+        <AgentBottomNav />
       </div>
-    </div>
+
+      <AgentDesktopShell active="support">{content}</AgentDesktopShell>
+    </>
   );
 }

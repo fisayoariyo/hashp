@@ -1,14 +1,13 @@
-import { ChevronDown, Headset, Plus } from "lucide-react";
+import { ChevronDown, Headset, Home, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { agentData } from "../../mockData/agent";
 
 // ── Custom sidebar icon assets ────────────────────────────
-import homeIcon    from "../../assets/comps/home-11.svg";
 import tractorIcon from "../../assets/comps/tractor.svg";
 import settingIcon from "../../assets/comps/settings-03.svg";
 
 const NAV_LINKS = [
-  { key: "dashboard", label: "Dashboard",    icon: homeIcon,    path: "/agent/home"           },
+  { key: "dashboard", label: "Dashboard",    icon: null,        path: "/agent/home"           },
   { key: "farmers",   label: "Farmers",       icon: tractorIcon, path: "/agent/saved-farmers"  },
   { key: "settings",  label: "Settings",      icon: settingIcon, path: "/agent/settings"       },
   { key: "support",   label: "Help & Support", icon: null,        path: "/agent/contact-support" },
@@ -18,11 +17,11 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
   const navigate = useNavigate();
 
   return (
-    <div className="hidden md:flex min-h-dvh items-center justify-center bg-brand-bg-page px-4 py-5">
-      <div className="h-[832px] w-[1280px] rounded-[20px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+    <div className="hidden md:block min-h-dvh bg-brand-bg-page p-4">
+      <div className="min-h-[calc(100dvh-2rem)] w-full rounded-[20px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
         <div className="flex h-full gap-[10px]">
           {/* ── Sidebar (CSS: 295x801) ── */}
-          <aside className="h-[801px] w-[295px] shrink-0 rounded-[20px] bg-white px-[29px] py-[31px]">
+          <aside className="h-full w-[295px] shrink-0 rounded-[20px] bg-white px-[29px] py-[31px]">
           <img
             src="/brand/HFEI_Primary_Logo_.png"
             alt="HFEI by Hashmar Cropex Ltd"
@@ -41,7 +40,13 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
                       : "text-[#030F0F]/80 hover:bg-[#03624D]/10 hover:text-[#03624D]"
                   }`}
                 >
-                  {icon ? (
+                  {key === "dashboard" ? (
+                    <Home
+                      size={20}
+                      strokeWidth={isActive ? 2.1 : 1.9}
+                      className={isActive ? "text-white" : "text-[#030F0F]"}
+                    />
+                  ) : icon ? (
                     <img
                       src={icon}
                       alt=""
@@ -59,7 +64,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
           </aside>
 
           {/* ── Main area (CSS: 935 content width) ── */}
-          <main className="flex w-[935px] min-w-0 flex-col gap-[14px]">
+          <main className="flex min-w-0 flex-1 flex-col gap-[14px]">
             {/* Header */}
             <div className="flex h-[95px] items-center justify-between rounded-[20px] bg-white px-[26px] py-[15px]">
               <div className="flex items-center gap-6">
@@ -91,7 +96,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
             </div>
 
             {/* Page content */}
-            <div className="h-[696px] rounded-[20px] bg-[#F6F6F6] px-9 py-7">
+            <div className="flex-1 min-h-0 rounded-[20px] bg-[#F6F6F6] px-9 py-7">
               <div className="h-full overflow-y-auto pr-1">
                 {children}
               </div>

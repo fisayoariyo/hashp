@@ -179,7 +179,7 @@ function ChangePasswordScreen({ onBack }) {
 function FAQScreen({ onBack }) {
   const [open, setOpen] = useState(null);
   const content = (
-    <div className="flex-1 w-full md:w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
+    <div className="flex-1 w-full md:mx-auto md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-brand-text-secondary mb-5"
@@ -187,16 +187,18 @@ function FAQScreen({ onBack }) {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">FAQs</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-5">
+        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
+          FAQs
+        </h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5 max-w-[760px]">
           Answers to common questions about the agent app.
         </p>
-        <div className="space-y-3">
+        <div className="space-y-3 max-w-[760px]">
           {agentFAQs.map((faq) => (
             <button
               key={faq.id}
               onClick={() => setOpen(open === faq.id ? null : faq.id)}
-              className="w-full text-left bg-white rounded-2xl p-4 shadow-sm active:scale-[0.99] transition-transform"
+              className="w-full text-left bg-white border border-[#E6E6E6] rounded-[20px] p-4 active:scale-[0.99] transition-transform"
             >
               <div className="flex items-start justify-between gap-3">
                 <p className="font-sans font-semibold text-sm text-brand-text-primary">
@@ -261,16 +263,16 @@ function LogoutModal({ onConfirm, onCancel }) {
 // ── Main Settings screen ───────────────────────────────────
 function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
   const content = (
-    <div className="flex-1 w-full md:w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">
+    <div className="flex-1 w-full md:mx-auto md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
+        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
           Settings
         </h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-5">
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5 max-w-[760px]">
           To update your details, contact your administrator
         </p>
 
         {/* Agent profile */}
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-5 max-w-[760px] rounded-[20px] border border-[#E6E6E6] bg-white p-4">
           <div className="relative shrink-0">
             <img
               src={agentData.photo}
@@ -297,10 +299,10 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
         </div>
 
         {/* Menu items */}
-        <div className="bg-white rounded-2xl overflow-hidden divide-y divide-brand-border shadow-card">
+        <div className="max-w-[760px] bg-white rounded-[20px] border border-[#E6E6E6] overflow-hidden divide-y divide-brand-border">
           <button
             onClick={onChangePassword}
-            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
           >
             <Lock size={20} strokeWidth={1.8} className="text-brand-text-secondary shrink-0" />
             <span className="flex-1 font-sans text-sm font-medium text-brand-text-primary">
@@ -310,7 +312,7 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
           </button>
           <button
             onClick={onFAQ}
-            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
           >
             <HelpCircle size={20} strokeWidth={1.8} className="text-brand-text-secondary shrink-0" />
             <span className="flex-1 font-sans text-sm font-medium text-brand-text-primary">
@@ -320,7 +322,7 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
           </button>
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
           >
             <LogOut size={20} strokeWidth={1.8} className="text-red-500 shrink-0" />
             <span className="flex-1 font-sans text-sm font-medium text-red-500">

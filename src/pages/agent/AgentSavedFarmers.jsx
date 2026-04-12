@@ -20,7 +20,7 @@ function FilterPill({ value, onChange, options }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-white border border-brand-border rounded-full py-2 pl-4 pr-9 text-xs font-sans text-brand-text-primary"
+        className="appearance-none bg-white border border-brand-border rounded-full py-2 pl-4 pr-9 text-xs font-sans text-brand-text-primary md:h-[36px] md:border-[#E6E6E6]"
       >
         {options.map((opt) => (
           <option key={`${opt.value}-${opt.label}`} value={opt.value}>
@@ -35,7 +35,7 @@ function FilterPill({ value, onChange, options }) {
 
 function FarmerCard({ farmer, onView, onSyncFarmer }) {
   return (
-    <div className="bg-white rounded-2xl p-3 md:p-4 relative">
+    <div className="relative rounded-2xl bg-white p-3 md:rounded-[20px] md:border md:border-[#E6E6E6] md:bg-[#FFFFFF] md:p-4">
       {farmer.status === "pending" && (
         <button
           type="button"
@@ -63,7 +63,10 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
           </span>
         </p>
       </div>
-      <button onClick={onView} className="w-full mt-3 py-2.5 rounded-xl bg-brand-green text-white font-sans font-semibold text-xs">
+      <button
+        onClick={onView}
+        className="mt-3 w-full rounded-xl bg-brand-green py-2.5 font-sans text-xs font-semibold text-white md:h-[37px] md:rounded-[10px] md:py-0"
+      >
         View Details
       </button>
     </div>
@@ -72,7 +75,7 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
 
 function FarmersGrid({ farmers, onSelect, onSyncFarmer }) {
   return (
-    <div className="px-4 md:px-0 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+    <div className="grid grid-cols-2 gap-3 px-4 md:grid-cols-3 md:gap-5 md:px-0">
       {farmers.map((f) => (
         <FarmerCard key={f.id} farmer={f} onView={() => onSelect(f)} onSyncFarmer={onSyncFarmer} />
       ))}
@@ -122,9 +125,13 @@ function ListScreen({
           Could not refresh list from server: {listError}
         </div>
       )}
-      <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary mb-1">Registered Farmers</h1>
-      <p className="font-sans text-sm text-brand-text-secondary mb-4">View all registered farmers and their sync status.</p>
-      <div className="flex items-center justify-between mb-4 md:mb-5">
+      <h1 className="mb-1 font-display text-2xl font-bold text-brand-text-primary md:text-[40px] md:leading-[48px]">
+        Registered Farmers
+      </h1>
+      <p className="mb-4 font-sans text-sm text-brand-text-secondary md:text-[14px]">
+        View all registered farmers and their sync status.
+      </p>
+      <div className="mb-4 flex items-center justify-between md:mb-5">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <div className="w-3.5 h-3.5 rounded-full bg-brand-green flex items-center justify-center">
@@ -141,19 +148,19 @@ function ListScreen({
           type="button"
           onClick={onSyncAll}
           disabled={syncing || pendingCount === 0}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-green text-white text-xs font-semibold disabled:opacity-45 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 rounded-xl bg-brand-green px-3.5 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45 md:h-[35px] md:rounded-[44px] md:px-[14px] md:py-0 md:text-[13px]"
         >
           <RefreshCw size={12} className={syncing ? "animate-spin" : ""} /> Sync now
         </button>
       </div>
-      <div className="flex items-center gap-2 mb-4 md:mb-5">
-        <div className="flex-1 flex items-center bg-white border border-brand-border rounded-2xl px-3 gap-2">
+      <div className="mb-4 flex items-center gap-2 md:mb-5">
+        <div className="flex flex-1 items-center gap-2 rounded-2xl border border-brand-border bg-white px-3 md:h-[52px] md:rounded-[15px] md:border-[#E6E6E6]">
           <Search size={16} className="text-brand-text-muted" />
-          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search farmer by name, farmer ID...." className="flex-1 py-3 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted" />
+          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search farmer by name, farmer ID...." className="flex-1 bg-transparent py-3 text-sm focus:outline-none placeholder:text-brand-text-muted md:py-0" />
         </div>
-        <button onClick={onOpenSearch} className="px-4 py-3 bg-brand-green rounded-2xl text-white font-sans text-sm font-semibold">Search</button>
+        <button onClick={onOpenSearch} className="rounded-2xl bg-brand-green px-4 py-3 font-sans text-sm font-semibold text-white md:h-[47px] md:rounded-[15px] md:px-6 md:py-0">Search</button>
       </div>
-      <div className="flex gap-2 mb-4 md:mb-5">
+      <div className="mb-4 flex gap-2 md:mb-5">
         <FilterPill value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "Status" }, { value: "synced", label: "Synced" }, { value: "pending", label: "Sync pending" }]} />
         <FilterPill value={sortBy} onChange={setSortBy} options={[{ value: "date-desc", label: "Sort by" }, { value: "date-desc", label: "Newest" }, { value: "date-asc", label: "Oldest" }, { value: "name", label: "Name" }]} />
       </div>
@@ -175,7 +182,7 @@ function ListScreen({
       </div>
 
       <AgentDesktopShell active="farmers">
-        <div className="w-[862.81px]">
+        <div className="mx-auto w-full max-w-[862.81px]">
           <HeaderBlock />
           <FarmersGrid farmers={listData} onSelect={onSelect} onSyncFarmer={onSyncFarmer} />
         </div>
@@ -223,7 +230,7 @@ function SearchScreen({ farmers, query, setQuery, statusFilter, setStatusFilter,
         <AgentBottomNav />
       </div>
       <AgentDesktopShell active="farmers">
-        <div className="w-[862.81px]">
+        <div className="mx-auto w-full max-w-[862.81px]">
           <SearchContent />
         </div>
       </AgentDesktopShell>
@@ -424,7 +431,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">{content}</div>
       </div>
       <AgentDesktopShell active="farmers">
-        <div className="w-[862.81px]">{content}</div>
+        <div className="mx-auto w-full max-w-[862.81px]">{content}</div>
       </AgentDesktopShell>
       <div className="md:hidden">
         <AgentBottomNav />

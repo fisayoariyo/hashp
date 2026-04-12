@@ -37,7 +37,7 @@ function formatChangePct(value) {
 }
 
 // ── Desktop stat card — accepts img URL or React element for icon ──
-function DesktopStatCard({ icon, iconEl, label, value, badge, action }) {
+function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge, action }) {
   return (
     <div className="relative h-[128px] w-[273.94px] overflow-hidden rounded-[20px] bg-[#005F4A] px-[21px] py-[15px] text-white">
       <div className="absolute inset-0 rounded-[20px] bg-[#016A53]" />
@@ -51,7 +51,7 @@ function DesktopStatCard({ icon, iconEl, label, value, badge, action }) {
         <div className="mb-3 flex items-start justify-between">
           {iconEl
             ? iconEl
-            : <img src={icon} alt="" aria-hidden="true" className="h-[21px] w-[21px] opacity-95" />
+            : <img src={icon} alt="" aria-hidden="true" className={`h-[21px] w-[21px] opacity-95 ${iconClassName}`} />
           }
           {badge}
           {action}
@@ -277,7 +277,7 @@ export default function AgentHome() {
   // ── Desktop layout ──────────────────────────────────────
   const desktopContent = (
     <AgentDesktopShell active="dashboard" isOnline={isOnline}>
-      <div className="w-[862.81px]">
+      <div className="mx-auto w-full max-w-[862.81px]">
         {/* ── Registration stats ── */}
         <h2 className="mb-[15px] font-display text-[20px] font-bold leading-6 text-brand-text-primary">
           Registration stats
@@ -285,6 +285,7 @@ export default function AgentHome() {
         <div className="mb-[15px] grid grid-cols-[273.94px_273.94px_273.94px] gap-5">
           <DesktopStatCard
             icon={statFarmersIcon}
+            iconClassName="brightness-0 invert"
             label="Registered Farmers"
             value={agentData.totalFarmersRegistered}
             badge={

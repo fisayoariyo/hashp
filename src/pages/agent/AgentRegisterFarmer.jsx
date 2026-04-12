@@ -174,8 +174,8 @@ function StartScreen({ onStart, onBack, embedded }) {
         <ArrowLeft size={18} />
         <span className="font-sans text-sm">Go back</span>
       </button>
-      <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Register new farmer</h1>
-      <p className="font-sans text-sm text-brand-text-secondary mb-7">
+      <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">Register new farmer</h1>
+      <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-7">
         Begin a new farmer registration by capturing their personal and biometric details to create a verified profile.
       </p>
       <h2 className="font-display font-bold text-base text-brand-text-primary mb-4">Registration steps</h2>
@@ -270,8 +270,8 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
     <div className={rootClass}>
       <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <Steps current={1} />
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Biometric capture</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">
+        <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">Biometric capture</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-8">
           Capture fingerprint and face for identity verification.
         </p>
         <div className="space-y-5">
@@ -341,10 +341,10 @@ function PersonalStep({ onNext, onBack, embedded }) {
     <div className={rootClass}>
       <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-4 min-h-0 ${scrollPb}`}>
         <Steps current={2} />
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-1">
+        <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
           Personal Information
         </h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-2">
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">
           Enter the farmer's basic details and identification number.
         </p>
 
@@ -488,8 +488,8 @@ function FarmStep({ onNext, onBack, embedded }) {
     <div className={rootClass}>
       <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-5 min-h-0 ${scrollPb}`}>
         <Steps current={3} />
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-1">Farm Information</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-2">Enter basic details about the farmer's farm.</p>
+        <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Farm Information</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">Enter basic details about the farmer's farm.</p>
         <F label="Farm Size" required>
           <div className="flex items-center input-field gap-3">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -529,8 +529,8 @@ function CoopStep({ onNext, onBack, embedded }) {
     <div className={rootClass}>
       <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-4 min-h-0 ${scrollPb}`}>
         <Steps current={4} />
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-1">Cooperative & Association</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-2">Add cooperative details if the farmer belongs to one.</p>
+        <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Cooperative & Association</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">Add cooperative details if the farmer belongs to one.</p>
         {[
           ["Cooperative Name","name",true,"Enter cooperative name"],
           ["Registration No.","regNo",true,"e.g. OY-COOP-2019-00441"],
@@ -593,8 +593,8 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
   return (
     <div className={rootClass}>
       <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">Review Details</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-6">
+        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Review Details</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-6">
           Please review all information before submitting.
         </p>
         {submitError && (
@@ -693,8 +693,8 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
           <ArrowLeft size={16} /><span className="font-sans text-sm">Go back home</span>
         </button>
 
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">Farmer ID</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-5">
+        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Farmer ID</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5">
           Farmer has been successfully registered. View and share their ID below.
         </p>
 
@@ -825,7 +825,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <AgentFacialVerification
               embedded
               onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
@@ -846,7 +846,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <AgentFingerprintVerification
               embedded
               onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
@@ -865,7 +865,7 @@ export default function AgentRegisterFarmer() {
           <StartScreen onStart={() => setStep("biometric")} onBack={goHome} />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <StartScreen embedded onStart={() => setStep("biometric")} onBack={goHome} />
           </div>
         </AgentDesktopShell>
@@ -886,7 +886,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <BiometricStep
               embedded
               faceCapture={faceCapture}
@@ -908,7 +908,7 @@ export default function AgentRegisterFarmer() {
           <PersonalStep onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <PersonalStep embedded onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />
           </div>
         </AgentDesktopShell>
@@ -922,7 +922,7 @@ export default function AgentRegisterFarmer() {
           <FarmStep onNext={() => setStep("coop")} onBack={() => setStep("personal")} />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <FarmStep embedded onNext={() => setStep("coop")} onBack={() => setStep("personal")} />
           </div>
         </AgentDesktopShell>
@@ -936,7 +936,7 @@ export default function AgentRegisterFarmer() {
           <CoopStep onNext={() => setStep("review")} onBack={() => setStep("farm")} />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <CoopStep embedded onNext={() => setStep("review")} onBack={() => setStep("farm")} />
           </div>
         </AgentDesktopShell>
@@ -955,7 +955,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <ReviewStep
               embedded
               onSubmit={handleSubmit}
@@ -979,7 +979,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="w-[862.81px]">
+          <div className="mx-auto w-full max-w-[862.81px]">
             <DoneStep
               embedded
               idCard={idCard}
