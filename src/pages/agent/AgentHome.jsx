@@ -39,7 +39,7 @@ function formatChangePct(value) {
 // ── Desktop stat card — accepts img URL or React element for icon ──
 function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge, action }) {
   return (
-    <div className="relative h-[128px] w-[273.94px] overflow-hidden rounded-[20px] bg-[#005F4A] px-[21px] py-[15px] text-white">
+    <div className="relative h-[112px] w-full overflow-hidden rounded-[20px] bg-[#005F4A] px-[18px] py-[12px] text-white">
       <div className="absolute inset-0 rounded-[20px] bg-[#016A53]" />
       <img
         src={cardPatternDesktop}
@@ -51,13 +51,13 @@ function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge
         <div className="mb-3 flex items-start justify-between">
           {iconEl
             ? iconEl
-            : <img src={icon} alt="" aria-hidden="true" className={`h-[21px] w-[21px] opacity-95 ${iconClassName}`} />
+            : <img src={icon} alt="" aria-hidden="true" className={`h-[18px] w-[18px] opacity-95 ${iconClassName}`} />
           }
           {badge}
           {action}
         </div>
-        <p className="font-sans text-[15px] font-light leading-[18px] text-white/85">{label}</p>
-        <p className="mt-2 font-display text-[30px] leading-[36px] font-medium tracking-tight">{value}</p>
+        <p className="font-sans text-[14px] font-light leading-[16px] text-white/85">{label}</p>
+        <p className="mt-1.5 font-display text-[34px] leading-[32px] font-medium tracking-tight">{value}</p>
       </div>
     </div>
   );
@@ -282,7 +282,7 @@ export default function AgentHome() {
         <h2 className="mb-5 font-display text-[20px] font-bold leading-6 text-brand-text-primary">
           Registration stats
         </h2>
-        <div className="mb-6 mx-auto flex h-[128px] w-[862.81px] items-center gap-5">
+        <div className="mb-6 flex h-[112px] w-full items-center gap-5">
           <DesktopStatCard
             icon={statFarmersIcon}
             iconClassName="brightness-0 invert"
@@ -305,7 +305,7 @@ export default function AgentHome() {
             }
           />
           <DesktopStatCard
-            iconEl={<RefreshCw size={20} strokeWidth={1.8} className="text-white/95" />}
+            iconEl={<RefreshCw size={17} strokeWidth={1.8} className="text-white/95" />}
             label="Pending sync"
             value={String(syncCounts.pending).padStart(2, "0")}
             action={
