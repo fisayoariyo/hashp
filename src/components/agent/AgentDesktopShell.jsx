@@ -17,11 +17,11 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
   const navigate = useNavigate();
 
   return (
-    <div className="hidden md:block min-h-dvh bg-brand-bg-page p-4">
-      <div className="h-[calc(100dvh-2rem)] w-full rounded-[20px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+    <div className="hidden h-dvh overflow-hidden bg-brand-bg-page  md:block">
+      <div className="h-full w-full rounded-[20px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
         <div className="flex h-full gap-[10px]">
           {/* ── Sidebar (CSS: 295x801) ── */}
-          <aside className="h-full w-[295px] shrink-0 rounded-[20px] bg-white px-[29px] py-[31px]">
+          <aside className="h-full w-[295px] shrink-0 overflow-hidden rounded-[20px] bg-white px-[29px] py-[31px]">
           <img
             src="/brand/HFEI_Primary_Logo_.png"
             alt="HFEI by Hashmar Cropex Ltd"
@@ -64,9 +64,9 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
           </aside>
 
           {/* ── Main area (CSS: 935 content width) ── */}
-          <main className="flex min-w-0 flex-1 flex-col gap-[14px]">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-[14px] overflow-hidden">
             {/* Header */}
-            <div className="flex h-[95px] items-center justify-between rounded-[20px] bg-white px-[26px] py-[15px]">
+            <div className="flex h-[95px] shrink-0 items-center justify-between rounded-[20px] bg-white px-[26px] py-[15px]">
               <div className="flex items-center gap-6">
                 <div className="min-w-0">
                   <h1 className="truncate font-display text-[20px] font-bold leading-6 text-brand-text-primary">
@@ -96,8 +96,8 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
             </div>
 
             {/* Page content */}
-            <div className="flex-1 min-h-0 rounded-[20px] bg-[#F6F6F6] px-9 py-7">
-              <div className="h-full overflow-y-auto pr-1">
+            <div className="flex-1 min-h-0 overflow-hidden rounded-[20px] bg-[#F6F6F6] px-9 py-7">
+              <div className="h-full overflow-y-auto pr-1 scrollbar-hide">
                 {children}
               </div>
             </div>

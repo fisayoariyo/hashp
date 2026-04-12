@@ -13,6 +13,7 @@
     font-size: 16px;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    
   }
   body {
     @apply font-sans bg-brand-bg-page text-brand-text-primary antialiased;
@@ -94,7 +95,7 @@
 
   /* ── Page wrappers ── */
   .page-container {
-    @apply flex flex-col min-h-dvh bg-brand-bg-page max-w-mobile md:max-w-none mx-auto w-full;
+    @apply flex flex-col min-h-dvh bg-brand-bg-page max-w-mobile md:max-w-none mx-auto w-full; 
   }
   .page-white {
     @apply flex flex-col min-h-dvh bg-white max-w-mobile md:max-w-none mx-auto w-full;

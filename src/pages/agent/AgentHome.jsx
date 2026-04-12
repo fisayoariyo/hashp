@@ -39,25 +39,26 @@ function formatChangePct(value) {
 // ── Desktop stat card — accepts img URL or React element for icon ──
 function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge, action }) {
   return (
-    <div className="relative h-[116px] w-full overflow-hidden rounded-[20px] bg-[#005F4A] px-[17px] py-[11px] text-white">
-      <div className="absolute inset-0 rounded-[20px] bg-[#016A53]" />
-      <img
-        src={cardPatternDesktop}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full rounded-[20px] object-cover opacity-20 mix-blend-color pointer-events-none"
-      />
+    <div
+      className="relative h-[222px] w-full overflow-hidden rounded-[20px] bg-[#03624D] px-8 pb-7 pt-7 text-white"
+      style={{
+        backgroundImage: `url(${cardPatternDesktop})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       <div className="relative z-10">
-        <div className="mb-3 flex items-start justify-between">
+        <div className="mb-6 flex items-start justify-between">
           {iconEl
             ? iconEl
-            : <img src={icon} alt="" aria-hidden="true" className={`h-[17px] w-[17px] opacity-95 ${iconClassName}`} />
+            : <img src={icon} alt="" aria-hidden="true" className={`h-9 w-9 opacity-95 ${iconClassName}`} />
           }
           {badge}
           {action}
         </div>
-        <p className="font-sans text-[14px] font-light leading-[16px] text-white/85">{label}</p>
-        <p className="mt-1.5 font-display text-[32px] leading-[30px] font-medium tracking-tight">{value}</p>
+        <p className="font-sans text-[20px] font-light leading-[24px] text-white/90">{label}</p>
+        <p className="mt-2 font-display text-[64px] leading-[58px] font-medium tracking-tight">{value}</p>
       </div>
     </div>
   );
@@ -228,6 +229,7 @@ export default function AgentHome() {
           </div>
         </div>
 
+
         {/* Sync status */}
         {syncDone && (
           <div className="bg-brand-green/10 border border-brand-green/20 rounded-2xl px-4 py-3 flex items-center gap-2">
@@ -277,7 +279,7 @@ export default function AgentHome() {
   // ── Desktop layout ──────────────────────────────────────
   const desktopContent = (
     <AgentDesktopShell active="dashboard" isOnline={isOnline}>
-      <div className="w-full max-w-[1120px]">
+      <div className="w-full ">
         {/* ── Registration stats ── */}
         <h2 className="mb-5 font-display text-[20px] font-bold leading-6 text-brand-text-primary">
           Registration stats
@@ -289,7 +291,7 @@ export default function AgentHome() {
             label="Registered Farmers"
             value={agentData.totalFarmersRegistered}
             badge={
-              <span className="inline-flex h-6 items-center rounded-[50px] bg-[#007158] px-[10px] text-[12px] font-light leading-[14px] text-[#F6F6F6]">
+              <span className="inline-flex h-10 items-center rounded-[50px] bg-[#007158] px-4 text-[20px] font-light leading-none text-[#F6F6F6]">
                 {formatChangePct(registeredFarmersChange)}
               </span>
             }
@@ -299,13 +301,13 @@ export default function AgentHome() {
             label="Digital IDs Issued"
             value={agentData.syncedFarmers.toLocaleString()}
             badge={
-              <span className="inline-flex h-6 items-center rounded-[50px] bg-[#007158] px-[10px] text-[12px] font-light leading-[14px] text-[#F6F6F6]">
+              <span className="inline-flex h-10 items-center rounded-[50px] bg-[#007158] px-4 text-[20px] font-light leading-none text-[#F6F6F6]">
                 {formatChangePct(idsIssuedChange)}
               </span>
             }
           />
           <DesktopStatCard
-            iconEl={<RefreshCw size={17} strokeWidth={1.8} className="text-white/95" />}
+            iconEl={<RefreshCw size={34} strokeWidth={1.8} className="text-white/95" />}
             label="Pending sync"
             value={String(syncCounts.pending).padStart(2, "0")}
             action={
@@ -313,7 +315,7 @@ export default function AgentHome() {
                 type="button"
                 onClick={handleSync}
                 disabled={syncing || syncCounts.pending === 0}
-                className="inline-flex h-6 items-center gap-1 rounded-[20px] bg-[#FFBB3C] px-[10px] text-[12px] font-medium leading-[14px] text-[#030F0F] disabled:opacity-40"
+                className="inline-flex h-10 items-center gap-1.5 rounded-[20px] bg-[#FFBB3C] px-4 text-[14px] font-medium leading-[16px] text-[#030F0F] disabled:opacity-40"
               >
                 <RefreshCw size={12} className={syncing ? "animate-spin" : ""} strokeWidth={1.8} />
                 Sync now
