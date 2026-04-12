@@ -1,11 +1,11 @@
-import { Headset, Plus, Wifi, WifiOff } from "lucide-react";
+import { ChevronDown, Headset, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { agentData } from "../../mockData/agent";
 
 // ── Custom sidebar icon assets ────────────────────────────
 import homeIcon    from "../../assets/comps/home-11.svg";
 import tractorIcon from "../../assets/comps/tractor.svg";
-import settingIcon from "../../assets/comps/setting.svg";
+import settingIcon from "../../assets/comps/settings-03.svg";
 
 const NAV_LINKS = [
   { key: "dashboard", label: "Dashboard",    icon: homeIcon,    path: "/agent/home"           },
@@ -67,7 +67,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
                   <h1 className="truncate font-display text-[20px] font-bold leading-6 text-brand-text-primary">
                     Welcome, Agent {agentData.name}
                   </h1>
-                  <p className="mt-2 text-[15px] leading-[18px] text-brand-text-secondary">
+                  <p className="mt-2 text-[15px] font-light leading-[18px] text-brand-text-secondary">
                     Ready to manage farmer registration and track activities
                   </p>
                 </div>
@@ -77,7 +77,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
                   }`}
                 >
                   {isOnline ? "Online" : "Offline"}
-                  {isOnline ? <Wifi size={11.11} strokeWidth={2.2} /> : <WifiOff size={11.11} strokeWidth={2.2} />}
+                  <ChevronDown size={10} strokeWidth={2.4} />
                 </div>
               </div>
               <button

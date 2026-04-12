@@ -175,8 +175,10 @@ function ListScreen({
       </div>
 
       <AgentDesktopShell active="farmers">
-        <HeaderBlock />
-        <FarmersGrid farmers={listData} onSelect={onSelect} onSyncFarmer={onSyncFarmer} />
+        <div className="w-[862.81px]">
+          <HeaderBlock />
+          <FarmersGrid farmers={listData} onSelect={onSelect} onSyncFarmer={onSyncFarmer} />
+        </div>
       </AgentDesktopShell>
     </>
   );
@@ -221,7 +223,9 @@ function SearchScreen({ farmers, query, setQuery, statusFilter, setStatusFilter,
         <AgentBottomNav />
       </div>
       <AgentDesktopShell active="farmers">
-        <SearchContent />
+        <div className="w-[862.81px]">
+          <SearchContent />
+        </div>
       </AgentDesktopShell>
     </>
   );
@@ -419,7 +423,9 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
       <div className="min-h-dvh bg-brand-bg-page md:hidden">
         <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">{content}</div>
       </div>
-      <AgentDesktopShell active="farmers">{content}</AgentDesktopShell>
+      <AgentDesktopShell active="farmers">
+        <div className="w-[862.81px]">{content}</div>
+      </AgentDesktopShell>
       <div className="md:hidden">
         <AgentBottomNav />
       </div>

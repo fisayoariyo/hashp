@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Settings, UserPlus, Search, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { CheckCircle2, ChevronRight, Home, Plus, Settings, UserPlus, Search, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { agentData, agentRegisteredFarmers } from "../../mockData/agent";
 import {
@@ -13,10 +13,8 @@ import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.svg";
 import statFarmersIcon    from "../../assets/comps/tractor.svg";
 import statIdIcon         from "../../assets/comps/id.svg";
 import registerActionIcon from "../../assets/comps/user-add-01.svg";
-import lookupActionIcon   from "../../assets/comps/user-search.svg";   // ← fixed
-import wifiOffStatusIcon  from "../../assets/comps/wifi-.svg";          // ← fixed
-import arrowRightIcon     from "../../assets/comps/arrow-r.svg";        // ← added
-import checkmarkCircleIcon from "../../assets/comps/checkmark-circle-02.svg"; // ← added
+import lookupActionIcon   from "../../assets/comps/user-search-01.svg";
+import wifiOffStatusIcon  from "../../assets/comps/wifi-off-02.svg";
 
 // ── Custom tractor icon (mobile bottom nav) ───────────────
 function TractorIcon({ size = 22, className = "" }) {
@@ -330,7 +328,7 @@ export default function AgentHome() {
 
             {/* Register new farmer */}
             <section>
-              <h3 className="font-display font-bold text-[20px] leading-none text-brand-text-primary mb-3">
+              <h3 className="font-display font-bold text-[20px] leading-6 text-brand-text-primary mb-3">
                 Register new farmer
               </h3>
               <div className="grid grid-cols-[273.94px_274px] gap-5">
@@ -346,7 +344,7 @@ export default function AgentHome() {
                     onClick={() => navigate("/agent/register-farmer")}
                     className="mt-4 inline-flex h-[37px] w-[190px] items-center justify-center gap-1 rounded-[10px] bg-[#FFBB3C] text-[12px] font-normal leading-[14px] text-[#030F0F]"
                   >
-                    <span className="text-[14px]">+</span>
+                    <Plus size={13} strokeWidth={2.1} />
                     Start Registration
                   </button>
                 </div>
@@ -372,7 +370,7 @@ export default function AgentHome() {
 
             {/* Synchronization */}
             <section>
-              <h3 className="font-display font-bold text-[20px] leading-none text-brand-text-primary mb-4">
+              <h3 className="font-display font-bold text-[20px] leading-6 text-brand-text-primary mb-4">
                 Synchronization
               </h3>
               <div className="h-[183.24px] rounded-[32.1469px] border border-[#e4e4e4] bg-[#FFFFFF] px-[27.33px] pb-[20px] pt-[14px]">
@@ -428,7 +426,7 @@ export default function AgentHome() {
               {/* Completed / Pending legend */}
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 text-[16.073px] leading-[19px] text-[#030F0F]">
-                  <img src={checkmarkCircleIcon} alt="" aria-hidden="true" className="h-[18px] w-[18px]" />
+                  <CheckCircle2 size={18} className="text-[#03624D]" strokeWidth={1.8} />
                   <span>{syncCounts.completed} Completed</span>
                 </div>
                 <div className="flex items-center gap-2 text-[16.073px] leading-[19px] text-[#030F0F]">
@@ -442,7 +440,7 @@ export default function AgentHome() {
 
           {/* ── Right column — Recently Registered ── */}
           <aside className="h-[462px]">
-            <h3 className="font-display font-bold text-[20px] leading-none text-[#030F0F] mb-4 whitespace-nowrap">
+            <h3 className="font-display font-bold text-[20px] leading-6 text-[#030F0F] mb-4 whitespace-nowrap">
               Recently Registered
             </h3>
             <div className="flex h-[422px] flex-col rounded-[20px] border border-[#e4e4e4] bg-[#FFFFFF] px-[17px] pb-3 pt-[17px]">
@@ -464,10 +462,10 @@ export default function AgentHome() {
                         </p>
                         <button
                           onClick={() => navigate("/agent/saved-farmers")}
-                          className="mt-[10px] inline-flex items-center gap-1 text-[10px] font-bold leading-[12px] text-[#03624D]"
+                          className="mt-[10px] inline-flex items-center gap-0.5 text-[10px] font-bold leading-[12px] text-[#03624D]"
                         >
                           View Details
-                          <img src={arrowRightIcon} alt="" aria-hidden="true" className="h-[10px] w-[10px]" />
+                          <ChevronRight size={10} strokeWidth={2.4} />
                         </button>
                       </div>
                     </div>
