@@ -17,11 +17,11 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
   const navigate = useNavigate();
 
   return (
-    <div className="hidden md:block min-h-dvh bg-brand-bg-page p-4">
-      <div className="min-h-[calc(100dvh-2rem)] w-full rounded-[20px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+    <div className="hidden md:block min-h-dvh bg-brand-bg-page p-3 lg:p-4">
+      <div className="mx-auto min-h-[calc(100dvh-1.5rem)] lg:min-h-[calc(100dvh-2rem)] w-full max-w-[1280px] xl:max-w-[1400px] 2xl:max-w-[1520px] rounded-[20px] bg-white p-3 lg:p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
         <div className="flex h-full gap-[10px]">
           {/* ── Sidebar (CSS: 295x801) ── */}
-          <aside className="h-full w-[295px] shrink-0 rounded-[20px] bg-white px-[29px] py-[31px]">
+          <aside className="h-full w-[260px] xl:w-[295px] shrink-0 rounded-[20px] bg-white px-5 xl:px-[29px] py-7 xl:py-[31px]">
           <img
             src="/brand/HFEI_Primary_Logo_.png"
             alt="HFEI by Hashmar Cropex Ltd"
@@ -64,9 +64,9 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
           </aside>
 
           {/* ── Main area (CSS: 935 content width) ── */}
-          <main className="flex min-w-0 flex-1 flex-col gap-[14px]">
+          <main className="mx-auto flex w-full min-w-0 max-w-[900px] xl:max-w-[1040px] 2xl:max-w-[1140px] flex-1 flex-col gap-[14px]">
             {/* Header */}
-            <div className="flex h-[95px] items-center justify-between rounded-[20px] bg-white px-[26px] py-[15px]">
+            <div className="flex h-[95px] items-center justify-between rounded-[20px] bg-white px-5 xl:px-[26px] py-[15px]">
               <div className="flex items-center gap-6">
                 <div className="min-w-0">
                   <h1 className="truncate font-display text-[20px] font-bold leading-6 text-brand-text-primary">
@@ -96,7 +96,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
             </div>
 
             {/* Page content */}
-            <div className="flex-1 min-h-0 rounded-[20px] bg-[#F6F6F6] px-9 py-7">
+            <div className="flex-1 min-h-0 rounded-[20px] bg-[#F6F6F6] px-6 xl:px-9 py-6 xl:py-7">
               <div className="h-full overflow-y-auto pr-1">
                 {children}
               </div>

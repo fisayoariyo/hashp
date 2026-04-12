@@ -445,16 +445,19 @@ export default function AgentHome() {
               Recently Registered
             </h3>
             <div className="flex h-[422px] flex-col rounded-[20px] border border-[#e4e4e4] bg-[#FFFFFF] px-[17px] pb-3 pt-[17px]">
-              <div className="flex-1 space-y-[15px]">
-                {agentRegisteredFarmers.slice(0, 4).map((farmer) => (
-                  <div key={farmer.id} className="h-[74px] w-full rounded-[10px] bg-[#F6F6F6] px-[9px] pb-[10px] pt-[8px]">
-                    <div className="flex items-center gap-[10px]">
+              <div className="flex-1 overflow-y-auto scrollbar-hide">
+                <div className="flex flex-col items-center gap-3">
+                  {agentRegisteredFarmers.slice(0, 5).map((farmer) => (
+                    <div
+                      key={farmer.id}
+                      className="flex h-[200px] w-[167px] flex-row items-center justify-between gap-[10px] rounded-[10px] bg-[#FFFFFF] px-[9px] pb-[10px] pt-[8px] shadow-[0_1px_0_rgba(3,15,15,0.06)]"
+                    >
                       <img
                         src={farmer.photo}
                         alt={farmer.name}
-                        className="h-[61px] w-[61px] rounded-[11px] object-cover shrink-0"
+                        className="h-[80px] w-[61px] rounded-[11px] object-cover shrink-0"
                       />
-                      <div className="min-w-0">
+                      <div className="min-w-0 self-start pt-1">
                         <p className="truncate text-[10px] leading-[12px] text-[#030F0F]">
                           ID : {farmer.id}
                         </p>
@@ -470,8 +473,8 @@ export default function AgentHome() {
                         </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
               <button
                 type="button"

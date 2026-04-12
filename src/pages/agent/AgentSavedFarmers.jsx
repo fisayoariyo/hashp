@@ -35,7 +35,7 @@ function FilterPill({ value, onChange, options }) {
 
 function FarmerCard({ farmer, onView, onSyncFarmer }) {
   return (
-    <div className="relative rounded-2xl bg-white p-3 md:rounded-[20px] md:border md:border-[#E6E6E6] md:bg-[#FFFFFF] md:p-4">
+    <div className="relative rounded-2xl bg-white p-3 md:h-[200px] md:rounded-[10px] md:border md:border-[#E6E6E6] md:bg-[#FFFFFF] md:px-[9px] md:pb-[10px] md:pt-[8px]">
       {farmer.status === "pending" && (
         <button
           type="button"
@@ -49,10 +49,10 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
           <span className="text-[10px] font-sans font-semibold text-brand-amber">Sync now</span>
         </button>
       )}
-      <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl overflow-hidden mb-3">
+      <div className="h-28 w-28 overflow-hidden rounded-xl mb-3 md:h-[61px] md:w-[61px] md:rounded-[11px]">
         <img src={farmer.photo} alt={farmer.name} className="w-full h-full object-cover" />
       </div>
-      <div className="space-y-0.5 min-h-[78px]">
+      <div className="space-y-0.5 min-h-[78px] md:min-h-[88px]">
         <p className="font-sans text-xs text-brand-text-primary"><span className="text-brand-text-muted">Name : </span>{farmer.name}</p>
         <p className="font-sans text-xs text-brand-text-primary"><span className="text-brand-text-muted">ID : </span>{farmer.id}</p>
         <p className="font-sans text-xs text-brand-text-primary"><span className="text-brand-text-muted">Reg date: </span>{farmer.regDate}</p>
@@ -65,7 +65,7 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
       </div>
       <button
         onClick={onView}
-        className="mt-3 w-full rounded-xl bg-brand-green py-2.5 font-sans text-xs font-semibold text-white md:h-[37px] md:rounded-[10px] md:py-0"
+        className="mt-3 w-full rounded-xl bg-brand-green py-2.5 font-sans text-xs font-semibold text-white md:h-[23px] md:rounded-[10px] md:py-0 md:text-[10px]"
       >
         View Details
       </button>
@@ -75,7 +75,7 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
 
 function FarmersGrid({ farmers, onSelect, onSyncFarmer }) {
   return (
-    <div className="grid grid-cols-2 gap-3 px-4 md:grid-cols-3 md:gap-5 md:px-0">
+    <div className="grid grid-cols-2 gap-3 px-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-4 md:px-0">
       {farmers.map((f) => (
         <FarmerCard key={f.id} farmer={f} onView={() => onSelect(f)} onSyncFarmer={onSyncFarmer} />
       ))}
