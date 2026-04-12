@@ -39,7 +39,7 @@ function formatChangePct(value) {
 // ── Desktop stat card — accepts img URL or React element for icon ──
 function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge, action }) {
   return (
-    <div className="relative h-[112px] w-full overflow-hidden rounded-[20px] bg-[#005F4A] px-[18px] py-[12px] text-white">
+    <div className="relative h-[102px] w-full overflow-hidden rounded-[20px] bg-[#005F4A] px-[17px] py-[11px] text-white">
       <div className="absolute inset-0 rounded-[20px] bg-[#016A53]" />
       <img
         src={cardPatternDesktop}
@@ -51,13 +51,13 @@ function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge
         <div className="mb-3 flex items-start justify-between">
           {iconEl
             ? iconEl
-            : <img src={icon} alt="" aria-hidden="true" className={`h-[18px] w-[18px] opacity-95 ${iconClassName}`} />
+            : <img src={icon} alt="" aria-hidden="true" className={`h-[17px] w-[17px] opacity-95 ${iconClassName}`} />
           }
           {badge}
           {action}
         </div>
         <p className="font-sans text-[14px] font-light leading-[16px] text-white/85">{label}</p>
-        <p className="mt-1.5 font-display text-[34px] leading-[32px] font-medium tracking-tight">{value}</p>
+        <p className="mt-1 font-display text-[32px] leading-[30px] font-medium tracking-tight">{value}</p>
       </div>
     </div>
   );
@@ -277,12 +277,12 @@ export default function AgentHome() {
   // ── Desktop layout ──────────────────────────────────────
   const desktopContent = (
     <AgentDesktopShell active="dashboard" isOnline={isOnline}>
-      <div className="mx-auto w-full max-w-[1040px]">
+      <div className="w-full max-w-[1120px]">
         {/* ── Registration stats ── */}
         <h2 className="mb-5 font-display text-[20px] font-bold leading-6 text-brand-text-primary">
           Registration stats
         </h2>
-        <div className="mb-6 flex h-[112px] w-full items-center gap-5">
+        <div className="mb-6 flex h-[102px] w-full items-center gap-4">
           <DesktopStatCard
             icon={statFarmersIcon}
             iconClassName="brightness-0 invert"
