@@ -18,7 +18,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
 
   return (
     <div className="hidden md:block min-h-dvh bg-brand-bg-page p-4">
-      <div className="min-h-[calc(100dvh-2rem)] w-full rounded-[20px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+      <div className="h-[calc(100dvh-2rem)] w-full rounded-[20px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
         <div className="flex h-full gap-[10px]">
           {/* ── Sidebar (CSS: 295x801) ── */}
           <aside className="h-full w-[295px] shrink-0 rounded-[20px] bg-white px-[29px] py-[31px]">

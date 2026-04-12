@@ -54,23 +54,9 @@ function ChangePasswordScreen({ onBack }) {
     setTimeout(() => onBack(), 2000);
   };
 
-  if (success) {
-    return (
-      <div className="page-white flex flex-col items-center justify-center gap-4 px-6">
-        <div className="w-16 h-16 rounded-full bg-brand-green flex items-center justify-center">
-          <span className="text-white text-2xl">✓</span>
-        </div>
-        <p className="font-display font-bold text-xl text-brand-text-primary">Password updated!</p>
-        <p className="font-sans text-sm text-brand-text-secondary text-center">
-          Redirecting back to settings...
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="page-white flex flex-col">
-      <div className="flex-1 px-5 pt-5">
+  const content = (
+    <div className="flex flex-col md:w-full md:max-w-[862.81px]">
+      <div className="flex-1 px-5 md:px-0 pt-5">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-brand-text-secondary mb-6"
@@ -79,99 +65,120 @@ function ChangePasswordScreen({ onBack }) {
           <span className="font-sans text-sm">Go back</span>
         </button>
 
-        {step === "otp" && (
-          <>
-            <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">
-              Enter OTP
-            </h1>
-            <p className="font-sans text-sm text-brand-text-secondary mb-8">
-              Enter the code sent to your registered phone number to confirm.
-            </p>
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              {digits.map((d, i) => (
-                <input
-                  key={i}
-                  ref={otpRefs[i]}
-                  type="tel"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={d}
-                  onChange={(e) => handleDigit(i, e.target.value)}
-                  onKeyDown={(e) => handleOTPKeyDown(i, e)}
-                  className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${
-                    d
-                      ? "border-brand-green text-brand-green"
-                      : "border-brand-border"
-                  } focus:border-brand-green`}
-                />
-              ))}
+        {success ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-10">
+            <div className="w-16 h-16 rounded-full bg-brand-green flex items-center justify-center">
+              <span className="text-white text-2xl">✓</span>
             </div>
-            {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-            <p className="font-sans text-xs text-brand-text-muted">
-              Demo OTP: <strong>1234</strong>
+            <p className="font-display font-bold text-xl text-brand-text-primary">Password updated!</p>
+            <p className="font-sans text-sm text-brand-text-secondary text-center">
+              Redirecting back to settings...
             </p>
-          </>
-        )}
-
-        {step === "new" && (
+          </div>
+        ) : (
           <>
-            <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">
-              New Password
-            </h1>
-            <p className="font-sans text-sm text-brand-text-secondary mb-8">
-              Create a new password for your account.
-            </p>
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-sans text-sm font-medium text-brand-text-primary">
+            {step === "otp" && (
+              <>
+                <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">
+                  Enter OTP
+                </h1>
+                <p className="font-sans text-sm text-brand-text-secondary mb-8">
+                  Enter the code sent to your registered phone number to confirm.
+                </p>
+                <div className="grid grid-cols-4 gap-3 mb-4 md:w-fit md:gap-4">
+                  {digits.map((d, i) => (
+                    <input
+                      key={i}
+                      ref={otpRefs[i]}
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={d}
+                      onChange={(e) => handleDigit(i, e.target.value)}
+                      onKeyDown={(e) => handleOTPKeyDown(i, e)}
+                      className={`h-16 w-full text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors md:w-[92px] ${
+                        d ? "border-brand-green text-brand-green" : "border-brand-border"
+                      } focus:border-brand-green`}
+                    />
+                  ))}
+                </div>
+                {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+                <p className="font-sans text-xs text-brand-text-muted">
+                  Demo OTP: <strong>1234</strong>
+                </p>
+              </>
+            )}
+
+            {step === "new" && (
+              <div className="md:max-w-[560px]">
+                <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">
                   New Password
-                </label>
-                <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all">
-                  <input
-                    type={showPass ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter new password"
-                    className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
-                  />
-                  <button
-                    onClick={() => setShowPass((v) => !v)}
-                    className="text-brand-text-muted shrink-0"
-                  >
-                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+                </h1>
+                <p className="font-sans text-sm text-brand-text-secondary mb-8">
+                  Create a new password for your account.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-sans text-sm font-medium text-brand-text-primary">
+                      New Password
+                    </label>
+                    <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all">
+                      <input
+                        type={showPass ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
+                      />
+                      <button
+                        onClick={() => setShowPass((v) => !v)}
+                        className="text-brand-text-muted shrink-0"
+                      >
+                        {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-sans text-sm font-medium text-brand-text-primary">
+                      Confirm Password
+                    </label>
+                    <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all">
+                      <input
+                        type={showPass ? "text" : "password"}
+                        value={confirm}
+                        onChange={(e) => setConfirm(e.target.value)}
+                        placeholder="Re-enter password"
+                        className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
+                      />
+                    </div>
+                  </div>
+                  {error && <p className="text-xs text-red-500">{error}</p>}
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="font-sans text-sm font-medium text-brand-text-primary">
-                  Confirm Password
-                </label>
-                <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all">
-                  <input
-                    type={showPass ? "text" : "password"}
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    placeholder="Re-enter password"
-                    className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
-                  />
-                </div>
-              </div>
-              {error && <p className="text-xs text-red-500">{error}</p>}
-            </div>
+            )}
           </>
         )}
       </div>
 
-      <div className="px-5 pb-8">
-        <button
-          onClick={step === "otp" ? handleOTP : handleSave}
-          disabled={step === "otp" && digits.join("").length < 4}
-          className="btn-primary"
-        >
-          {step === "otp" ? "Verify" : "Save Password"}
-        </button>
-      </div>
+      {!success && (
+        <div className="px-5 md:px-0 pb-8 md:pb-0 md:pt-6">
+          <button
+            onClick={step === "otp" ? handleOTP : handleSave}
+            disabled={step === "otp" && digits.join("").length < 4}
+            className="w-full md:w-[240px] inline-flex h-[47px] items-center justify-center rounded-[15px] bg-[#03624D] text-white font-sans font-semibold disabled:opacity-40"
+          >
+            {step === "otp" ? "Verify" : "Save Password"}
+          </button>
+        </div>
+      )}
     </div>
+  );
+
+  return (
+    <>
+      <div className="md:hidden page-white">{content}</div>
+      <AgentDesktopShell active="settings">{content}</AgentDesktopShell>
+    </>
   );
 }
 
