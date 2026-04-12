@@ -97,11 +97,45 @@ export default function AgentHome() {
   const navigate = useNavigate();
   const [syncing,    setSyncing]    = useState(false);
   const [syncDone,   setSyncDone]   = useState(false);
-  const [syncCounts, setSyncCounts] = useState(getFarmerSyncCountsFromStorage);
+  const [syncCounts, setSyncCounts] = useState(() => {
+    try {
+      const counts = getFarmerSyncCountsFromStorage();
+      if (!counts || typeof counts !== "object") return { completed: 0, pending: 0 };
+      return {
+        completed: Number.isFinite(counts.completed) ? counts.completed : 0,
+        pending: Number.isFinite(counts.pending) ? counts.pending : 0,
+      };
+    } catch {
+      return { completed: 0, pending: 0 };
+    }
+  });
   const [isOnline,   setIsOnline]   = useState(typeof navigator === "undefined" ? true : navigator.onLine);
 
+  const safeSyncCounts = useMemo(() => {
+    if (!syncCounts || typeof syncCounts !== "object") return { completed: 0, pending: 0 };
+    return {
+      completed: Number.isFinite(syncCounts.completed) ? syncCounts.completed : 0,
+      pending: Number.isFinite(syncCounts.pending) ? syncCounts.pending : 0,
+    };
+  }, [syncCounts]);
+
+  const recentFarmers = useMemo(
+    () => (Array.isArray(agentRegisteredFarmers) ? agentRegisteredFarmers.slice(0, 4) : []),
+    []
+  );
+
   useEffect(() => {
-    const refresh = () => setSyncCounts(getFarmerSyncCountsFromStorage());
+    const refresh = () => {
+      try {
+        const counts = getFarmerSyncCountsFromStorage();
+        setSyncCounts({
+          completed: Number.isFinite(counts?.completed) ? counts.completed : 0,
+          pending: Number.isFinite(counts?.pending) ? counts.pending : 0,
+        });
+      } catch {
+        setSyncCounts({ completed: 0, pending: 0 });
+      }
+    };
     window.addEventListener("hcx-farmers-sync", refresh);
     return () => window.removeEventListener("hcx-farmers-sync", refresh);
   }, []);
@@ -118,10 +152,10 @@ export default function AgentHome() {
   }, []);
 
   const syncProgressPct = useMemo(() => {
-    const t = syncCounts.completed + syncCounts.pending;
+    const t = safeSyncCounts.completed + safeSyncCounts.pending;
     if (t === 0) return 100;
-    return Math.round((syncCounts.completed / t) * 100);
-  }, [syncCounts]);
+    return Math.round((safeSyncCounts.completed / t) * 100);
+  }, [safeSyncCounts]);
 
   const registeredFarmersChange = useMemo(
     () => getChangePct(agentData.totalFarmersRegistered, agentData.previousPeriodFarmersRegistered),
@@ -133,11 +167,19 @@ export default function AgentHome() {
   );
 
   const handleSync = async () => {
-    if (syncCounts.pending === 0) return;
+    if (safeSyncCounts.pending === 0) return;
     setSyncing(true);
     await new Promise((r) => setTimeout(r, 1200));
     syncAllPendingFarmersStorage();
-    setSyncCounts(getFarmerSyncCountsFromStorage());
+    try {
+      const counts = getFarmerSyncCountsFromStorage();
+      setSyncCounts({
+        completed: Number.isFinite(counts?.completed) ? counts.completed : 0,
+        pending: Number.isFinite(counts?.pending) ? counts.pending : 0,
+      });
+    } catch {
+      setSyncCounts({ completed: 0, pending: 0 });
+    }
     setSyncing(false);
     setSyncDone(true);
     setTimeout(() => setSyncDone(false), 3000);
@@ -184,7 +226,7 @@ export default function AgentHome() {
                 <button
                   type="button"
                   onClick={handleSync}
-                  disabled={syncing || syncCounts.pending === 0}
+                  disabled={syncing || safeSyncCounts.pending === 0}
                   className="flex items-center gap-1 text-brand-amber text-xs font-semibold disabled:opacity-40"
                 >
                   <RefreshCw size={11} className={syncing ? "animate-spin" : ""} /> Sync now
@@ -192,7 +234,7 @@ export default function AgentHome() {
               </div>
               <p className="font-sans text-white/70 text-xs">Pending sync</p>
               <p className="font-display font-bold text-2xl text-white mt-1">
-                {String(syncCounts.pending).padStart(2, "0")}
+                {String(safeSyncCounts.pending).padStart(2, "0")}
               </p>
             </div>
           </div>
@@ -310,7 +352,7 @@ export default function AgentHome() {
                 <button
                   type="button"
                   onClick={handleSync}
-                  disabled={syncing || syncCounts.pending === 0}
+                  disabled={syncing || safeSyncCounts.pending === 0}
                   className="inline-flex h-6 items-center gap-1 rounded-[20px] bg-[#FFBB3C] px-[10px] text-[12px] font-medium leading-[14px] text-[#030F0F] disabled:opacity-40"
                 >
                   <img
@@ -401,11 +443,11 @@ export default function AgentHome() {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-1">
                 <CheckCircle2 size={16} className="text-[#03624D]" />
-                <p className="text-[16px] font-normal leading-[19px] text-[#030F0F]">{syncCounts.completed} Completed</p>
+                <p className="text-[16px] font-normal leading-[19px] text-[#030F0F]">{safeSyncCounts.completed} Completed</p>
               </div>
               <div className="flex items-center gap-1">
                 <div className="h-4 w-4 rounded-full bg-[#FFBB3C]" />
-                <p className="text-[16px] font-normal leading-[19px] text-[#030F0F]">{syncCounts.pending} Pending</p>
+                <p className="text-[16px] font-normal leading-[19px] text-[#030F0F]">{safeSyncCounts.pending} Pending</p>
               </div>
             </div>
           </div>
@@ -415,7 +457,7 @@ export default function AgentHome() {
           <h3 className="mb-4 text-[20px] font-bold leading-6 text-[#030F0F]">Recently Registered</h3>
           <div className="rounded-[20px] bg-white px-[17px] pb-3 pt-[17px]">
             <div className="space-y-[15px]">
-              {agentRegisteredFarmers.slice(0, 4).map((farmer) => (
+              {recentFarmers.map((farmer) => (
                 <div key={farmer.id} className="flex h-[74px] items-center gap-[10px] rounded-[10px] bg-[#F6F6F6] px-[9px] py-[8px]">
                   <img src={farmer.photo} alt={farmer.name} className="h-[61px] w-[61px] rounded-[11px] object-cover" />
                   <div>

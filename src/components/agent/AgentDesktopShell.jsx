@@ -22,7 +22,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
       <div className="relative mx-auto w-full max-w-[1280px] min-h-[832px] rounded-[20px] bg-white">
         <aside className="absolute left-[20px] top-[16px] h-[801px] w-[295px] rounded-[20px] bg-white px-[29px] pt-[31px]">
           <img
-            src="/brand/HFEI_Primary_Logo_.png"
+            src="/brand/HFEI_Primary_Logo_White.png"
             alt="HFEI by Hashmar Cropex Ltd"
             className="h-[34px] w-auto object-contain"
           />
