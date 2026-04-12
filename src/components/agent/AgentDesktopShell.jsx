@@ -5,7 +5,7 @@ import { agentData } from "../../mockData/agent";
 // ── Custom sidebar icon assets ────────────────────────────
 import homeIcon    from "../../assets/comps/home-11.svg";
 import tractorIcon from "../../assets/comps/tractor.svg";
-import settingIcon from "../../assets/comps/settings-03.svg";
+import settingIcon from "../../assets/comps/setting.svg";
 
 const NAV_LINKS = [
   { key: "dashboard", label: "Dashboard",    icon: homeIcon,    path: "/agent/home"           },
@@ -14,31 +14,31 @@ const NAV_LINKS = [
   { key: "support",   label: "Help & Support", icon: null,        path: "/agent/contact-support" },
 ];
 
-export default function AgentDesktopShell({ active = "dashboard", isOnline = true, forceVisible = false, children }) {
+export default function AgentDesktopShell({ active = "dashboard", isOnline = true, children }) {
   const navigate = useNavigate();
 
   return (
-    <div className={`${forceVisible ? "block" : "hidden md:block"} min-h-dvh bg-[#f6f6f6] p-4 xl:p-8`}>
-      <div className="relative mx-auto w-full max-w-[1280px] min-h-[832px] rounded-[20px] bg-white">
-        <aside className="absolute left-[20px] top-[16px] h-[801px] w-[295px] rounded-[20px] bg-white px-[29px] pt-[31px]">
+    <div className="hidden md:flex min-h-dvh items-center justify-center bg-brand-bg-page px-4 py-5">
+      <div className="h-[832px] w-[1280px] rounded-[20px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+        <div className="flex h-full gap-[10px]">
+          {/* ── Sidebar (CSS: 295x801) ── */}
+          <aside className="h-[801px] w-[295px] shrink-0 rounded-[20px] bg-white px-[29px] py-[31px]">
           <img
-            src="/brand/HFEI_Primary_Logo_White.png"
+            src="/brand/HFEI_Primary_Logo_.png"
             alt="HFEI by Hashmar Cropex Ltd"
-            className="h-[34px] w-auto object-contain"
+            className="mb-[60px] h-[34px] w-auto object-contain"
           />
-
-          <nav className="mt-[60px] space-y-5">
+          <nav className="space-y-2">
             {NAV_LINKS.map(({ key, label, icon, path }) => {
               const isActive = active === key;
               return (
                 <button
                   key={key}
-                  type="button"
                   onClick={() => navigate(path)}
-                  className={`flex h-[45px] w-[238px] items-center gap-2.5 rounded-[10px] px-[14px] text-left text-[15px] leading-[18px] ${
+                  className={`flex h-[45px] w-full items-center gap-[10px] rounded-[10px] px-[14px] text-[15px] leading-[18px] font-normal transition-colors ${
                     isActive
-                      ? "bg-[#03624D] font-medium text-white"
-                      : "bg-transparent font-normal text-[#030F0F] hover:bg-[#03624d0f]"
+                      ? "bg-[#03624D] text-white shadow-[0_6px_14px_rgba(3,98,77,0.18)]"
+                      : "text-[#030F0F]/80 hover:bg-[#03624D]/10 hover:text-[#03624D]"
                   }`}
                 >
                   {icon ? (
@@ -46,49 +46,58 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
                       src={icon}
                       alt=""
                       aria-hidden="true"
-                      className={`h-[22px] w-[22px] ${isActive ? "brightness-0 invert" : ""}`}
+                      className={`h-[22px] w-[22px] shrink-0 ${isActive ? "brightness-0 invert" : ""}`}
                     />
                   ) : (
-                    <Headset size={22} className={isActive ? "text-white" : "text-[#030F0F]"} />
+                    <Headset size={22} className="shrink-0" />
                   )}
-                  <span className="truncate">{label}</span>
+                  {label}
                 </button>
               );
             })}
           </nav>
-        </aside>
+          </aside>
 
-        <header className="absolute left-[325px] top-[16px] flex h-[95px] w-[935px] items-center justify-between rounded-[20px] bg-white px-[26px] py-[15px]">
-          <div className="flex items-center gap-2">
-            <div>
-              <h1 className="text-[20px] font-bold leading-6 text-[#030F0F]">Welcome, Agent {agentData.name}</h1>
-              <p className="text-[15px] font-light leading-[18px] text-[#030F0F]">
-                Ready to manage farmer registration and track activities
-              </p>
+          {/* ── Main area (CSS: 935 content width) ── */}
+          <main className="flex w-[935px] min-w-0 flex-col gap-[14px]">
+            {/* Header */}
+            <div className="flex h-[95px] items-center justify-between rounded-[20px] bg-white px-[26px] py-[15px]">
+              <div className="flex items-center gap-6">
+                <div className="min-w-0">
+                  <h1 className="truncate font-display text-[20px] font-bold leading-6 text-brand-text-primary">
+                    Welcome, Agent {agentData.name}
+                  </h1>
+                  <p className="mt-2 text-[15px] leading-[18px] text-brand-text-secondary">
+                    Ready to manage farmer registration and track activities
+                  </p>
+                </div>
+                <div
+                  className={`inline-flex h-[21.21px] items-center gap-[3px] rounded-[50.49px] px-[10px] text-[12.12px] font-bold leading-[14px] ${
+                    isOnline ? "bg-[#03624D] text-white" : "bg-[#E8ECEB] text-[#445250]"
+                  }`}
+                >
+                  {isOnline ? "Online" : "Offline"}
+                  {isOnline ? <Wifi size={11.11} strokeWidth={2.2} /> : <WifiOff size={11.11} strokeWidth={2.2} />}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/agent/register-farmer")}
+                className="inline-flex h-[47px] w-[204px] shrink-0 items-center justify-center gap-2 rounded-[15px] bg-[#03624D] px-[20px] text-[15px] font-medium text-white"
+              >
+                <Plus size={17} strokeWidth={2.5} />
+                Register New Farmer
+              </button>
             </div>
-            <div
-              className={`ml-1 inline-flex h-[21px] items-center gap-1 rounded-[50px] px-[10px] text-[12px] font-bold leading-[14px] ${
-                isOnline ? "bg-[#03624D] text-white" : "bg-[#e8eceb] text-[#445250]"
-              }`}
-            >
-              {isOnline ? <Wifi size={11} /> : <WifiOff size={11} />}
-              {isOnline ? "Online" : "Offline"}
+
+            {/* Page content */}
+            <div className="h-[696px] rounded-[20px] bg-[#F6F6F6] px-9 py-7">
+              <div className="h-full overflow-y-auto pr-1">
+                {children}
+              </div>
             </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => navigate("/agent/register-farmer")}
-            className="inline-flex h-[47px] items-center justify-center gap-2 rounded-[15px] bg-[#03624D] px-6 text-[15px] font-medium leading-[18px] text-white"
-          >
-            <Plus size={17} />
-            Register New Farmer
-          </button>
-        </header>
-
-        <main className="absolute left-[325px] top-[121px] h-[696px] w-[935px] rounded-[20px] bg-[#F6F6F6]">
-          {children}
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   );
