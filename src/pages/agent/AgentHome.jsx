@@ -39,7 +39,7 @@ function formatChangePct(value) {
 // ── Desktop stat card — accepts img URL or React element for icon ──
 function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge, action }) {
   return (
-    <div className="relative h-[102px] w-full overflow-hidden rounded-[20px] bg-[#005F4A] px-[17px] py-[11px] text-white">
+    <div className="relative h-[116px] w-full overflow-hidden rounded-[20px] bg-[#005F4A] px-[17px] py-[11px] text-white">
       <div className="absolute inset-0 rounded-[20px] bg-[#016A53]" />
       <img
         src={cardPatternDesktop}
@@ -57,7 +57,7 @@ function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge
           {action}
         </div>
         <p className="font-sans text-[14px] font-light leading-[16px] text-white/85">{label}</p>
-        <p className="mt-1 font-display text-[32px] leading-[30px] font-medium tracking-tight">{value}</p>
+        <p className="mt-1.5 font-display text-[32px] leading-[30px] font-medium tracking-tight">{value}</p>
       </div>
     </div>
   );
@@ -282,7 +282,7 @@ export default function AgentHome() {
         <h2 className="mb-5 font-display text-[20px] font-bold leading-6 text-brand-text-primary">
           Registration stats
         </h2>
-        <div className="mb-6 flex h-[102px] w-full items-center gap-4">
+        <div className="mb-6 grid w-full grid-cols-3 gap-5">
           <DesktopStatCard
             icon={statFarmersIcon}
             iconClassName="brightness-0 invert"
@@ -323,9 +323,9 @@ export default function AgentHome() {
         </div>
 
         {/* ── Bottom section: left 569 + right 273 ── */}
-        <div className="grid grid-cols-[minmax(0,1fr)_300px] justify-between gap-5">
+        <div className="grid grid-cols-3 gap-5">
           {/* ── Left column ── */}
-          <div className="space-y-6">
+          <div className="col-span-2 space-y-6">
 
             {/* Register new farmer */}
             <section>
