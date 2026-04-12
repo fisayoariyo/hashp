@@ -82,7 +82,7 @@ export default function AgentAccountUnderReview() {
       </button>
       <button
         type="button"
-        onClick={() => navigate("/agent/contact-support")}
+        onClick={() => navigate("/agent/contact-support", { state: { preAuth: true, from: "under-review" } })}
         className="w-full py-4 rounded-3xl border-2 border-brand-border text-brand-green font-sans font-semibold text-sm"
       >
         Contact support

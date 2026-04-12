@@ -5,10 +5,16 @@ import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayou
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { nigerianStates, nigerianLGAs } from "../../mockData/agent";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { agentRegister, formatPhoneForApi } from "../../services/cropexApi";
-import { CropexHttpError } from "../../services/cropexHttp";
 
 const REG_KEY = "hcx_agent_registration";
+
+function formatPhoneForLocalStore(digits) {
+  const d = String(digits || "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.startsWith("234")) return `+${d}`;
+  if (d.startsWith("0")) return `+234${d.slice(1)}`;
+  return `+234${d}`;
+}
 
 export default function AgentSelectLocation() {
   const navigate = useNavigate();
@@ -39,31 +45,27 @@ export default function AgentSelectLocation() {
         setLoading(false);
         return;
       }
-      await agentRegister({
-        email: reg.email,
-        full_name: reg.fullName,
-        gender: reg.gender,
-        lga,
-        password: pwd,
-        phone_number: formatPhoneForApi(reg.phone),
-        state,
-      });
       sessionStorage.setItem(
         REG_KEY,
-        JSON.stringify({ ...reg, state, lga, submittedAt: new Date().toISOString() })
+        JSON.stringify({
+          ...reg,
+          state,
+          lga,
+          phone: formatPhoneForLocalStore(reg.phone),
+          submittedAt: new Date().toISOString(),
+        })
       );
       sessionStorage.removeItem("hcx_agent_review_refresh_count");
       navigate("/agent/account-under-review");
-    } catch (e) {
-      const msg = e instanceof CropexHttpError ? e.message : "Registration failed. Try again.";
-      setRegError(msg);
+    } catch {
+      setRegError("Could not save your selected location. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const formBody = (
-    <div className="space-y-5 w-full max-w-md mx-auto md:mx-0">
+    <div className="space-y-5 w-full max-w-md mx-auto">
       {regError && (
         <AgentFormFeedback variant="error">{regError}</AgentFormFeedback>
       )}
@@ -128,6 +130,7 @@ export default function AgentSelectLocation() {
   if (isDesktop) {
     return (
       <AgentAuthDesktopLayout
+        centerTitle
         title="Select your assigned location"
         subtitle="Select the location you were assigned to"
         actions={actions}

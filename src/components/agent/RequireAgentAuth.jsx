@@ -1,9 +1,9 @@
 import { Navigate } from "react-router-dom";
-import { getAgentAccessToken } from "../../services/cropexApi";
 
 export default function RequireAgentAuth({ children }) {
   try {
-    if (!getAgentAccessToken()) {
+    const raw = sessionStorage.getItem("hcx_agent_auth");
+    if (!raw) {
       return <Navigate to="/agent/login" replace />;
     }
   } catch {

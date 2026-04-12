@@ -4,11 +4,17 @@ import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { sendOtp, verifyOtp, formatPhoneForApi } from "../../services/cropexApi";
-import { CropexHttpError } from "../../services/cropexHttp";
 
 const REG_KEY = "hcx_agent_registration";
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
+
+function formatPhoneForLocalStore(digits) {
+  const d = String(digits || "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.startsWith("234")) return `+${d}`;
+  if (d.startsWith("0")) return `+234${d.slice(1)}`;
+  return `+234${d}`;
+}
 
 export default function AgentVerifyPhone() {
   const navigate = useNavigate();
@@ -29,17 +35,15 @@ export default function AgentVerifyPhone() {
       try {
         const raw = sessionStorage.getItem(REG_KEY);
         const reg = raw ? JSON.parse(raw) : {};
-        const ph = formatPhoneForApi(reg.phone);
+        const ph = formatPhoneForLocalStore(reg.phone);
         if (!ph) {
           if (!cancelled) setError("Missing phone number. Go back to create account.");
           return;
         }
         setRegisterPhone(ph);
-        await sendOtp(ph);
-      } catch (e) {
+      } catch {
         if (!cancelled) {
-          const msg = e instanceof CropexHttpError ? e.message : "Could not send verification code.";
-          setError(msg);
+          setError("Could not prepare verification code.");
         }
       }
     })();
@@ -123,27 +127,14 @@ export default function AgentVerifyPhone() {
         }
         return;
       }
-      const ph = registerPhone || (() => {
-        try {
-          const raw = sessionStorage.getItem(REG_KEY);
-          const reg = raw ? JSON.parse(raw) : {};
-          return formatPhoneForApi(reg.phone);
-        } catch {
-          return "";
-        }
-      })();
-      if (!ph) {
+      if (!registerPhone) {
         setError("Missing phone number.");
         return;
       }
-      // Temporary test fallback for registration flow while backend OTP can vary.
-      if (otp !== "1234") {
-        await verifyOtp(ph, otp);
-      }
+      // Backend verification is paused; accept 4-digit OTP in local flow.
       navigate("/agent/select-location");
-    } catch (e) {
-      const msg = e instanceof CropexHttpError ? e.message : "Verification failed.";
-      setError(msg);
+    } catch {
+      setError("Verification failed.");
       setDigits(["", "", "", ""]);
       setTimeout(() => r0.current?.focus(), 0);
     } finally {
@@ -153,25 +144,13 @@ export default function AgentVerifyPhone() {
 
   const handleResend = async () => {
     if (mode !== "register") return;
-    const ph =
-      registerPhone ||
-      (() => {
-        try {
-          const raw = sessionStorage.getItem(REG_KEY);
-          const reg = raw ? JSON.parse(raw) : {};
-          return formatPhoneForApi(reg.phone);
-        } catch {
-          return "";
-        }
-      })();
-    if (!ph) return;
+    if (!registerPhone) return;
     setError("");
     setLoading(true);
     try {
-      await sendOtp(ph);
-    } catch (e) {
-      const msg = e instanceof CropexHttpError ? e.message : "Could not resend code.";
-      setError(msg);
+      await new Promise((r) => setTimeout(r, 350));
+    } catch {
+      setError("Could not resend code.");
     } finally {
       setLoading(false);
     }

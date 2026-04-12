@@ -6,13 +6,6 @@ import { agentData } from "../../mockData/agent";
 import { useAgentFarmersSync } from "../../hooks/useAgentFarmersSync";
 import AgentStatusPanel from "../../components/agent/AgentStatusPanel";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
-import {
-  extractFarmerRecord,
-  getFarmerById,
-  getAgentAccessToken,
-  mapApiFarmerToUi,
-} from "../../services/cropexApi";
-import { CropexHttpError } from "../../services/cropexHttp";
 
 function FilterPill({ value, onChange, options }) {
   return (
@@ -178,7 +171,7 @@ function ListScreen({
     <>
       {listError && (
         <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-800">
-          Could not refresh list from server: {listError}
+          Could not refresh list: {listError}
         </div>
       )}
       <h1 className="mb-1 font-display text-2xl font-bold text-brand-text-primary md:text-[40px] md:leading-[48px]">
@@ -368,39 +361,7 @@ function tabBtnClass(active) {
 
 function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
   const [tab, setTab] = useState("details");
-  const [remote, setRemote] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState("");
-
-  useEffect(() => {
-    setRemote(null);
-    if (!farmer?.id) return;
-    if (!getAgentAccessToken()) {
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      setDetailLoading(true);
-      setDetailError("");
-      try {
-        const raw = await getFarmerById(farmer.id);
-        const row = extractFarmerRecord(raw);
-        const ui = mapApiFarmerToUi(row);
-        if (!cancelled && ui) setRemote(ui);
-      } catch (e) {
-        if (!cancelled) {
-          setDetailError(e instanceof CropexHttpError ? e.message : "Could not load latest details.");
-        }
-      } finally {
-        if (!cancelled) setDetailLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [farmer?.id]);
-
-  const display = { ...farmer, ...(remote || {}) };
+  const display = { ...farmer };
 
   const shareId = () => {
     const msg = `Farmer ID: *${display.id}*\nName: ${display.name}\nVerify: https://cropex.hashmarcropex.com/verify/${display.id}`;
@@ -415,14 +376,6 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         <ArrowLeft size={18} />
         <span className="font-sans text-sm">Go back</span>
       </button>
-      {detailLoading && (
-        <p className="font-sans text-xs text-brand-text-muted mb-2">Loading latest details from server…</p>
-      )}
-      {detailError && (
-        <p className="font-sans text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-3">
-          {detailError} Showing data from the list until refresh works.
-        </p>
-      )}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
         <div>
           <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary mb-0.5">Farmer details</h1>

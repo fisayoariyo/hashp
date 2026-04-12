@@ -1,15 +1,34 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Phone, User } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, Mail, Phone, User } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
+import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { AgentBottomNav } from "./AgentHome";
 import { agentData } from "../../mockData/agent";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 export default function AgentContactSupport() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [issueType, setIssueType] = useState("Profile Update");
   const [farmerId, setFarmerId] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
+
+  const hasAuthSession = (() => {
+    try {
+      return Boolean(sessionStorage.getItem("hcx_agent_auth"));
+    } catch {
+      return false;
+    }
+  })();
+  const isPreAuthSupport = Boolean(location.state?.preAuth) || !hasAuthSession;
+  const goBackPath =
+    location.state?.from === "under-review"
+      ? "/agent/account-under-review"
+      : location.state?.from === "verification-failed"
+        ? "/agent/verification-failed"
+        : "/agent/login";
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -102,23 +121,70 @@ export default function AgentContactSupport() {
     </div>
   );
 
+  const preAuthContent = (
+    <div className="w-full max-w-[430px]">
+      <h1 className="font-display text-[44px] font-bold leading-[1.05] text-[#030F0F]">Need Help?</h1>
+      <p className="mt-3 text-[18px] leading-[1.35] text-[#030F0F]/70">
+        We&apos;re here to support you. Reach out to us if you&apos;re having any issues with registration,
+        verification, or syncing data.
+      </p>
+
+      <div className="mt-8 rounded-[14px] border border-[#E6E6E6] bg-white p-4">
+        <p className="font-display text-[24px] font-bold leading-7 text-[#030F0F]">Customer Support</p>
+        <p className="mt-1 text-[14px] leading-5 text-[#030F0F]/75">Get help from our support team</p>
+
+        <div className="mt-4 space-y-3">
+          <p className="flex items-center gap-2.5 text-[18px] text-[#030F0F]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-brand-green text-white">
+              <Phone size={14} />
+            </span>
+            <span>+234 XXX XXX XXXX</span>
+          </p>
+          <p className="flex items-center gap-2.5 text-[18px] text-[#030F0F]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-brand-green text-white">
+              <Mail size={14} />
+            </span>
+            <span>support@hashmar.com</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
-      <div className="md:hidden min-h-dvh bg-brand-bg-page">
+      <div className={`md:hidden min-h-dvh ${isPreAuthSupport ? "bg-white" : "bg-brand-bg-page"}`}>
         <div className="px-4 pt-5 pb-28">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(isPreAuthSupport ? goBackPath : -1)}
             className="mb-4 text-sm text-[#030F0F]/70"
           >
             Back
           </button>
-          {content}
+          {isPreAuthSupport ? preAuthContent : content}
         </div>
-        <AgentBottomNav />
+        {!isPreAuthSupport && <AgentBottomNav />}
       </div>
 
-      <AgentDesktopShell active="support">{content}</AgentDesktopShell>
+      {isDesktop &&
+        (isPreAuthSupport ? (
+          <AgentAuthDesktopLayout title="" subtitle="" leading={null} actions={null}>
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={() => navigate(goBackPath)}
+                className="mb-4 inline-flex items-center gap-2 text-sm text-brand-text-secondary"
+              >
+                <ArrowLeft size={16} />
+                Back
+              </button>
+              {preAuthContent}
+            </div>
+          </AgentAuthDesktopLayout>
+        ) : (
+          <AgentDesktopShell active="support">{content}</AgentDesktopShell>
+        ))}
     </>
   );
 }

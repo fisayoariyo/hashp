@@ -37,7 +37,7 @@ export default function AgentVerificationFailed() {
       </button>
       <button
         type="button"
-        onClick={() => navigate("/agent/contact-support")}
+        onClick={() => navigate("/agent/contact-support", { state: { preAuth: true, from: "verification-failed" } })}
         className="w-full py-4 rounded-3xl bg-gray-100 text-brand-green font-sans font-semibold text-sm"
       >
         Contact support

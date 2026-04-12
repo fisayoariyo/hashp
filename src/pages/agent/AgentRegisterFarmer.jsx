@@ -6,13 +6,6 @@ import {
 } from "lucide-react";
 import { nigerianStates, nigerianLGAs } from "../../mockData/agent";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
-import {
-  draftToEnrollmentPayload,
-  enrollFarmer,
-  getAgentAccessToken,
-  getAgentIdFromSession,
-} from "../../services/cropexApi";
-import { CropexHttpError } from "../../services/cropexHttp";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
 
@@ -784,21 +777,13 @@ export default function AgentRegisterFarmer() {
     setSubmitting(true);
     setSubmitError("");
     const draft = getDraft();
-    const token = getAgentAccessToken();
-    if (!token) {
-      setSubmitError("Your session expired. Log in again from Settings.");
-      setSubmitting(false);
-      return;
-    }
     try {
-      const payload = draftToEnrollmentPayload(draft, getAgentIdFromSession());
-      const res = await enrollFarmer(payload);
+      await new Promise((r) => setTimeout(r, 700));
       const id =
-        (res && (res.id ?? res.farmer_id ?? res.uuid)) ||
         `HSH-IB-2026-${String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)}`;
       setIdCard({
         farmerID: String(id),
-        name: draft.personal?.fullName || res?.full_name || "New Farmer",
+        name: draft.personal?.fullName || "New Farmer",
         photo: DEMO_FARMER_PHOTO,
         cooperative: draft.cooperative?.name || "—",
       });
@@ -806,9 +791,8 @@ export default function AgentRegisterFarmer() {
       setStep("done");
       window.dispatchEvent(new CustomEvent("hcx-farmers-refresh"));
       window.dispatchEvent(new CustomEvent("hcx-farmers-sync"));
-    } catch (e) {
-      const msg = e instanceof CropexHttpError ? e.message : "Enrollment failed. Check required fields.";
-      setSubmitError(msg);
+    } catch {
+      setSubmitError("Enrollment failed. Check required fields.");
     } finally {
       setSubmitting(false);
     }

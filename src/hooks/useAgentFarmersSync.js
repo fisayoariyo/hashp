@@ -1,12 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { agentRegisteredFarmers } from "../mockData/agent";
-import {
-  getAgentAccessToken,
-  listFarmers,
-  extractFarmersArray,
-  mapApiFarmerToUi,
-} from "../services/cropexApi";
-import { CropexHttpError } from "../services/cropexHttp";
 
 export const FARMERS_SYNC_STORAGE_KEY = "hcx_agent_farmers_sync";
 const FARMERS_LIST_CACHE_KEY = "hcx_agent_farmers_list";
@@ -60,17 +53,7 @@ export function syncAllPendingFarmersStorage() {
   saveFarmerStatuses(next);
 }
 
-async function fetchFarmersFromApi() {
-  const token = getAgentAccessToken();
-  if (!token) return null;
-  const payload = await listFarmers({ page: 1, page_size: 100 });
-  const rows = extractFarmersArray(payload)
-    .map(mapApiFarmerToUi)
-    .filter(Boolean);
-  return rows;
-}
-
-/** Local mutable copy + optional API list; mock sync actions when using demo data. */
+/** Local mutable copy with mock sync actions. */
 export function useAgentFarmersSync() {
   const [farmers, setFarmers] = useState(loadFarmersFromStorage);
   const [syncing, setSyncing] = useState(false);
@@ -79,21 +62,7 @@ export function useAgentFarmersSync() {
 
   const refreshFromApi = useCallback(async () => {
     setListError(null);
-    try {
-      const rows = await fetchFarmersFromApi();
-      if (rows) {
-        try {
-          localStorage.setItem(FARMERS_LIST_CACHE_KEY, JSON.stringify(rows));
-        } catch { /* ignore */ }
-        setFarmers(rows);
-        saveFarmerStatuses(rows);
-        return;
-      }
-    } catch (e) {
-      if (e instanceof CropexHttpError) {
-        setListError(e.message);
-      }
-    }
+    // Backend sync is paused; always use local/mock storage.
     setFarmers(loadFarmersFromStorage());
   }, []);
 
