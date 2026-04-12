@@ -39,7 +39,7 @@ function formatChangePct(value) {
 // ── Desktop stat card — accepts img URL or React element for icon ──
 function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge, action }) {
   return (
-    <div className="relative h-[128px] w-[273.94px] overflow-hidden rounded-[20px] bg-[#005F4A] px-[21px] py-[15px] text-white">
+    <div className="relative h-[146px] w-full overflow-hidden rounded-[20px] bg-[#005F4A] px-[22px] py-[16px] text-white">
       <div className="absolute inset-0 rounded-[20px] bg-[#016A53]" />
       <img
         src={cardPatternDesktop}
@@ -51,13 +51,13 @@ function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge
         <div className="mb-3 flex items-start justify-between">
           {iconEl
             ? iconEl
-            : <img src={icon} alt="" aria-hidden="true" className={`h-[21px] w-[21px] opacity-95 ${iconClassName}`} />
+            : <img src={icon} alt="" aria-hidden="true" className={`h-6 w-6 opacity-95 ${iconClassName}`} />
           }
           {badge}
           {action}
         </div>
         <p className="font-sans text-[15px] font-light leading-[18px] text-white/85">{label}</p>
-        <p className="mt-2 font-display text-[30px] leading-[36px] font-medium tracking-tight">{value}</p>
+        <p className="mt-2 font-display text-[36px] leading-[40px] font-medium tracking-tight">{value}</p>
       </div>
     </div>
   );
@@ -277,12 +277,12 @@ export default function AgentHome() {
   // ── Desktop layout ──────────────────────────────────────
   const desktopContent = (
     <AgentDesktopShell active="dashboard" isOnline={isOnline}>
-      <div className="mx-auto w-full max-w-[862.81px]">
+      <div className="mx-auto w-full max-w-[1040px]">
         {/* ── Registration stats ── */}
-        <h2 className="mb-[15px] font-display text-[20px] font-bold leading-6 text-brand-text-primary">
+        <h2 className="mb-5 font-display text-[20px] font-bold leading-6 text-brand-text-primary">
           Registration stats
         </h2>
-        <div className="mb-[15px] grid grid-cols-[273.94px_273.94px_273.94px] gap-5">
+        <div className="mb-6 grid grid-cols-3 gap-5">
           <DesktopStatCard
             icon={statFarmersIcon}
             iconClassName="brightness-0 invert"
@@ -323,16 +323,16 @@ export default function AgentHome() {
         </div>
 
         {/* ── Bottom section: left 569 + right 273 ── */}
-        <div className="grid grid-cols-[569px_273px] justify-between gap-5">
+        <div className="grid grid-cols-[minmax(0,1fr)_300px] justify-between gap-5">
           {/* ── Left column ── */}
-          <div className="space-y-[15px]">
+          <div className="space-y-6">
 
             {/* Register new farmer */}
             <section>
-              <h3 className="font-display font-bold text-[20px] leading-6 text-brand-text-primary mb-3">
+              <h3 className="mb-4 font-display text-[20px] font-bold leading-6 text-brand-text-primary">
                 Register new farmer
               </h3>
-              <div className="grid grid-cols-[273.94px_274px] gap-5">
+              <div className="grid grid-cols-2 gap-5">
                 <div className="flex h-[166px] flex-col items-center justify-center rounded-[20px] border border-[#e4e4e4] bg-[#FFFFFF] px-5 py-[15px] text-center">
                   <img src={registerActionIcon} alt="" aria-hidden="true" className="mb-3 h-8 w-8" />
                   <p className="font-display font-medium text-[15px] leading-[18px] text-[#030F0F]">
@@ -371,7 +371,7 @@ export default function AgentHome() {
 
             {/* Synchronization */}
             <section>
-              <h3 className="font-display font-bold text-[20px] leading-6 text-brand-text-primary mb-4">
+              <h3 className="mb-4 font-display text-[20px] font-bold leading-6 text-brand-text-primary">
                 Synchronization
               </h3>
               <div className="h-[183.24px] rounded-[32.1469px] border border-[#e4e4e4] bg-[#FFFFFF] px-[27.33px] pb-[20px] pt-[14px]">
@@ -447,7 +447,7 @@ export default function AgentHome() {
             <div className="flex h-[422px] flex-col rounded-[20px] border border-[#e4e4e4] bg-[#FFFFFF] px-[17px] pb-3 pt-[17px]">
               <div className="flex-1 space-y-[15px]">
                 {agentRegisteredFarmers.slice(0, 4).map((farmer) => (
-                  <div key={farmer.id} className="h-[74px] w-[243px] rounded-[10px] bg-[#F6F6F6] px-[9px] pb-[10px] pt-[8px]">
+                  <div key={farmer.id} className="h-[74px] w-full rounded-[10px] bg-[#F6F6F6] px-[9px] pb-[10px] pt-[8px]">
                     <div className="flex items-center gap-[10px]">
                       <img
                         src={farmer.photo}
