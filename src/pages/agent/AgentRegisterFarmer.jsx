@@ -666,7 +666,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
           type="button"
           onClick={onSubmit}
           disabled={submitting}
-          className="order-1 sm:order-3 btn-primary min-w-[180px] h-[44px] w-full sm:w-auto px-8 inline-flex items-center justify-center disabled:opacity-50"
+          className="order-1 sm:order-3 min-w-[180px] h-[44px] w-full sm:w-auto px-8 rounded-2xl bg-brand-green text-white font-sans font-semibold text-sm inline-flex items-center justify-center transition-all duration-200 active:scale-95 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Submitting..." : "Continue and submit"}
         </button>
