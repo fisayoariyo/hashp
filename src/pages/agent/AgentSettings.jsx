@@ -242,24 +242,31 @@ function FAQScreen({ onBack }) {
 // ── Logout modal ───────────────────────────────────────────
 function LogoutModal({ onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center max-w-mobile mx-auto left-0 right-0">
-      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
-      <div className="relative bg-white rounded-t-3xl px-6 pt-6 pb-10 w-full animate-slide-up">
-        <h3 className="font-display font-bold text-xl text-brand-text-primary mb-2">
-          Log out?
+    <div className="fixed inset-0 z-[120] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/80" onClick={onCancel} />
+      <div className="relative w-full max-w-[370px] rounded-[30px] bg-[#F6F6F6] px-6 pb-8 pt-9">
+        <div className="mb-4 flex justify-center">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-full">
+            <LogOut size={38} strokeWidth={1.8} className="text-[#03624D]" />
+          </div>
+        </div>
+        <h3 className="mx-auto mb-8 max-w-[270px] text-center font-sans text-2xl font-bold leading-[37px] text-[#03624D]">
+          Are you sure you want to logout?
         </h3>
-        <p className="font-sans text-sm text-brand-text-secondary mb-6">
-          Are you sure you want to log out of your agent account?
-        </p>
-        <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
           <button
+            type="button"
             onClick={onConfirm}
-            className="w-full bg-red-500 text-white font-display font-semibold text-base py-4 px-6 rounded-3xl transition-all hover:brightness-90 active:scale-95"
+            className="inline-flex h-[50px] items-center justify-center rounded-full border border-[#C6D8D2] bg-transparent font-sans text-xl font-light leading-[35px] text-[#03624D]"
           >
-            Yes, log out
+            Yes
           </button>
-          <button onClick={onCancel} className="btn-ghost">
-            Cancel
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-[50px] items-center justify-center rounded-full bg-[#03624D] font-sans text-xl font-light leading-[35px] text-[#F6F6F6]"
+          >
+            No
           </button>
         </div>
       </div>

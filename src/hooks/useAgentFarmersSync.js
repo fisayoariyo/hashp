@@ -5,36 +5,51 @@ export const FARMERS_SYNC_STORAGE_KEY = "hcx_agent_farmers_sync";
 const FARMERS_LIST_CACHE_KEY = "hcx_agent_farmers_list";
 
 export function loadFarmersFromStorage() {
+  let map = {};
+  try {
+    const raw = localStorage.getItem(FARMERS_SYNC_STORAGE_KEY);
+    map = raw ? JSON.parse(raw) : {};
+  } catch {
+    map = {};
+  }
+
   try {
     const listRaw = localStorage.getItem(FARMERS_LIST_CACHE_KEY);
     if (listRaw) {
       const parsed = JSON.parse(listRaw);
       if (Array.isArray(parsed)) {
-        return parsed;
+        return parsed.map((f) => ({
+          ...f,
+          status: map[f.id] === "synced" || map[f.id] === "pending" ? map[f.id] : f.status,
+        }));
       }
     }
   } catch {
     /* fall through */
   }
-  try {
-    const raw = localStorage.getItem(FARMERS_SYNC_STORAGE_KEY);
-    const map = raw ? JSON.parse(raw) : {};
-    return agentRegisteredFarmers.map((f) => ({
-      ...f,
-      status: map[f.id] === "synced" || map[f.id] === "pending" ? map[f.id] : f.status,
-    }));
-  } catch {
-    return agentRegisteredFarmers.map((f) => ({ ...f }));
-  }
+  return agentRegisteredFarmers.map((f) => ({
+    ...f,
+    status: map[f.id] === "synced" || map[f.id] === "pending" ? map[f.id] : f.status,
+  }));
 }
 
 export function saveFarmerStatuses(farmers) {
+  localStorage.setItem(FARMERS_LIST_CACHE_KEY, JSON.stringify(farmers));
   const map = {};
   farmers.forEach((f) => {
     map[f.id] = f.status;
   });
   localStorage.setItem(FARMERS_SYNC_STORAGE_KEY, JSON.stringify(map));
   window.dispatchEvent(new CustomEvent("hcx-farmers-sync"));
+}
+
+export function upsertFarmerInStorage(farmer) {
+  const current = loadFarmersFromStorage();
+  const next = [
+    farmer,
+    ...current.filter((item) => item.id !== farmer.id),
+  ];
+  saveFarmerStatuses(next);
 }
 
 export function getFarmerSyncCountsFromStorage() {

@@ -77,7 +77,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
                   </p>
                 </div>
                 <div
-                  className={`inline-flex h-[21.21px] items-center gap-[3px] rounded-[50.49px] px-[10px] text-[12.12px] font-bold leading-[14px] ${
+                  className={`inline-flex py-1.5 items-center gap-[3px] rounded-[50.49px] px-[10px] text-[12.12px] font-bold leading-[14px] ${
                     isOnline ? "bg-[#03624D] text-white" : "bg-[#E8ECEB] text-[#445250]"
                   }`}
                 >
@@ -88,7 +88,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
               <button
                 type="button"
                 onClick={() => navigate("/agent/register-farmer")}
-                className="inline-flex h-[47px] w-[204px] shrink-0 items-center justify-center gap-2 rounded-[15px] bg-[#03624D] px-[20px] text-[15px] font-medium text-white"
+                className="inline-flex h-[47px]  shrink-0 items-center justify-center gap-2 rounded-[15px] bg-[#03624D] px-[20px] text-[15px] font-medium text-white"
               >
                 <Plus size={17} strokeWidth={2.5} />
                 Register New Farmer
@@ -96,8 +96,8 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
             </div>
 
             {/* Page content */}
-            <div className="flex-1 min-h-0 overflow-hidden rounded-[20px] bg-[#F6F6F6] px-9 py-7">
-              <div className="h-full overflow-y-auto pr-1 scrollbar-hide">
+            <div className="flex-1 min-h-0 w-full overflow-hidden rounded-[20px] bg-[#F6F6F6] px-9 py-7">
+              <div className="h-full overflow-y-auto pr-1 scrollbar-hide w-full">
                 {children}
               </div>
             </div>

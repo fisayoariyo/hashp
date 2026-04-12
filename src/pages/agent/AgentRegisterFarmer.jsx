@@ -8,6 +8,7 @@ import { nigerianStates, nigerianLGAs } from "../../mockData/agent";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
+import { upsertFarmerInStorage } from "../../hooks/useAgentFarmersSync";
 
 const DEMO_FARMER_PHOTO = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop";
 
@@ -15,6 +16,13 @@ const DRAFT_KEY  = "hcx_reg_draft";
 const getDraft   = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
 const setDraft   = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...getDraft(), ...d })); } catch {} };
 const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
+const formatToday = () => {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
 
 // ── Step indicator ─────────────────────────────────────────
 function Steps({ current }) {
@@ -787,6 +795,27 @@ export default function AgentRegisterFarmer() {
         photo: DEMO_FARMER_PHOTO,
         cooperative: draft.cooperative?.name || "—",
       });
+
+      upsertFarmerInStorage({
+        id: String(id),
+        name: draft.personal?.fullName || "New Farmer",
+        photo: DEMO_FARMER_PHOTO,
+        regDate: formatToday(),
+        status: "pending",
+        primaryCrop: draft.farm?.cropType || draft.personal?.primaryCrops?.[0] || "—",
+        state: draft.personal?.state || "—",
+        lga: draft.personal?.lga || "—",
+        phone: draft.personal?.phone || "—",
+        cooperative: draft.cooperative?.name || "—",
+        farmSize: draft.farm?.farmSize || "—",
+        landOwnership: draft.farm?.landOwnership || "—",
+        gender: draft.personal?.gender || "—",
+        dob: draft.personal?.dob || "—",
+        nin: draft.personal?.nin || "—",
+        address: draft.personal?.address || "—",
+        biometric: { face: true, fingerprint: true },
+      });
+
       clearDraft();
       setStep("done");
       window.dispatchEvent(new CustomEvent("hcx-farmers-refresh"));

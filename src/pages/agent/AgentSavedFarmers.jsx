@@ -28,7 +28,7 @@ function FilterPill({ value, onChange, options }) {
 
 function FarmerCard({ farmer, onView, onSyncFarmer }) {
   return (
-    <div className="relative rounded-[36px] bg-[#F6F6F6] p-6 md:h-[200px] md:w-[167px] md:flex-none md:rounded-[10px] md:bg-[#FFFFFF] md:pl-[9px] md:pr-[7px] md:pt-[8px] md:pb-[10px]">
+    <div className="relative w-full rounded-[10px] bg-[#FFFFFF] px-[12px] py-3">
       {farmer.status === "pending" && (
         <button
           type="button"
@@ -36,20 +36,20 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
             e.stopPropagation();
             onSyncFarmer(farmer.id);
           }}
-          className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-brand-amber/20 hover:bg-brand-amber/35 active:scale-[0.98] rounded-full px-2.5 py-1 border border-brand-amber/50 transition-colors"
+          className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 transition-colors active:scale-[0.98]"
         >
           <RefreshCw size={10} className="text-brand-amber" />
           <span className="text-[10px] font-sans font-semibold text-brand-amber">Sync now</span>
         </button>
       )}
-      <div className="mb-5 h-[120px] w-[120px] overflow-hidden rounded-[28px] md:mb-1.5 md:h-[61px] md:w-[61px] md:rounded-[11px]">
+      <div className="mb-1.5 h-[61px] w-[61px] overflow-hidden rounded-[11px]">
         <img src={farmer.photo} alt={farmer.name} className="w-full h-full object-cover" />
       </div>
-      <div className="min-h-[130px] space-y-2 md:min-h-0 md:space-y-0">
-        <p className="font-sans text-[20px] leading-[1.25] text-brand-text-primary md:truncate md:text-[10px] md:leading-[12px]"><span className="text-brand-text-muted">Name : </span>{farmer.name}</p>
-        <p className="font-sans text-[20px] leading-[1.25] text-brand-text-primary md:truncate md:text-[10px] md:leading-[12px]"><span className="text-brand-text-muted">ID : </span>{farmer.id}</p>
-        <p className="font-sans text-[20px] leading-[1.25] text-brand-text-primary md:text-[10px] md:leading-[12px]"><span className="text-brand-text-muted">Reg date: </span>{farmer.regDate}</p>
-        <p className="font-sans text-[20px] leading-[1.25] font-semibold md:text-[10px] md:leading-[12px]">
+      <div className="min-h-0 space-y-2">
+        <p className="truncate font-sans text-[10px] leading-[12px] text-brand-text-primary"><span className="text-brand-text-muted">Name : </span>{farmer.name}</p>
+        <p className="truncate font-sans text-[10px] leading-[12px] text-brand-text-primary"><span className="text-brand-text-muted">ID : </span>{farmer.id}</p>
+        <p className="font-sans text-[10px] leading-[12px] text-brand-text-primary"><span className="text-brand-text-muted">Reg date: </span>{farmer.regDate}</p>
+        <p className="font-sans text-[10px] leading-[12px] font-semibold">
           <span className="text-brand-text-muted font-normal">Status : </span>
           <span className={farmer.status === "synced" ? "text-brand-green" : "text-brand-amber"}>
             {farmer.status === "synced" ? "Synced" : "Sync pending"}
@@ -58,7 +58,7 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
       </div>
       <button
         onClick={onView}
-        className="mt-6 h-[64px] w-full rounded-full bg-brand-green py-2.5 font-sans text-[20px] font-medium text-white md:mt-2 md:h-[29px] md:rounded-[8px] md:py-0 md:text-[10px] md:leading-[12px]"
+        className="mt-2 h-[29px] w-full rounded-[8px] bg-brand-green py-0 font-sans text-[10px] font-medium leading-[12px] text-white"
       >
         View Details
       </button>
@@ -68,7 +68,7 @@ function FarmerCard({ farmer, onView, onSyncFarmer }) {
 
 function FarmersGrid({ farmers, onSelect, onSyncFarmer }) {
   return (
-    <div className="grid grid-cols-1 gap-4 px-4 md:grid-cols-5 md:gap-[10px] md:px-0">
+    <div className="grid grid-cols-2 gap-3 px-4 md:grid-cols-5 md:gap-[10px] md:px-0">
       {farmers.map((f) => (
         <FarmerCard key={f.id} farmer={f} onView={() => onSelect(f)} onSyncFarmer={onSyncFarmer} />
       ))}
@@ -273,7 +273,7 @@ function ListScreen({
       </div>
 
       <AgentDesktopShell active="farmers">
-        <div className="w-full max-w-[1040px]">
+        <div className="min-w-full">
           <HeaderBlock />
           {desktopViewMode === "list" ? (
             <DesktopFarmersTable
@@ -330,7 +330,7 @@ function SearchScreen({ farmers, query, setQuery, statusFilter, setStatusFilter,
         <AgentBottomNav />
       </div>
       <AgentDesktopShell active="farmers">
-        <div className="w-full max-w-[1040px]">
+        <div className="min-w-full">
           <SearchContent />
         </div>
       </AgentDesktopShell>
@@ -491,7 +491,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">{content}</div>
       </div>
       <AgentDesktopShell active="farmers">
-        <div className="w-full max-w-[1040px]">{content}</div>
+        <div className="min-w-full">{content}</div>
       </AgentDesktopShell>
       <div className="md:hidden">
         <AgentBottomNav />
