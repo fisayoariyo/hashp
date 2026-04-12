@@ -644,7 +644,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
         <button
           type="button"
           onClick={onBack}
-          className="order-2 sm:order-1 min-w-[140px] py-3 px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm hover:bg-gray-50 transition-colors"
+          className="order-2 sm:order-1 min-w-[140px] h-[44px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center hover:bg-gray-50 transition-colors"
         >
           Edit details
         </button>
@@ -658,7 +658,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
             a.click();
             URL.revokeObjectURL(a.href);
           }}
-          className="order-3 sm:order-2 min-w-[140px] py-3 px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+          className="order-3 sm:order-2 min-w-[140px] h-[44px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
         >
           <FileDown size={16} /> Download as CSV
         </button>
@@ -666,7 +666,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
           type="button"
           onClick={onSubmit}
           disabled={submitting}
-          className="order-1 sm:order-3 btn-primary min-w-[180px] w-full sm:w-auto px-8 disabled:opacity-50"
+          className="order-1 sm:order-3 btn-primary min-w-[180px] h-[44px] w-full sm:w-auto px-8 inline-flex items-center justify-center disabled:opacity-50"
         >
           {submitting ? "Submitting..." : "Continue and submit"}
         </button>
