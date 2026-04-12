@@ -154,7 +154,7 @@ function ListScreen({
   pendingCount,
   listError,
 }) {
-  const [desktopViewMode, setDesktopViewMode] = useState("list");
+  const [desktopViewMode, setDesktopViewMode] = useState("grid");
   const [visibleCount, setVisibleCount] = useState(7);
 
   const listData = useMemo(() => {
@@ -246,19 +246,21 @@ function ListScreen({
           </select>
           <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#111827]" />
         </div>
-        <button
-          type="button"
-          onClick={() => setDesktopViewMode((v) => (v === "list" ? "grid" : "list"))}
-          className="inline-flex h-[32px] w-[130px] items-center justify-between rounded-[10px] border border-[#E6E6E6] bg-white px-3 text-[14px] text-[#737373]"
-          aria-label={`View mode: ${desktopViewMode === "list" ? "List" : "Grid"}`}
-        >
-          <span>View :</span>
-          <span className="inline-flex items-center gap-1.5 text-[#374151]">
-            <span className="text-[#737373]">{desktopViewMode === "list" ? "List" : "Grid"}</span>
+        <div className="relative">
+          <select
+            value={desktopViewMode}
+            onChange={(e) => setDesktopViewMode(e.target.value)}
+            className="h-[32px] w-[150px] appearance-none rounded-[10px] border border-[#E6E6E6] bg-white pl-3 pr-8 text-[14px] text-[#737373]"
+            aria-label="View mode"
+          >
+            <option value="grid">View Grid</option>
+            <option value="list">View List</option>
+          </select>
+          <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center gap-1 text-[#374151]">
             {desktopViewMode === "list" ? <List size={14} /> : <LayoutGrid size={14} />}
             <ChevronDown size={14} className="text-[#111827]" />
           </span>
-        </button>
+        </div>
       </div>
     </>
   );
