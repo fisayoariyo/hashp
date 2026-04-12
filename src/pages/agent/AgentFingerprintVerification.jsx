@@ -313,7 +313,11 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
 
       <div className={bottomClass}>
         {currentIdx === null ? (
-          <button type="button" onClick={() => setCurrentIdx(0)} className="btn-capture-pill px-8">
+          <button
+            type="button"
+            onClick={() => setCurrentIdx(0)}
+            className="btn-capture-pill w-[220px] justify-center"
+          >
             Begin Fingerprint Scan
           </button>
         ) : (
@@ -321,7 +325,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             type="button"
             onClick={onSuccess}
             disabled={!allDone || !passThreshold}
-            className="btn-capture-pill px-8 disabled:opacity-45 disabled:cursor-not-allowed disabled:active:scale-100"
+            className="btn-capture-pill w-[220px] justify-center disabled:opacity-45 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             Continue
           </button>
@@ -331,7 +335,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
           <button
             type="button"
             onClick={retryFailed}
-            className="py-3 px-8 rounded-full border-2 border-brand-green text-brand-green font-sans font-semibold text-sm"
+            className="inline-flex h-[44px] w-[220px] items-center justify-center rounded-full border-2 border-brand-green text-brand-green font-sans font-semibold text-sm"
           >
             Retry Failed Scans
           </button>
