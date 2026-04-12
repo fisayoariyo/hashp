@@ -14,11 +14,11 @@ const NAV_LINKS = [
   { key: "support",   label: "Help & Support", icon: null,        path: "/agent/contact-support" },
 ];
 
-export default function AgentDesktopShell({ active = "dashboard", isOnline = true, children }) {
+export default function AgentDesktopShell({ active = "dashboard", isOnline = true, forceVisible = false, children }) {
   const navigate = useNavigate();
 
   return (
-    <div className="hidden md:block min-h-dvh bg-[#f6f6f6] p-4 xl:p-8">
+    <div className={`${forceVisible ? "block" : "hidden md:block"} min-h-dvh bg-[#f6f6f6] p-4 xl:p-8`}>
       <div className="relative mx-auto w-full max-w-[1280px] min-h-[832px] rounded-[20px] bg-white">
         <aside className="absolute left-[20px] top-[16px] h-[801px] w-[295px] rounded-[20px] bg-white px-[29px] pt-[31px]">
           <img

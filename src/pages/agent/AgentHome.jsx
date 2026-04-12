@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, Home, Settings, UserPlus, Search, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { agentData, agentRegisteredFarmers } from "../../mockData/agent";
 import {
   getFarmerSyncCountsFromStorage,
@@ -95,6 +96,7 @@ export function AgentBottomNav() {
 // ── Main component ────────────────────────────────────────
 export default function AgentHome() {
   const navigate = useNavigate();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [syncing,    setSyncing]    = useState(false);
   const [syncDone,   setSyncDone]   = useState(false);
   const [syncCounts, setSyncCounts] = useState(() => {
@@ -319,7 +321,7 @@ export default function AgentHome() {
 
   // ── Desktop layout ──────────────────────────────────────
   const desktopContent = (
-    <AgentDesktopShell active="dashboard" isOnline={isOnline}>
+    <AgentDesktopShell active="dashboard" isOnline={isOnline} forceVisible>
       <div className="relative h-full w-full">
         <section className="absolute left-[36px] top-[24px] w-[862.81px]">
           <h2 className="mb-[15px] text-[20px] font-bold leading-6 text-[#030F0F]">Registration stats</h2>
@@ -494,10 +496,5 @@ export default function AgentHome() {
     </AgentDesktopShell>
   );
 
-  return (
-    <>
-      {mobileContent}
-      {desktopContent}
-    </>
-  );
+  return isDesktop ? desktopContent : mobileContent;
 }
