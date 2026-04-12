@@ -1,6 +1,17 @@
 import agentDesktopHeroImage from "../../assets/agent-onboarding/AWD-pic.png";
 
-export default function AgentAuthDesktopLayout({ title, subtitle, children, actions, centerTitle = false, leading = null }) {
+export default function AgentAuthDesktopLayout({
+  title,
+  subtitle,
+  children,
+  actions,
+  centerTitle = false,
+  leading = null,
+  contentClassName = "",
+  titleClassName = "",
+  subtitleClassName = "",
+  actionsClassName = "",
+}) {
   return (
     <div className="hidden md:grid md:grid-cols-2 md:min-h-dvh md:bg-white md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch">
       {/* Left ~50% — agent auth reference style */}
@@ -32,20 +43,28 @@ export default function AgentAuthDesktopLayout({ title, subtitle, children, acti
       <div
         className={`flex min-w-0 flex-col w-full justify-center py-4 lg:py-6 px-2 lg:px-6 max-w-xl mx-auto lg:max-w-none lg:mx-0 lg:pr-10 ${
           centerTitle ? "items-center text-center" : ""
-        }`}
+        } ${contentClassName}`}
       >
         {leading}
         {title ? (
-          <h1 className="font-display font-bold text-5xl text-brand-text-primary mb-3">{title}</h1>
+          <h1 className={`font-display font-bold text-5xl text-brand-text-primary mb-3 ${titleClassName}`}>{title}</h1>
         ) : null}
         {subtitle && (
-          <p className={`font-sans text-xl text-brand-text-secondary mb-8 ${centerTitle ? "max-w-md" : ""}`}>
+          <p
+            className={`font-sans text-xl text-brand-text-secondary mb-8 ${
+              centerTitle ? "max-w-md" : ""
+            } ${subtitleClassName}`}
+          >
             {subtitle}
           </p>
         )}
         <div className={`flex-1 w-full ${centerTitle ? "flex flex-col items-center" : ""}`}>{children}</div>
         {actions && (
-          <div className={`pt-6 w-full ${centerTitle ? "flex flex-col items-center max-w-sm" : ""}`}>{actions}</div>
+          <div
+            className={`pt-6 w-full ${centerTitle ? "flex flex-col items-center max-w-sm" : ""} ${actionsClassName}`}
+          >
+            {actions}
+          </div>
         )}
       </div>
     </div>
