@@ -825,7 +825,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <AgentFacialVerification
               embedded
               onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
@@ -846,7 +846,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <AgentFingerprintVerification
               embedded
               onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
@@ -865,7 +865,7 @@ export default function AgentRegisterFarmer() {
           <StartScreen onStart={() => setStep("biometric")} onBack={goHome} />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <StartScreen embedded onStart={() => setStep("biometric")} onBack={goHome} />
           </div>
         </AgentDesktopShell>
@@ -886,7 +886,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <BiometricStep
               embedded
               faceCapture={faceCapture}
@@ -908,7 +908,7 @@ export default function AgentRegisterFarmer() {
           <PersonalStep onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <PersonalStep embedded onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />
           </div>
         </AgentDesktopShell>
@@ -922,7 +922,7 @@ export default function AgentRegisterFarmer() {
           <FarmStep onNext={() => setStep("coop")} onBack={() => setStep("personal")} />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <FarmStep embedded onNext={() => setStep("coop")} onBack={() => setStep("personal")} />
           </div>
         </AgentDesktopShell>
@@ -936,7 +936,7 @@ export default function AgentRegisterFarmer() {
           <CoopStep onNext={() => setStep("review")} onBack={() => setStep("farm")} />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <CoopStep embedded onNext={() => setStep("review")} onBack={() => setStep("farm")} />
           </div>
         </AgentDesktopShell>
@@ -955,7 +955,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <ReviewStep
               embedded
               onSubmit={handleSubmit}
@@ -979,7 +979,7 @@ export default function AgentRegisterFarmer() {
           />
         </div>
         <AgentDesktopShell active="farmers">
-          <div className="mx-auto w-full max-w-[862.81px]">
+          <div className="w-full max-w-[862.81px]">
             <DoneStep
               embedded
               idCard={idCard}
