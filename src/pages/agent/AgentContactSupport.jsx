@@ -16,7 +16,7 @@ export default function AgentContactSupport() {
   };
 
   const content = (
-    <div className="w-full md:mx-auto md:max-w-[862.81px]">
+    <div className="w-full md:max-w-[862.81px]">
       <h1 className="font-display text-[40px] md:text-[40px] font-bold leading-[48px] text-[#030F0F]">
         Help &amp; Support
       </h1>

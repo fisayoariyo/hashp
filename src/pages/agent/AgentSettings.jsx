@@ -179,7 +179,7 @@ function ChangePasswordScreen({ onBack }) {
 function FAQScreen({ onBack }) {
   const [open, setOpen] = useState(null);
   const content = (
-    <div className="flex-1 w-full md:mx-auto md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
+    <div className="flex-1 w-full md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-brand-text-secondary mb-5"
@@ -263,7 +263,7 @@ function LogoutModal({ onConfirm, onCancel }) {
 // ── Main Settings screen ───────────────────────────────────
 function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
   const content = (
-    <div className="flex-1 w-full md:mx-auto md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
+    <div className="flex-1 w-full md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
         <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
           Settings
         </h1>

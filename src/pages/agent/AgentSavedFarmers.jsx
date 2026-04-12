@@ -278,7 +278,7 @@ function ListScreen({
       </div>
 
       <AgentDesktopShell active="farmers">
-        <div className="mx-auto w-full max-w-[1040px]">
+        <div className="w-full max-w-[1040px]">
           <HeaderBlock />
           {desktopViewMode === "list" ? (
             <DesktopFarmersTable
@@ -335,7 +335,7 @@ function SearchScreen({ farmers, query, setQuery, statusFilter, setStatusFilter,
         <AgentBottomNav />
       </div>
       <AgentDesktopShell active="farmers">
-        <div className="mx-auto w-full max-w-[1040px]">
+        <div className="w-full max-w-[1040px]">
           <SearchContent />
         </div>
       </AgentDesktopShell>
@@ -536,7 +536,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">{content}</div>
       </div>
       <AgentDesktopShell active="farmers">
-        <div className="mx-auto w-full max-w-[1040px]">{content}</div>
+        <div className="w-full max-w-[1040px]">{content}</div>
       </AgentDesktopShell>
       <div className="md:hidden">
         <AgentBottomNav />
