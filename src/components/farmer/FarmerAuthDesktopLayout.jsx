@@ -28,6 +28,7 @@ export default function FarmerAuthDesktopLayout({
   children,
   actions,
   fixedImage,
+  centered = false,
 }) {
   const [imgIdx, setImgIdx] = useState(0);
 
@@ -88,7 +89,7 @@ export default function FarmerAuthDesktopLayout({
       <div className="flex-1 flex flex-col justify-between py-14 lg:py-16 px-6 lg:px-14 xl:px-20">
 
         {/* top section: heading + optional subtitle + form children */}
-        <div>
+        <div className={centered ? "mx-auto w-full max-w-[420px] text-center" : ""}>
           {title && (
             <h1 className="font-display font-bold text-[1.85rem] lg:text-[2rem] text-brand-text-primary leading-tight mb-2">
               {title}
@@ -99,11 +100,11 @@ export default function FarmerAuthDesktopLayout({
               {subtitle}
             </p>
           )}
-          <div className="mt-8">{children}</div>
+          <div className={`mt-8 ${centered ? "text-left" : ""}`}>{children}</div>
         </div>
 
         {/* bottom section: action buttons */}
-        {actions && <div>{actions}</div>}
+        {actions && <div className={centered ? "mx-auto w-full max-w-[420px]" : ""}>{actions}</div>}
       </div>
 
     </div>

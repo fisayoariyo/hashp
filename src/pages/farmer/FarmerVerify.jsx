@@ -48,6 +48,7 @@ function PhoneStep({ onSubmit, onBack }) {
       <FarmerAuthDesktopLayout
         title="Login to your farmer profile"
         heroImage="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1400&q=80"
+        centered
         actions={
           <div className="space-y-3">
             <button type="button" onClick={handle} disabled={loading} className="btn-primary">
@@ -157,7 +158,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
   };
 
   const otpGrid = (
-    <div className={`mb-4 ${isDesktop ? "flex gap-4" : "grid grid-cols-4 gap-4"}`}>
+    <div className={`mb-4 ${isDesktop ? "flex justify-center gap-4" : "grid grid-cols-4 gap-4"}`}>
       {digits.map((d, i) => (
         <input
           key={i}
@@ -177,14 +178,14 @@ function OTPStep({ phone, onSuccess, onBack }) {
   );
 
   const otpFooter = (
-    <>
+    <div className={isDesktop ? "text-center" : ""}>
       {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
       <p className="font-sans text-sm text-brand-text-secondary mb-1">
         I did not receive a code,{" "}
         <button type="button" className="text-brand-green font-semibold">Resend Code</button>
       </p>
       <p className="font-sans text-xs text-brand-text-muted mb-0 md:mb-6">Demo OTP: <strong>1234</strong></p>
-    </>
+    </div>
   );
 
   if (isDesktop) {
@@ -195,6 +196,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
         heroImage="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=1400&q=80"
         heroTitle="Your Digital Identity"
         heroSub="One verified ID that proves you're a registered farmer and unlocks access to services."
+        centered
         actions={
           <div className="space-y-3">
             <button type="button" onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
