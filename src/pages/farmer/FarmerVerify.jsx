@@ -157,7 +157,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
   };
 
   const otpGrid = (
-    <div className="grid grid-cols-4 gap-4 mb-4">
+    <div className={`mb-4 ${isDesktop ? "flex gap-4" : "grid grid-cols-4 gap-4"}`}>
       {digits.map((d, i) => (
         <input
           key={i}
@@ -170,7 +170,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={i === 0 ? handlePaste : undefined}
           autoComplete="one-time-code"
-          className={`w-full h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
+          className={`${isDesktop ? "w-16" : "w-full"} h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
         />
       ))}
     </div>

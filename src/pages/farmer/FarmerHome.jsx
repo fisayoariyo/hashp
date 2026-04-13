@@ -108,12 +108,12 @@ export default function FarmerHome() {
       </div>
 
       {/* ── DESKTOP (FWDHP01) ────────────────────────── */}
-      <FarmerDesktopLayout activeNav="Home">
+      <FarmerDesktopLayout activeNav="Home" islandContent edgeToEdge>
         {/* 4-card primary row */}
         <div className="grid grid-cols-4 gap-4 mb-8">
           {PRIMARY.map(({ label, Icon, path }) => (
             <button key={label} onClick={() => navigate(path)}
-              className="bg-brand-bg-page rounded-2xl p-5 flex flex-col gap-4 text-left hover:shadow-card-lg active:scale-[0.98] transition-all group">
+              className="bg-white rounded-2xl p-5 flex flex-col gap-4 text-left hover:shadow-card-lg active:scale-[0.98] transition-all group">
               <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-brand-green group-hover:bg-brand-green group-hover:text-white transition-colors">
                 <Icon size={22} strokeWidth={1.8} />
               </div>
@@ -127,7 +127,7 @@ export default function FarmerHome() {
         <div className="grid grid-cols-3 gap-4">
           {BENEFITS.map(({ label, Icon, path }) => (
             <button key={label} onClick={() => navigate(path)}
-              className="bg-brand-bg-page rounded-2xl p-5 flex flex-col gap-4 text-left hover:shadow-card-lg active:scale-[0.98] transition-all">
+              className="bg-white rounded-2xl p-5 flex flex-col gap-4 text-left hover:shadow-card-lg active:scale-[0.98] transition-all">
               <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-brand-green">
                 <Icon size={22} strokeWidth={1.8} />
               </div>

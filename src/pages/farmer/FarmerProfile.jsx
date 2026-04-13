@@ -91,7 +91,7 @@ export default function FarmerProfile() {
       </div>
 
       {/* ── DESKTOP (FWDHP03) ────────────────────────── */}
-      <FarmerDesktopLayout activeNav="Profile">
+      <FarmerDesktopLayout activeNav="Profile" islandContent edgeToEdge>
         <button onClick={() => navigate("/farmer/home")}
           className="flex items-center gap-2 text-brand-text-secondary mb-4 hover:text-brand-text-primary transition-colors">
           <ArrowLeft size={16} /><span className="font-sans text-sm">Go back</span>
@@ -100,7 +100,7 @@ export default function FarmerProfile() {
         <p className="font-sans text-sm text-brand-text-secondary mb-6">
           If you notice any mistake in your details, please contact your agent to make corrections.
         </p>
-        <div className="max-w-lg">
+        <div className="w-full max-w-none">
           <ProfileContent />
         </div>
       </FarmerDesktopLayout>

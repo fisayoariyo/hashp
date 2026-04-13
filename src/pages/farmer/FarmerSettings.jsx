@@ -106,7 +106,7 @@ export default function FarmerSettings() {
       </div>
 
       {/* ── DESKTOP: FAQ (FWDHP04) or Contact (FWDHP05) ─ */}
-      <FarmerDesktopLayout activeNav="Home">
+      <FarmerDesktopLayout activeNav="Home" islandContent edgeToEdge>
         <button onClick={() => navigate("/farmer/home")}
           className="flex items-center gap-2 text-brand-text-secondary mb-4 hover:text-brand-text-primary transition-colors">
           <ArrowLeft size={16} /><span className="font-sans text-sm">Go back</span>
