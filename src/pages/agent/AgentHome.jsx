@@ -203,28 +203,36 @@ export default function AgentHome() {
       <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide space-y-4">
         {/* Action cards */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-2xl p-4 flex flex-col gap-3">
-            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-4 flex flex-col">
+            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center self-center">
               <UserPlus size={22} className="text-brand-green" strokeWidth={1.8} />
             </div>
-            <div>
+            <div className="mt-3 min-h-[56px]">
               <p className="font-display font-bold text-sm text-brand-text-primary">Register new farmer</p>
               <p className="font-sans text-xs text-brand-text-muted mt-0.5">Capture biometric and personal data</p>
             </div>
-            <button onClick={() => navigate("/agent/register-farmer")} className="btn-amber py-2.5 text-xs">
-              + Start Registration
+            <button
+              onClick={() => navigate("/agent/register-farmer")}
+              className="btn-amber mt-auto h-9 px-3 text-[10px] font-medium leading-none whitespace-nowrap inline-flex items-center justify-center gap-1"
+            >
+              <Plus size={11} strokeWidth={2.2} />
+              <span>Start Registration</span>
             </button>
           </div>
-          <div className="bg-white rounded-2xl p-4 flex flex-col gap-3">
-            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-4 flex flex-col">
+            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center self-center">
               <Search size={22} className="text-brand-green" strokeWidth={1.8} />
             </div>
-            <div>
+            <div className="mt-3 min-h-[56px]">
               <p className="font-display font-bold text-sm text-brand-text-primary">Farmer lookup</p>
               <p className="font-sans text-xs text-brand-text-muted mt-0.5">Search by ID or name</p>
             </div>
-            <button onClick={() => navigate("/agent/saved-farmers")} className="btn-amber py-2.5 text-xs">
-              🔍 Search
+            <button
+              onClick={() => navigate("/agent/saved-farmers")}
+              className="btn-amber mt-auto h-9 px-3 text-[10px] font-medium leading-none whitespace-nowrap inline-flex items-center justify-center gap-1"
+            >
+              <Search size={11} strokeWidth={2.2} />
+              <span>Search</span>
             </button>
           </div>
         </div>

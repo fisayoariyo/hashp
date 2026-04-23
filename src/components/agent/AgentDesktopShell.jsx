@@ -1,4 +1,4 @@
-import { ChevronDown, Headset, Home, Plus } from "lucide-react";
+import { Headset, Home, Plus, Wifi } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { agentData } from "../../mockData/agent";
 
@@ -82,7 +82,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
                   }`}
                 >
                   {isOnline ? "Online" : "Offline"}
-                  <ChevronDown size={10} strokeWidth={2.4} />
+                  <Wifi size={11} strokeWidth={2.4} />
                 </div>
               </div>
               <button

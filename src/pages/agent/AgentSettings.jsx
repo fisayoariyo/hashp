@@ -161,7 +161,7 @@ function ChangePasswordScreen({ onBack }) {
       </div>
 
       {!success && (
-        <div className="px-5 md:px-0 pb-8 md:pb-0 md:pt-6">
+        <div className={`px-5 md:px-0 pb-8 md:pb-0 md:pt-6 ${step === "new" ? "pt-4" : ""}`}>
           <button
             onClick={step === "otp" ? handleOTP : handleSave}
             disabled={step === "otp" && digits.join("").length < 4}
