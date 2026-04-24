@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, ChevronRight, Camera,
+  ArrowLeft, ChevronRight,
   ChevronDown, X, Plus, FileDown,
 } from "lucide-react";
 import { nigerianStates, nigerianLGAs } from "../../mockData/agent";
@@ -175,12 +175,12 @@ function StartScreen({ onStart, onBack, embedded }) {
         <ArrowLeft size={18} />
         <span className="font-sans text-sm">Go back</span>
       </button>
-      <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">Register new farmer</h1>
-      <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-7">
+      <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2 md:text-left">Register new farmer</h1>
+      <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-7 md:max-w-[760px]">
         Begin a new farmer registration by capturing their personal and biometric details to create a verified profile.
       </p>
       <h2 className="font-display font-bold text-base text-brand-text-primary mb-4">Registration steps</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 md:max-w-[560px]">
         {STEPS.map((s) => (
           <div
             key={s.label}
@@ -207,7 +207,7 @@ function StartScreen({ onStart, onBack, embedded }) {
     return (
       <div className="flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]">
         <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">{body}</div>
-        <div className="shrink-0 pt-4 border-t border-brand-border flex justify-center md:justify-start">
+        <div className="shrink-0 pt-4 border-t border-brand-border flex justify-center">
           {startBtn}
         </div>
       </div>
@@ -271,11 +271,11 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
     <div className={rootClass}>
       <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <Steps current={1} />
-        <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">Biometric capture</h1>
-        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-8">
+        <h1 className="font-display font-bold text-3xl md:text-[48px] md:leading-[52px] text-brand-text-primary mb-2 md:text-center">Biometric capture</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-8 md:text-center">
           Capture fingerprint and face for identity verification.
         </p>
-        <div className="space-y-5">
+        <div className="space-y-5 md:max-w-[520px] md:mx-auto">
           <Row
             label="Face verification"
             subLabel="Capture your face to verify"
@@ -348,20 +348,19 @@ function PersonalStep({ onNext, onBack, embedded }) {
         <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">
           Enter the farmer's basic details and identification number.
         </p>
-
-        {/* Upload picture */}
-        <button className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-brand-border text-brand-text-secondary text-sm font-sans bg-white w-full">
-          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-            <Camera size={16} className="text-brand-text-muted" />
-          </div>
-          <span>Upload profile picture</span>
-        </button>
-
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
         <F label="Full legal name" required>
           <Input value={form.fullName} onChange={set("fullName")} placeholder="Write farmer full name here"
             icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} />
         </F>
-
+        <F label="Date of birth" required>
+          <div className="flex items-center input-field gap-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <input type="date" value={form.dob} onChange={set("dob")} placeholder="DD/MM/YYYY"
+              className="flex-1 bg-transparent focus:outline-none text-sm text-brand-text-primary placeholder:text-brand-text-muted" />
+          </div>
+        </F>
+        <F label="Gender" required><Sel value={form.gender} onChange={set("gender")} options={["Male","Female","Other"]} /></F>
         <F label="Phone number" required>
           <div className="flex items-center input-field gap-3">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
@@ -373,16 +372,6 @@ function PersonalStep({ onNext, onBack, embedded }) {
               className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
           </div>
         </F>
-
-        <F label="Date of birth" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <input type="date" value={form.dob} onChange={set("dob")} placeholder="DD/MM/YYYY"
-              className="flex-1 bg-transparent focus:outline-none text-sm text-brand-text-primary placeholder:text-brand-text-muted" />
-          </div>
-        </F>
-
-        <F label="Gender" required><Sel value={form.gender} onChange={set("gender")} options={["Male","Female","Other"]} /></F>
         <F label="State of origin" required><Sel value={form.state} onChange={set("state")} options={nigerianStates} placeholder="Select" /></F>
         <F label="Local government area" required>
           <Sel
@@ -392,16 +381,9 @@ function PersonalStep({ onNext, onBack, embedded }) {
             placeholder={form.state ? "Select LGA" : "Select state first"}
           />
         </F>
-        <F label="Residential address" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <input value={form.address} onChange={set("address")} placeholder="Write farmer full address here"
-              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
-          </div>
-        </F>
         <F label="NIN (National ID No.)" required>
           <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h3m0 0v6m0-6h4"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <input value={form.nin} onChange={set("nin")} placeholder="Write farmer full name here"
               className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
           </div>
@@ -413,8 +395,6 @@ function PersonalStep({ onNext, onBack, embedded }) {
               className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
           </div>
         </F>
-
-        {/* Optional fields */}
         <F label="Marital Status (optional)">
           <Sel value={form.maritalStatus} onChange={set("maritalStatus")}
             options={["Single","Married","Divorced","Widowed"]} placeholder="Select" />
@@ -427,8 +407,6 @@ function PersonalStep({ onNext, onBack, embedded }) {
           <Sel value={form.yearsExperience} onChange={set("yearsExperience")}
             options={["Less than 1 year","1-3 years","4-7 years","8-15 years","15+ years"]} placeholder="Select" />
         </F>
-
-        {/* Primary Crops — tag pills */}
         <F label="Primary Crop(s) (optional)">
           <div className="flex flex-wrap gap-2 min-h-[42px] p-3 rounded-2xl border border-brand-border bg-white">
             {form.primaryCrops.map((crop) => (
@@ -446,13 +424,11 @@ function PersonalStep({ onNext, onBack, embedded }) {
             </select>
           </div>
         </F>
-
-        {/* Next of Kin */}
-        <F label="Next of Kin Name (optional)">
+        <F label="Next of Kin Name" required>
           <Input value={form.nextKinName} onChange={set("nextKinName")} placeholder="Write farmer next of kin name here"
             icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} />
         </F>
-        <F label="Next of Kin Number (optional)">
+        <F label="Next of Kin phone number" required>
           <div className="flex items-center input-field gap-3">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
             <div className="w-px h-5 bg-brand-border shrink-0" />
@@ -463,10 +439,18 @@ function PersonalStep({ onNext, onBack, embedded }) {
               className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
           </div>
         </F>
-        <F label="Next of Kin Relationship (optional)">
+        <F label="Residential address" required>
+          <div className="flex items-center input-field gap-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <input value={form.address} onChange={set("address")} placeholder="Write farmer full address here"
+              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
+          </div>
+        </F>
+        <F label="Next of Kin Relationship" required>
           <Sel value={form.nextKinRelationship} onChange={set("nextKinRelationship")}
             options={["Spouse","Parent","Sibling","Child","Relative","Friend"]} placeholder="Select" />
         </F>
+        </div>
       </div>
       <NavRow layout={navLayout} onBack={onBack} onNext={() => { setDraft({ personal: form }); onNext(); }} />
     </div>
@@ -476,7 +460,7 @@ function PersonalStep({ onNext, onBack, embedded }) {
 // ── Farm info ──────────────────────────────────────────────
 function FarmStep({ onNext, onBack, embedded }) {
   const d = getDraft().farm || {};
-  const [form, setForm] = useState({ farmSize:"", cropType:"", landOwnership:"", ...d });
+  const [form, setForm] = useState({ farmSize:"", farmLocation:"", cropType:"", soilType:"", landOwnership:"", ...d });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const navLayout = embedded ? "inline" : "fixed";
@@ -491,23 +475,37 @@ function FarmStep({ onNext, onBack, embedded }) {
         <Steps current={3} />
         <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Farm Information</h1>
         <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">Enter basic details about the farmer's farm.</p>
-        <F label="Farm Size" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <input value={form.farmSize} onChange={set("farmSize")} placeholder="Enter farm size (e.g. 2 acres)"
-              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
-          </div>
-        </F>
-        <F label="Crop Type" required>
-          <Sel value={form.cropType} onChange={set("cropType")}
-            options={["Maize","Rice","Cassava","Yam","Soybean","Green Beans","Tomato","Pepper","Groundnut"]}
-            placeholder="Select crop type" />
-        </F>
-        <F label="Land Ownership (Optional)">
-          <Sel value={form.landOwnership} onChange={set("landOwnership")}
-            options={["Owned","Leased","Communal","Family"]}
-            placeholder="Select ownership type (e.g. Owned, Leased)" />
-        </F>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
+          <F label="Farm Size" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <input value={form.farmSize} onChange={set("farmSize")} placeholder="Enter farm size (e.g. 2 acres)"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
+            </div>
+          </F>
+          <F label="Crop Type" required>
+            <Sel value={form.cropType} onChange={set("cropType")}
+              options={["Maize","Rice","Cassava","Yam","Soybean","Green Beans","Tomato","Pepper","Groundnut"]}
+              placeholder="Select crop type" />
+          </F>
+          <F label="Farm Location" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M12 21s-6-4.35-6-10a6 6 0 1 1 12 0c0 5.65-6 10-6 10Z"/><circle cx="12" cy="11" r="2.5"/></svg>
+              <input value={form.farmLocation} onChange={set("farmLocation")} placeholder="Input farm location"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
+            </div>
+          </F>
+          <F label="Soil Type" required>
+            <Sel value={form.soilType} onChange={set("soilType")}
+              options={["Loamy soil","Clay soil","Sandy","Silty soil","Peaty soil","Chalky soil"]}
+              placeholder="Select soil type" />
+          </F>
+          <F label="Land Ownership (Optional)">
+            <Sel value={form.landOwnership} onChange={set("landOwnership")}
+              options={["Owned","Leased","Communal","Family"]}
+              placeholder="Select ownership type (e.g. Owned, Leased)" />
+          </F>
+        </div>
       </div>
       <NavRow layout={navLayout} onBack={onBack} onNext={() => { setDraft({ farm: form }); onNext(); }} />
     </div>
@@ -517,7 +515,7 @@ function FarmStep({ onNext, onBack, embedded }) {
 // ── Cooperative info ───────────────────────────────────────
 function CoopStep({ onNext, onBack, embedded }) {
   const d = getDraft().cooperative || {};
-  const [form, setForm] = useState({ name:"",regNo:"",role:"Member",lga:"",commodity:"",size:"",landType:"",farmHect:"",supplier:"", ...d });
+  const [form, setForm] = useState({ name:"",regNo:"",role:"Member",joinedDate:"",lga:"",commodity:"",size:"",landType:"",supplier:"", ...d });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const navLayout = embedded ? "inline" : "fixed";
@@ -532,25 +530,35 @@ function CoopStep({ onNext, onBack, embedded }) {
         <Steps current={4} />
         <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Cooperative & Association</h1>
         <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">Add cooperative details if the farmer belongs to one.</p>
-        {[
-          ["Cooperative Name","name",true,"Enter cooperative name"],
-          ["Registration No.","regNo",true,"e.g. OY-COOP-2019-00441"],
-          ["LGA of Cooperative","lga",false,"LGA"],
-          ["Commodity Focus","commodity",false,"e.g. Maize, Cassava"],
-          ["Cooperative Size (members)","size",false,"e.g. 120"],
-          ["Farm Size (Hectares)","farmHect",false,"e.g. 2"],
-          ["Input Supplier","supplier",false,"Optional"],
-        ].map(([label, key, req, ph]) => (
-          <F key={key} label={label} required={req}>
-            <Input value={form[key]} onChange={set(key)} placeholder={ph} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
+          <F label="Cooperative Name">
+            <Input value={form.name} onChange={set("name")} placeholder="Enter cooperative name" />
           </F>
-        ))}
-        <F label="Membership Role">
-          <Sel value={form.role} onChange={set("role")} options={["Member","Secretary","Chairman","Treasurer"]} />
-        </F>
-        <F label="Land Ownership Type">
-          <Sel value={form.landType} onChange={set("landType")} options={["Owned","Leased","Communal","Family"]} placeholder="Select" />
-        </F>
+          <F label="Cooperative Registration No.">
+            <Input value={form.regNo} onChange={set("regNo")} placeholder="Enter registration number" />
+          </F>
+          <F label="Membership Role">
+            <Sel value={form.role} onChange={set("role")} options={["Member","Secretary","Chairman","Treasurer"]} />
+          </F>
+          <F label="Date Joined">
+            <Input value={form.joinedDate} onChange={set("joinedDate")} placeholder="DD/MM/YYYY" />
+          </F>
+          <F label="LGA of Cooperative">
+            <Sel value={form.lga} onChange={set("lga")} options={nigerianLGAs[getDraft().personal?.state] || []} placeholder="Select LGA" />
+          </F>
+          <F label="Commodity Focus">
+            <Input value={form.commodity} onChange={set("commodity")} placeholder="e.g. Maize, Cassava" />
+          </F>
+          <F label="Cooperative Size">
+            <Input value={form.size} onChange={set("size")} placeholder="Enter number of members" />
+          </F>
+          <F label="Land Ownership Type">
+            <Sel value={form.landType} onChange={set("landType")} options={["Owned","Leased","Communal","Family"]} placeholder="Select" />
+          </F>
+          <F label="Input Supplier Name">
+            <Input value={form.supplier} onChange={set("supplier")} placeholder="Enter supplier name" />
+          </F>
+        </div>
       </div>
       <NavRow
         layout={navLayout}
@@ -620,7 +628,9 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
 
         <Section title="Farm Information" rows={[
           ["Farm Size",      f.farmSize],
+          ["Farm Location",  f.farmLocation],
           ["Crop Type",      f.cropType],
+          ["Soil Type",      f.soilType],
           ["Land Ownership", f.landOwnership],
         ]} />
 
@@ -628,12 +638,12 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
           ["Cooperative Name",    c.name],
           ["Registration Number", c.regNo],
           ["Membership Role",     c.role],
+          ["Date Joined",         c.joinedDate],
           ["LGA",                 c.lga],
           ["Commodity Focus",     c.commodity],
           ["Cooperative Size",    c.size ? `${c.size} members` : undefined],
           ["Land Ownership Type", c.landType],
-          ["Farm Size (Hectares)", c.farmHect ? `${c.farmHect} hectares` : undefined],
-          ["Input Supplier",      c.supplier],
+          ["Input Supplier Name", c.supplier],
         ]} />
       </div>
 

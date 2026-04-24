@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Home, User } from "lucide-react";
 import FarmerDesktopLayout from "../../components/farmer/FarmerDesktopLayout";
-import { farmerData } from "../../mockData/farmer";
+import { farmerData, farmerFarms } from "../../mockData/farmer";
+
+const primaryFarm = farmerFarms[0];
 
 function MobileBottomNav() {
   const navigate = useNavigate();
@@ -53,11 +55,16 @@ function ProfileContent() {
         ["Address", farmerData.address],
         ["NIN", "XXXXXXXXXXXXX"],
       ]} />
-      <Section title="Farm Information" rows={[
-        ["Farm Size", farmerData.farmSize],
-        ["Crop Type", farmerData.primaryCrop],
-        ["Land Ownership", farmerData.landOwnershipType],
-      ]} />
+      <Section
+        title="Farm Information"
+        rows={[
+          ["Farm Size", primaryFarm?.size ?? farmerData.farmSize],
+          ["Farm Location", primaryFarm?.location ?? farmerData.address],
+          ["Crop Type", primaryFarm?.crop ?? farmerData.primaryCrop],
+          ["Soil Type", primaryFarm?.soilType ?? farmerData.soilType],
+          ["Land Ownership", farmerData.landOwnershipType],
+        ]}
+      />
       <Section title="Cooperative & Association" rows={[
         ["Cooperative Name", farmerData.cooperative],
         ["Registration Number", farmerData.cooperativeRegNo],

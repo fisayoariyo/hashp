@@ -21,7 +21,7 @@ export default function AgentVerifyPhone() {
   const location = useLocation();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const mode = location.state?.mode === "reset-password" ? "reset-password" : "register";
-  const emailForReset = location.state?.email || "";
+  const resetPhone = location.state?.phone || "";
 
   const [digits, setDigits] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -71,10 +71,10 @@ export default function AgentVerifyPhone() {
       } catch {
         navigate("/agent/create-account", { replace: true });
       }
-    } else if (!emailForReset) {
+    } else if (!resetPhone) {
       navigate("/agent/forgot-password", { replace: true });
     }
-  }, [mode, emailForReset, navigate]);
+  }, [mode, resetPhone, navigate]);
 
   const handleChange = (i, e) => {
     const raw = e.target.value.replace(/\D/g, "");
@@ -119,7 +119,7 @@ export default function AgentVerifyPhone() {
           try {
             sessionStorage.setItem(RESET_FLAG, "1");
           } catch { /* ignore */ }
-          navigate("/agent/reset-password-new", { replace: true, state: { email: emailForReset } });
+          navigate("/agent/reset-password-new", { replace: true, state: { phone: resetPhone } });
         } else {
           setError("Incorrect code, Try again");
           setDigits(["", "", "", ""]);
@@ -206,12 +206,11 @@ export default function AgentVerifyPhone() {
         title="Verify Phone number"
         subtitle="Enter the 4-digit code we sent to your registered phone number"
         centerTitle
-        contentClassName="max-w-[400px] mx-auto px-0 lg:px-0 lg:pr-0"
         titleClassName="text-[46px] leading-[1.05] mb-2"
         subtitleClassName="text-[19px] leading-[1.3] mb-8"
         actionsClassName="mt-auto pt-7"
         actions={
-          <div className="space-y-3 w-full max-w-[340px] mx-auto">
+          <div className="space-y-3 w-full">
             <button
               type="button"
               onClick={handleContinue}

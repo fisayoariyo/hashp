@@ -1,7 +1,19 @@
 import { useNavigate } from "react-router-dom";
-import { BadgeCheck, Copy, CreditCard, User, HelpCircle, Headphones, HandCoins, Users, Link2, Home } from "lucide-react";
+import { ArrowRight, BadgeCheck, Copy, CreditCard, User, HelpCircle, Headphones, HandCoins, Users, Link2, Home } from "lucide-react";
 import FarmerDesktopLayout from "../../components/farmer/FarmerDesktopLayout";
-import { farmerData } from "../../mockData/farmer";
+import FarmerFarmInfoBar from "../../components/farmer/FarmerFarmInfoBar";
+import { farmerData, farmerFarms } from "../../mockData/farmer";
+
+/** Primary farm row for home summary — same source as profile/API will use later. */
+function getPrimaryFarmSummary() {
+  const farm = farmerFarms[0];
+  return {
+    farmSize: farm?.size ?? farmerData.farmSize ?? "—",
+    cropType: farm?.crop ?? farmerData.primaryCrop ?? "—",
+    soilType: farm?.soilType ?? "—",
+    farmLocation: farm?.location ?? farmerData.address ?? "—",
+  };
+}
 
 const PRIMARY = [
   { label: "View My ID",  Icon: CreditCard,  path: "/farmer/id" },
@@ -73,8 +85,50 @@ function ActionGrid({ navigate }) {
   );
 }
 
+function MobileFarmInfoCard({ farmSummary, onSeeMore }) {
+  return (
+    <section className="mb-5 overflow-hidden rounded-2xl bg-gradient-to-b from-[#0d7a63] to-[#005F4A] px-4 pb-4 pt-5 text-white shadow-[0_6px_14px_rgba(0,95,74,0.22)] ring-1 ring-inset ring-white/12">
+      <h2 className="font-display text-[22px] font-bold leading-7">My Farm Information</h2>
+
+      <div className="mt-4 grid grid-cols-3 gap-0">
+        {[
+          { label: "Farm size", value: farmSummary.farmSize },
+          { label: "Crop Type", value: farmSummary.cropType },
+          { label: "Soil Type", value: farmSummary.soilType },
+        ].map(({ label, value }, idx) => (
+          <div
+            key={label}
+            className={`min-w-0 px-2 ${idx > 0 ? "border-l border-white/25 pl-3" : "pl-0"}`}
+          >
+            <p className="font-sans text-xs text-white/85">{label}</p>
+            <p className="mt-1 font-display text-[18px] font-semibold leading-tight line-clamp-2 break-words">
+              {value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 border-t border-white/20 pt-3">
+        <p className="font-sans text-xs text-white/85">Farm location</p>
+        <p className="mt-1 font-display text-[20px] font-semibold leading-tight line-clamp-2 break-words">
+          {farmSummary.farmLocation}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onSeeMore}
+        className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/6 text-sm font-semibold"
+      >
+        See more info <ArrowRight size={15} />
+      </button>
+    </section>
+  );
+}
+
 export default function FarmerHome() {
   const navigate = useNavigate();
+  const farmSummary = getPrimaryFarmSummary();
 
   const copyID = () => navigator.clipboard?.writeText(farmerData.id).catch(() => {});
 
@@ -102,6 +156,10 @@ export default function FarmerHome() {
               <BadgeCheck size={13} /> Verified
             </span>
           </div>
+          <MobileFarmInfoCard
+            farmSummary={farmSummary}
+            onSeeMore={() => navigate("/farmer/profile")}
+          />
           <ActionGrid navigate={navigate} />
         </div>
         <MobileBottomNav />
@@ -109,7 +167,19 @@ export default function FarmerHome() {
 
       {/* ── DESKTOP (FWDHP01) ────────────────────────── */}
       <FarmerDesktopLayout activeNav="Home" islandContent edgeToEdge>
-        {/* 4-card primary row */}
+        <div className="mb-8">
+          <FarmerFarmInfoBar
+            title="My Farm Information"
+            items={[
+              { label: "Farm size", value: farmSummary.farmSize, onClick: () => navigate("/farmer/profile") },
+              { label: "Crop Type", value: farmSummary.cropType, onClick: () => navigate("/farmer/profile") },
+              { label: "Soil Type", value: farmSummary.soilType, onClick: () => navigate("/farmer/profile") },
+              { label: "Farm Location", value: farmSummary.farmLocation, onClick: () => navigate("/farmer/profile") },
+            ]}
+          />
+        </div>
+
+        <h2 className="font-display font-bold text-lg text-brand-text-primary mb-4">Your Information</h2>
         <div className="grid grid-cols-4 gap-4 mb-8">
           {PRIMARY.map(({ label, Icon, path }) => (
             <button key={label} onClick={() => navigate(path)}

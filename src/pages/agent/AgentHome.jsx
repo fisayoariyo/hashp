@@ -41,13 +41,13 @@ function DesktopStatCard({ icon, iconEl, iconClassName = "", label, value, badge
   return (
     <div
       className="relative h-[222px] w-full overflow-hidden rounded-[20px] bg-[#03624D] px-8 pb-7 pt-7 text-white"
-      style={{
-        backgroundImage: `url(${cardPatternDesktop})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
     >
+      <img
+        src={cardPatternDesktop}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover opacity-[0.12]"
+      />
       <div className="relative z-10">
         <div className="mb-6 flex items-start justify-between">
           {iconEl
@@ -147,39 +147,94 @@ export default function AgentHome() {
   const mobileContent = (
     <div className="page-container md:hidden">
       {/* Dark green header */}
-      <div className="bg-brand-green px-4 pt-6 pb-6">
-        <div className="flex items-center justify-between mb-1">
+      <div className="relative isolate overflow-hidden bg-[#005F4A] px-4 pt-6 pb-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 origin-center scale-[1.08] opacity-[0.44] contrast-[1.06]"
+          style={{
+            backgroundImage: `url(${cardPatternDesktop})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#fef9c3]/16 mix-blend-soft-light" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#016A53]/22 mix-blend-multiply" />
+        <div className="relative z-10 flex items-center justify-between mb-1">
           <h1 className="font-display font-bold text-xl text-white">Welcome, Agent {agentData.name}</h1>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20">
             <Wifi size={12} className="text-white" />
             <span className="text-xs font-sans font-semibold text-white">{agentData.status}</span>
           </div>
         </div>
-        <p className="font-sans text-white/70 text-sm mb-5">
+        <p className="relative z-10 font-sans text-white/70 text-sm mb-5">
           Ready to manage farmer registration and track activities
         </p>
-        <div className="space-y-3">
+        <div className="relative z-10 space-y-3">
           {/* Registered Farmers — wide card */}
-          <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-2xl">🚜</span>
+          <div className="relative isolate overflow-hidden rounded-2xl border border-white/10 bg-[#016A53] p-4">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-[0.45]"
+              style={{
+                backgroundImage: `url(${cardPatternDesktop})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+              }}
+            />
+            <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#016A53]/25 mix-blend-multiply" />
+            <div className="relative z-10 flex items-center justify-between mb-1">
+              <img
+                src={statFarmersIcon}
+                alt=""
+                aria-hidden="true"
+                className="h-7 w-7 brightness-0 invert"
+              />
               <span className="text-xs font-sans font-semibold text-brand-amber bg-brand-amber/20 px-2 py-0.5 rounded-full">+12%</span>
             </div>
-            <p className="font-sans text-white/70 text-sm">Registered Farmers</p>
-            <p className="font-display font-bold text-4xl text-white mt-1">{agentData.totalFarmersRegistered}</p>
+            <p className="relative z-10 font-sans text-white/70 text-sm">Registered Farmers</p>
+            <p className="relative z-10 font-display font-bold text-4xl text-white mt-1">{agentData.totalFarmersRegistered}</p>
           </div>
           {/* Two half-width cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xl">🪪</span>
+            <div className="relative isolate overflow-hidden rounded-2xl border border-white/10 bg-[#016A53] p-4">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-[0.45]"
+                style={{
+                  backgroundImage: `url(${cardPatternDesktop})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }}
+              />
+              <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#016A53]/25 mix-blend-multiply" />
+              <div className="relative z-10 flex items-center justify-between mb-1">
+                <img
+                  src={statIdIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-6 w-6 brightness-0 invert"
+                />
                 <span className="text-xs font-sans font-semibold text-brand-amber bg-brand-amber/20 px-2 py-0.5 rounded-full">+12%</span>
               </div>
-              <p className="font-sans text-white/70 text-xs">Digital IDs Issued</p>
-              <p className="font-display font-bold text-2xl text-white mt-1">{agentData.syncedFarmers}</p>
+              <p className="relative z-10 font-sans text-white/70 text-xs">Digital IDs Issued</p>
+              <p className="relative z-10 font-display font-bold text-2xl text-white mt-1">{agentData.syncedFarmers}</p>
             </div>
-            <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-1">
+            <div className="relative isolate overflow-hidden rounded-2xl border border-white/10 bg-[#016A53] p-4">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-[0.45]"
+                style={{
+                  backgroundImage: `url(${cardPatternDesktop})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }}
+              />
+              <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#016A53]/25 mix-blend-multiply" />
+              <div className="relative z-10 flex items-center justify-between mb-1">
                 <RefreshCw size={18} className="text-white/70" />
                 <button
                   type="button"
@@ -190,8 +245,8 @@ export default function AgentHome() {
                   <RefreshCw size={11} className={syncing ? "animate-spin" : ""} /> Sync now
                 </button>
               </div>
-              <p className="font-sans text-white/70 text-xs">Pending sync</p>
-              <p className="font-display font-bold text-2xl text-white mt-1">
+              <p className="relative z-10 font-sans text-white/70 text-xs">Pending sync</p>
+              <p className="relative z-10 font-display font-bold text-2xl text-white mt-1">
                 {String(syncCounts.pending).padStart(2, "0")}
               </p>
             </div>
@@ -203,33 +258,53 @@ export default function AgentHome() {
       <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide space-y-4">
         {/* Action cards */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-2xl p-4 flex flex-col">
+          <div className="relative isolate overflow-hidden bg-white rounded-2xl p-4 flex flex-col border border-[#EDEDED]">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-[0.045]"
+              style={{
+                backgroundImage: `url(${cardPatternDesktop})`,
+                backgroundSize: "170% auto",
+                backgroundPosition: "50% 22%",
+                backgroundRepeat: "no-repeat",
+              }}
+            />
             <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center self-center">
               <UserPlus size={22} className="text-brand-green" strokeWidth={1.8} />
             </div>
-            <div className="mt-3 min-h-[56px]">
+            <div className="relative z-10 mt-3 min-h-[56px]">
               <p className="font-display font-bold text-sm text-brand-text-primary">Register new farmer</p>
               <p className="font-sans text-xs text-brand-text-muted mt-0.5">Capture biometric and personal data</p>
             </div>
             <button
               onClick={() => navigate("/agent/register-farmer")}
-              className="btn-amber mt-auto h-9 px-3 text-[10px] font-medium leading-none whitespace-nowrap inline-flex items-center justify-center gap-1"
+              className="relative z-10 btn-amber mt-auto h-9 px-3 text-[10px] font-medium leading-none whitespace-nowrap inline-flex items-center justify-center gap-1"
             >
               <Plus size={11} strokeWidth={2.2} />
               <span>Start Registration</span>
             </button>
           </div>
-          <div className="bg-white rounded-2xl p-4 flex flex-col">
+          <div className="relative isolate overflow-hidden bg-white rounded-2xl p-4 flex flex-col border border-[#EDEDED]">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-[0.045]"
+              style={{
+                backgroundImage: `url(${cardPatternDesktop})`,
+                backgroundSize: "170% auto",
+                backgroundPosition: "50% 22%",
+                backgroundRepeat: "no-repeat",
+              }}
+            />
             <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center self-center">
               <Search size={22} className="text-brand-green" strokeWidth={1.8} />
             </div>
-            <div className="mt-3 min-h-[56px]">
+            <div className="relative z-10 mt-3 min-h-[56px]">
               <p className="font-display font-bold text-sm text-brand-text-primary">Farmer lookup</p>
               <p className="font-sans text-xs text-brand-text-muted mt-0.5">Search by ID or name</p>
             </div>
             <button
               onClick={() => navigate("/agent/saved-farmers")}
-              className="btn-amber mt-auto h-9 px-3 text-[10px] font-medium leading-none whitespace-nowrap inline-flex items-center justify-center gap-1"
+              className="relative z-10 btn-amber mt-auto h-9 px-3 text-[10px] font-medium leading-none whitespace-nowrap inline-flex items-center justify-center gap-1"
             >
               <Search size={11} strokeWidth={2.2} />
               <span>Search</span>
@@ -244,8 +319,18 @@ export default function AgentHome() {
             <span className="text-brand-green text-xs font-semibold">✓ Sync complete — all records uploaded</span>
           </div>
         )}
-        <div className="bg-white rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="relative isolate overflow-hidden bg-white rounded-2xl p-4 border border-[#EDEDED]">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-[0.035]"
+            style={{
+              backgroundImage: `url(${cardPatternDesktop})`,
+              backgroundSize: "180% auto",
+              backgroundPosition: "50% 24%",
+              backgroundRepeat: "no-repeat",
+            }}
+          />
+          <div className="relative z-10 flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <WifiOff size={16} className="text-brand-text-secondary" />
               <p className="font-sans font-semibold text-sm text-brand-text-primary">Offline Status</p>
@@ -259,14 +344,14 @@ export default function AgentHome() {
               <RefreshCw size={12} className={syncing ? "animate-spin" : ""} /> Sync now
             </button>
           </div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="relative z-10 flex items-center justify-between mb-2">
             <p className="font-sans text-sm text-brand-text-secondary">Synchronization Progress</p>
             <p className="font-sans text-sm font-semibold">{syncProgressPct}%</p>
           </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full mb-3">
+          <div className="relative z-10 w-full h-2 bg-gray-100 rounded-full mb-3">
             <div className="h-2 bg-brand-green rounded-full transition-all" style={{ width: `${syncProgressPct}%` }} />
           </div>
-          <div className="flex gap-4">
+          <div className="relative z-10 flex gap-4">
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 rounded-full bg-brand-green flex items-center justify-center">
                 <span className="text-white text-[8px]">✓</span>

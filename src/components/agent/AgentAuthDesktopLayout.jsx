@@ -41,7 +41,7 @@ export default function AgentAuthDesktopLayout({
       </div>
 
       <div
-        className={`flex min-w-0 flex-col w-full justify-center py-4 lg:py-6 px-2 lg:px-6 max-w-xl mx-auto lg:max-w-none lg:mx-0 lg:pr-10 ${
+        className={`flex min-w-0 flex-col w-full justify-center py-4 lg:py-6 px-2 lg:px-6 max-w-[560px] mx-auto ${
           centerTitle ? "items-center text-center" : ""
         } ${contentClassName}`}
       >

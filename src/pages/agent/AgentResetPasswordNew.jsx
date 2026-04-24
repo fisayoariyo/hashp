@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
@@ -8,9 +8,7 @@ const RESET_FLAG = "hcx_agent_reset_otp_ok";
 
 export default function AgentResetPasswordNew() {
   const navigate = useNavigate();
-  const location = useLocation();
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const email = location.state?.email || "";
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -49,13 +47,12 @@ export default function AgentResetPasswordNew() {
         "hcx_agent_login_message",
         "Password reset successfully. Sign in with your new password."
       );
-      if (email) sessionStorage.setItem("hcx_agent_reset_email_prefill", email);
     } catch { /* ignore */ }
     navigate("/agent/login");
   };
 
   const fields = (
-    <div className="space-y-4 w-full max-w-md mx-auto md:mx-0">
+    <div className="space-y-4 w-full">
       <div className="flex flex-col gap-1.5">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Create your password</label>
         <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all">
@@ -95,7 +92,7 @@ export default function AgentResetPasswordNew() {
   );
 
   const actions = (
-    <div className="space-y-3 w-full max-w-sm">
+    <div className="space-y-3 w-full">
       <button type="button" onClick={handleContinue} disabled={loading} className="btn-primary w-full">
         {loading ? "Saving..." : "Continue"}
       </button>

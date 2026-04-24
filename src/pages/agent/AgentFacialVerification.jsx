@@ -41,10 +41,10 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
           <span className="font-sans text-sm">Go back</span>
         </button>
 
-        <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary mb-1">
+        <h1 className="font-display font-bold text-2xl md:text-[48px] md:leading-[52px] text-brand-text-primary mb-1 md:text-center">
           Facial Verification
         </h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-6">
+        <p className="font-sans text-sm text-brand-text-secondary mb-6 md:text-center">
           Capture face for identity verification.
         </p>
 
@@ -134,7 +134,7 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
 
       <div className={bottomClass}>
         {status === "success" ? (
-          <button type="button" onClick={handleContinue} className="btn-capture-pill">
+          <button type="button" onClick={handleContinue} className="btn-capture-pill w-[220px] justify-center">
             Continue
           </button>
         ) : (
@@ -142,7 +142,7 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
             type="button"
             onClick={handleCapture}
             disabled={status === "scanning"}
-            className="btn-capture-pill disabled:opacity-60"
+            className="btn-capture-pill w-[220px] justify-center disabled:opacity-60"
           >
             {status === "scanning" ? "Scanning..." : "Capture"}
           </button>
@@ -154,7 +154,7 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
   return (
     <div className={rootClass}>
       {embedded ? (
-        <div className={`${innerCard} max-h-full`}>
+        <div className="flex flex-col min-h-0 flex-1 w-full">
           {content}
         </div>
       ) : (

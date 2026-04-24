@@ -255,7 +255,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
     : "page-container";
   const scrollPb = embedded ? "pb-4" : "pb-40";
   const bottomClass = embedded
-    ? "flex flex-col items-center gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 px-4"
+    ? "flex items-center justify-center gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 px-4"
     : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3 z-10 flex flex-col items-center";
 
   return (
@@ -265,19 +265,19 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
           <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
         </button>
 
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-1">
+        <h1 className="font-display font-bold text-3xl md:text-[48px] md:leading-[52px] text-brand-text-primary mb-1 md:text-center">
           Fingerprint verification
         </h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-5">
+        <p className="font-sans text-sm text-brand-text-secondary mb-5 md:text-center">
           Scan each finger to complete identity verification
         </p>
 
         {/* Legend */}
-        <div className="mb-5">
+        <div className="mb-5 md:text-center">
           <p className="font-sans text-sm font-semibold text-brand-text-primary mb-2">
             Fingerprint scan status guide
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2 md:flex md:items-center md:justify-center md:gap-5 md:space-y-0">
             {LEGEND.map(({ color, text }) => (
               <div key={text} className="flex items-center gap-2.5">
                 <FPLegendIcon color={color} size={20} />
@@ -312,6 +312,15 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
       </div>
 
       <div className={bottomClass}>
+        {allDone && failedIds.length > 0 && (
+          <button
+            type="button"
+            onClick={retryFailed}
+            className="inline-flex h-[44px] w-[220px] items-center justify-center rounded-full border-2 border-brand-green text-brand-green font-sans font-semibold text-sm"
+          >
+            Retry Failed Scans
+          </button>
+        )}
         {currentIdx === null ? (
           <button
             type="button"
@@ -328,16 +337,6 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             className="btn-capture-pill w-[220px] justify-center disabled:opacity-45 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             Continue
-          </button>
-        )}
-
-        {allDone && failedIds.length > 0 && (
-          <button
-            type="button"
-            onClick={retryFailed}
-            className="inline-flex h-[44px] w-[220px] items-center justify-center rounded-full border-2 border-brand-green text-brand-green font-sans font-semibold text-sm"
-          >
-            Retry Failed Scans
           </button>
         )}
       </div>
