@@ -25,7 +25,7 @@ function DesktopRoleSelect() {
       */}
       <div className="relative w-[45%] shrink-0 rounded-3xl overflow-hidden">
         <img
-          src="/onboarding/farmer-1.jpg"
+          src={selected === "agent" ? "/onboarding/agent-onboard1.png" : "/onboarding/farmer-1.jpg"}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -62,7 +62,7 @@ function DesktopRoleSelect() {
       <div className="flex-1 flex flex-col justify-between py-14 lg:py-16 px-6 lg:px-14 xl:px-20">
 
         {/* top: title + subtitle + role cards */}
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center w-full">
           <h1 className="font-display font-bold text-[2rem] lg:text-[2.3rem] text-brand-text-primary text-center mb-3">
             Get Started
           </h1>
@@ -72,7 +72,7 @@ function DesktopRoleSelect() {
           </p>
 
           {/* ── Role cards ── */}
-          <div className="flex gap-4 w-full">
+          <div className="grid grid-cols-2 gap-5 w-full max-w-[520px]">
 
             {/* Farmer card */}
             <button
@@ -85,9 +85,9 @@ function DesktopRoleSelect() {
                 }`}
             >
               {/* photo — upper ~75% of card */}
-              <div className="w-full h-52 lg:h-56 overflow-hidden">
+              <div className="w-full aspect-square overflow-hidden">
                 <img
-                  src="/onboarding/farmer-2.jpg"
+                  src="/onboarding/farmer-2.png"
                   alt="Farmer"
                   className="w-full h-full object-cover"
                 />
@@ -114,9 +114,9 @@ function DesktopRoleSelect() {
                   : "border border-gray-200 shadow-sm"
                 }`}
             >
-              <div className="w-full h-52 lg:h-56 overflow-hidden">
+              <div className="w-full aspect-square overflow-hidden">
                 <img
-                  src="/onboarding/agent-1.jpg"
+                  src="/onboarding/agent-1.png"
                   alt="Agent"
                   className="w-full h-full object-cover"
                 />
@@ -139,7 +139,7 @@ function DesktopRoleSelect() {
         <button
           type="button"
           onClick={handleContinue}
-          className="btn-primary"
+          className="btn-primary w-full max-w-[520px] self-center"
         >
           Continue
         </button>
