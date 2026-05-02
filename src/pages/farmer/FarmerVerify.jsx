@@ -39,10 +39,10 @@ function PhoneStep({ onSubmit, onBack }) {
   };
 
   const phoneField = (
-    <div className="flex flex-col gap-1.5 mb-6">
+    <div className={`mb-6 flex w-full flex-col gap-1.5 text-left ${isDesktop ? "max-w-[560px] self-start" : ""}`}>
       <label className="font-sans text-sm font-medium text-brand-text-primary">Phone Number</label>
       <div
-        className={`flex items-center bg-white border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
+        className={`flex w-full items-center bg-white border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
           error ? "border-red-400" : "border-brand-border"
         }`}
       >
@@ -57,10 +57,10 @@ function PhoneStep({ onSubmit, onBack }) {
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && void handle()}
           placeholder="Input your phone number here"
-          className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-left text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
         />
       </div>
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && <p className="mt-1 text-left text-xs text-red-500">{error}</p>}
     </div>
   );
 
@@ -68,11 +68,12 @@ function PhoneStep({ onSubmit, onBack }) {
     return (
       <FarmerAuthDesktopLayout
         title="Login to your farmer profile"
-        heroImage="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1400&q=80"
-        centered
+        centerTitle
+        contentClassName="max-w-[620px]"
+        titleClassName="text-[2.7rem] leading-[1.08]"
         actions={
-          <div className="space-y-3">
-            <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary">
+          <div className="w-full max-w-[560px] space-y-3">
+            <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary w-full">
               {loading ? "Sending code..." : "Continue"}
             </button>
             <button
@@ -239,17 +240,16 @@ function OTPStep({ phone, onSuccess, onBack }) {
       <FarmerAuthDesktopLayout
         title={`Enter ${OTP_LENGTH}-Digit code`}
         subtitle={`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
-        heroImage="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=1400&q=80"
-        heroTitle="Your Digital Identity"
-        heroSub="One verified ID that proves you're a registered farmer and unlocks access to services."
-        centered
+        centerTitle
+        contentClassName="max-w-[620px]"
+        titleClassName="text-[2.7rem] leading-[1.08]"
         actions={
-          <div className="space-y-3">
+          <div className="w-full max-w-[560px] space-y-3">
             <button
               type="button"
               onClick={() => void handleLogin()}
               disabled={loading || digits.join("").length < OTP_LENGTH}
-              className="btn-primary"
+              className="btn-primary w-full"
             >
               {loading ? "Verifying..." : "Login"}
             </button>
@@ -306,8 +306,15 @@ function OTPStep({ phone, onSuccess, onBack }) {
 
 export default function FarmerVerify() {
   const navigate = useNavigate();
-  const [step, setStep] = useState("onboarding");
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [step, setStep] = useState(() => (window.matchMedia("(min-width: 768px)").matches ? "phone" : "onboarding"));
   const [phone, setPhone] = useState("");
+
+  useEffect(() => {
+    if (isDesktop && step === "onboarding") {
+      setStep("phone");
+    }
+  }, [isDesktop, step]);
 
   if (step === "onboarding") {
     return <FarmerOnboarding onDone={() => setStep("phone")} />;

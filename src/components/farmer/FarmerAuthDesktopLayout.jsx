@@ -1,112 +1,112 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { farmerOnboardingSlides } from "../../mockData/farmer";
 
-// Exactly the 3 images shown in FWD-CA-01 / 02 / 03 (left panel cycles through these)
-const HERO_IMAGES = [
-  "/onboarding/farmer-1.jpg",   // woman with leaves / basket on head
-  "/onboarding/farmer-2.jpg",   // gloved hands pulling plant from soil
-  "/onboarding/farmer-3.jpg",   // man walking through corn field
-];
+const SLIDE_INTERVAL_MS = 4500;
 
-/**
- * FarmerAuthDesktopLayout
- *
- * Desktop-only (hidden on mobile). Two-column split:
- *   LEFT  — hero photo card with HFEI logo + tagline. Cycles through 3 images
- *           unless `fixedImage` is provided (used on OTP screen to stop cycling).
- *   RIGHT — title at top, children (form), action buttons pinned to bottom.
- *
- * Props
- *   title       heading on right panel
- *   subtitle    small text below heading (optional)
- *   children    form / content block
- *   actions     button row pinned to bottom of right panel
- *   fixedImage  pin left panel to one specific image path (stops cycling)
- */
 export default function FarmerAuthDesktopLayout({
   title,
   subtitle,
   children,
   actions,
-  fixedImage,
-  centered = false,
+  centerTitle = false,
+  leading = null,
+  contentClassName = "",
+  titleClassName = "",
+  subtitleClassName = "",
+  actionsClassName = "",
+  fixedImage = "",
 }) {
-  const [imgIdx, setImgIdx] = useState(0);
+  const slides = useMemo(() => farmerOnboardingSlides || [], []);
+  const [slideIndex, setSlideIndex] = useState(0);
 
   useEffect(() => {
-    // No cycling when a fixed image is provided (e.g. OTP screen)
-    if (fixedImage) return;
-    const t = setInterval(
-      () => setImgIdx((i) => (i + 1) % HERO_IMAGES.length),
-      4500
-    );
-    return () => clearInterval(t);
-  }, [fixedImage]);
+    if (fixedImage || slides.length <= 1) return undefined;
+    const timer = window.setInterval(() => {
+      setSlideIndex((current) => (current + 1) % slides.length);
+    }, SLIDE_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [fixedImage, slides]);
 
-  const heroSrc = fixedImage ?? HERO_IMAGES[imgIdx];
+  const activeSlide = slides[slideIndex] || {
+    image: fixedImage,
+    title: "Welcome to your Farmer Profile",
+    sub: "You now have a digital identity that helps you access support, loans, and better opportunities.",
+  };
+
+  const heroImage = fixedImage || activeSlide.image;
 
   return (
-    <div className="hidden md:flex min-h-dvh bg-white p-5 lg:p-6 gap-5 lg:gap-6">
-
-      {/* ── LEFT: hero photo card ──────────────────────────────── */}
-      <div className="relative w-[45%] shrink-0 rounded-3xl overflow-hidden">
-        <img
-          key={heroSrc}
-          src={heroSrc}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        {/* dark gradient from bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-
-        {/* brand block — bottom left */}
-        <div className="absolute bottom-8 left-8 right-8 lg:bottom-10 lg:left-10 lg:right-10">
-          {/*
-            block + w-auto prevents the inline-baseline white-line artefact.
-            max-w-[200px] keeps the container tight around the image so no
-            extra transparent space renders as white on dark backgrounds.
-          */}
+    <div className="hidden md:grid md:grid-cols-2 md:min-h-dvh md:bg-white md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch">
+      <div className="flex min-w-0 min-h-0 items-stretch">
+        <div className="relative w-full min-h-[calc(100dvh-3rem)] overflow-hidden rounded-3xl border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
-            src="/brand/HFEI_Primary_Logo_White.png"
-            alt="HFEI by Hashmar Cropex Ltd"
-            className="block h-10 w-auto max-w-[200px] object-contain object-left mb-4"
-            draggable="false"
+            key={heroImage}
+            src={heroImage}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
           />
-          <h2 className="font-display font-bold text-[1.85rem] lg:text-[2.1rem] text-white leading-tight mb-2">
-            Welcome to your Farmer Profile
-          </h2>
-          <p className="font-sans text-base lg:text-[1.05rem] text-white/85 leading-snug">
-            You now have a digital identity that helps you access support,
-            loans, and better opportunities.
-          </p>
-        </div>
-      </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/18 to-transparent" />
 
-      {/* ── RIGHT: form panel ─────────────────────────────────── */}
-      {/*
-        justify-between keeps title+form at the top and action buttons
-        pinned to the bottom — exactly as the designs show.
-      */}
-      <div className="flex-1 flex flex-col justify-between py-14 lg:py-16 px-6 lg:px-14 xl:px-20">
-
-        {/* top section: heading + optional subtitle + form children */}
-        <div className={centered ? "mx-auto w-full max-w-[420px] text-center" : ""}>
-          {title && (
-            <h1 className="font-display font-bold text-[1.85rem] lg:text-[2rem] text-brand-text-primary leading-tight mb-2">
-              {title}
-            </h1>
-          )}
-          {subtitle && (
-            <p className="font-sans text-sm text-brand-text-secondary mb-6 leading-relaxed">
-              {subtitle}
+          <div className="absolute left-6 right-6 bottom-6 lg:left-8 lg:right-8 lg:bottom-8 text-white">
+            <img
+              src="/brand/HFEI_Primary_Logo_White.png"
+              alt="HFEI by Hashmar Cropex Ltd"
+              className="block h-11 w-auto object-contain mb-4"
+              draggable="false"
+            />
+            <h2 className="font-display font-bold text-4xl xl:text-[2.6rem] leading-tight mb-2 max-w-[30rem]">
+              {activeSlide.title}
+            </h2>
+            <p className="font-sans text-[0.95rem] lg:text-[1.05rem] text-white/90 leading-[1.35] max-w-[31rem]">
+              {activeSlide.sub}
             </p>
-          )}
-          <div className={`mt-8 ${centered ? "text-left" : ""}`}>{children}</div>
-        </div>
 
-        {/* bottom section: action buttons */}
-        {actions && <div className={centered ? "mx-auto w-full max-w-[420px]" : ""}>{actions}</div>}
+            {!fixedImage && slides.length > 1 ? (
+              <div className="mt-5 flex items-center gap-2">
+                {slides.map((slide, index) => (
+                  <span
+                    key={`${slide.title}-${index}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      index === slideIndex ? "w-8 bg-white" : "w-3 bg-white/40"
+                    }`}
+                    aria-hidden
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
 
+      <div
+        className={`flex min-w-0 flex-col w-full justify-center py-4 lg:py-6 px-4 lg:px-8 max-w-[620px] mx-auto ${
+          centerTitle ? "items-center text-center" : ""
+        } ${contentClassName}`}
+      >
+        {leading}
+        {title ? (
+          <h1 className={`font-display font-bold text-[3rem] leading-[1.05] text-brand-text-primary mb-3 ${titleClassName}`}>
+            {title}
+          </h1>
+        ) : null}
+        {subtitle && (
+          <p
+            className={`font-sans text-xl text-brand-text-secondary mb-8 ${
+              centerTitle ? "max-w-md" : ""
+            } ${subtitleClassName}`}
+          >
+            {subtitle}
+          </p>
+        )}
+        <div className={`flex-1 w-full ${centerTitle ? "flex flex-col items-center" : ""}`}>{children}</div>
+        {actions && (
+          <div
+            className={`pt-6 w-full ${centerTitle ? "flex flex-col items-center max-w-[420px]" : ""} ${actionsClassName}`}
+          >
+            {actions}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
