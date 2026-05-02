@@ -1,57 +1,148 @@
-import { useState, useRef } from "react";
+import { createRef, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Lock, HelpCircle, LogOut, ChevronRight,
-  ChevronDown, ChevronUp, Eye, EyeOff, ArrowLeft,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  Lock,
+  LogOut,
 } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
-import { agentData, agentFAQs } from "../../mockData/agent";
+import { agentFAQs } from "../../mockData/agent";
+import {
+  clearAgentSession,
+  getAgentDashboard,
+  getAgentSession,
+  resetPassword,
+  sendOtp,
+  verifyOtp,
+} from "../../services/cropexApi";
 
-// ── Change Password ────────────────────────────────────────
+const OTP_LENGTH = 6;
+
 function ChangePasswordScreen({ onBack }) {
+  const session = getAgentSession();
+  const phone = session?.phone || "";
   const [step, setStep] = useState("otp");
-  const [digits, setDigits] = useState(["", "", "", ""]);
+  const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
 
-  // Individual refs — React rules of hooks compliant
-  const r0 = useRef(null);
-  const r1 = useRef(null);
-  const r2 = useRef(null);
-  const r3 = useRef(null);
-  const otpRefs = [r0, r1, r2, r3];
+  const otpRefs = useMemo(() => Array.from({ length: OTP_LENGTH }, () => createRef()), []);
 
-  const handleDigit = (i, val) => {
-    if (!/^\d?$/.test(val)) return;
+  useEffect(() => {
+    if (!phone) {
+      setError("No phone number is available for this account.");
+      return;
+    }
+
+    let active = true;
+    setSubmitting(true);
+    setError("");
+
+    sendOtp(phone)
+      .then(() => {
+        if (active) setOtpSent(true);
+      })
+      .catch((requestError) => {
+        if (active) {
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Could not send a verification code."
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setSubmitting(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [phone]);
+
+  const handleDigit = (index, value) => {
+    if (!/^\d?$/.test(value)) return;
     const next = [...digits];
-    next[i] = val;
+    next[index] = value;
     setDigits(next);
     setError("");
-    if (val && i < 3) otpRefs[i + 1].current?.focus();
+    if (value && index < OTP_LENGTH - 1) otpRefs[index + 1].current?.focus();
   };
 
-  const handleOTPKeyDown = (i, e) => {
-    if (e.key === "Backspace" && !digits[i] && i > 0) otpRefs[i - 1].current?.focus();
+  const handleOTPKeyDown = (index, event) => {
+    if (event.key === "Backspace" && !digits[index] && index > 0) {
+      otpRefs[index - 1].current?.focus();
+    }
   };
 
-  const handleOTP = () => {
+  const handleOTP = async () => {
     const otp = digits.join("");
-    if (otp !== "1234") { setError("Incorrect code. Use 1234 for demo."); return; }
+    if (otp.length < OTP_LENGTH) {
+      setError("Enter the full verification code.");
+      return;
+    }
+
+    setSubmitting(true);
     setError("");
-    setDigits(["", "", "", ""]);
-    setStep("new");
+    try {
+      await verifyOtp(phone, otp);
+      setStep("new");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not verify the code.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleSave = () => {
-    if (password.length < 8) { setError("Minimum 8 characters."); return; }
-    if (password !== confirm) { setError("Passwords do not match."); return; }
+  const handleSave = async () => {
+    if (password.length < 8) {
+      setError("Minimum 8 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setSubmitting(true);
     setError("");
-    setSuccess(true);
-    setTimeout(() => onBack(), 2000);
+    try {
+      await resetPassword({ phone, otp: digits.join(""), newPassword: password });
+      setSuccess(true);
+      window.setTimeout(() => onBack(), 2000);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "Could not update the password."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resendCode = async () => {
+    if (!phone) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await sendOtp(phone);
+      setOtpSent(true);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not resend the code.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const content = (
@@ -68,9 +159,9 @@ function ChangePasswordScreen({ onBack }) {
         {success ? (
           <div className="flex flex-col items-center justify-center gap-4 py-10">
             <div className="w-16 h-16 rounded-full bg-brand-green flex items-center justify-center">
-              <span className="text-white text-2xl">✓</span>
+              <span className="text-white text-2xl">OK</span>
             </div>
-            <p className="font-display font-bold text-xl text-brand-text-primary">Password updated!</p>
+            <p className="font-display font-bold text-xl text-brand-text-primary">Password updated</p>
             <p className="font-sans text-sm text-brand-text-secondary text-center">
               Redirecting back to settings...
             </p>
@@ -83,29 +174,39 @@ function ChangePasswordScreen({ onBack }) {
                   Enter OTP
                 </h1>
                 <p className="font-sans text-sm text-brand-text-secondary mb-8">
-                  Enter the code sent to your registered phone number to confirm.
+                  Enter the code sent to {phone || "your registered phone number"} to confirm.
                 </p>
-                <div className="grid grid-cols-4 gap-3 mb-4 md:w-fit md:gap-4">
-                  {digits.map((d, i) => (
+                <div className="grid grid-cols-6 gap-3 mb-4 md:w-fit md:gap-4">
+                  {digits.map((digit, index) => (
                     <input
-                      key={i}
-                      ref={otpRefs[i]}
+                      key={index}
+                      ref={otpRefs[index]}
                       type="tel"
                       inputMode="numeric"
                       maxLength={1}
-                      value={d}
-                      onChange={(e) => handleDigit(i, e.target.value)}
-                      onKeyDown={(e) => handleOTPKeyDown(i, e)}
+                      value={digit}
+                      onChange={(event) => handleDigit(index, event.target.value)}
+                      onKeyDown={(event) => handleOTPKeyDown(index, event)}
                       className={`h-16 w-full text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors md:w-[92px] ${
-                        d ? "border-brand-green text-brand-green" : "border-brand-border"
+                        digit ? "border-brand-green text-brand-green" : "border-brand-border"
                       } focus:border-brand-green`}
                     />
                   ))}
                 </div>
                 {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-                <p className="font-sans text-xs text-brand-text-muted">
-                  Demo OTP: <strong>1234</strong>
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="font-sans text-xs text-brand-text-muted">
+                    {otpSent ? "Verification code sent." : "Sending verification code..."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void resendCode()}
+                    disabled={submitting || !phone}
+                    className="font-sans text-xs font-semibold text-brand-green disabled:opacity-40"
+                  >
+                    Resend code
+                  </button>
+                </div>
               </>
             )}
 
@@ -126,12 +227,13 @@ function ChangePasswordScreen({ onBack }) {
                       <input
                         type={showPass ? "text" : "password"}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(event) => setPassword(event.target.value)}
                         placeholder="Enter new password"
                         className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
                       />
                       <button
-                        onClick={() => setShowPass((v) => !v)}
+                        type="button"
+                        onClick={() => setShowPass((value) => !value)}
                         className="text-brand-text-muted shrink-0"
                       >
                         {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -146,7 +248,7 @@ function ChangePasswordScreen({ onBack }) {
                       <input
                         type={showPass ? "text" : "password"}
                         value={confirm}
-                        onChange={(e) => setConfirm(e.target.value)}
+                        onChange={(event) => setConfirm(event.target.value)}
                         placeholder="Re-enter password"
                         className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
                       />
@@ -163,11 +265,11 @@ function ChangePasswordScreen({ onBack }) {
       {!success && (
         <div className={`px-5 md:px-0 pb-8 md:pb-0 md:pt-6 ${step === "new" ? "pt-4" : ""}`}>
           <button
-            onClick={step === "otp" ? handleOTP : handleSave}
-            disabled={step === "otp" && digits.join("").length < 4}
+            onClick={() => void (step === "otp" ? handleOTP() : handleSave())}
+            disabled={submitting || (step === "otp" && digits.join("").length < OTP_LENGTH)}
             className="w-full md:w-[240px] inline-flex h-[47px] items-center justify-center rounded-[15px] bg-[#03624D] text-white font-sans font-semibold disabled:opacity-40"
           >
-            {step === "otp" ? "Verify" : "Save Password"}
+            {submitting ? "Processing..." : step === "otp" ? "Verify" : "Save Password"}
           </button>
         </div>
       )}
@@ -182,49 +284,48 @@ function ChangePasswordScreen({ onBack }) {
   );
 }
 
-// ── FAQ screen ─────────────────────────────────────────────
 function FAQScreen({ onBack }) {
   const [open, setOpen] = useState(null);
   const content = (
     <div className="flex-1 w-full md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-brand-text-secondary mb-5"
-        >
-          <ArrowLeft size={18} />
-          <span className="font-sans text-sm">Go back</span>
-        </button>
-        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
-          FAQs
-        </h1>
-        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5 max-w-[760px]">
-          Answers to common questions about the agent app.
-        </p>
-        <div className="space-y-3 max-w-[760px]">
-          {agentFAQs.map((faq) => (
-            <button
-              key={faq.id}
-              onClick={() => setOpen(open === faq.id ? null : faq.id)}
-              className="w-full text-left bg-white border border-[#E6E6E6] rounded-[20px] p-4 active:scale-[0.99] transition-transform"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-sans font-semibold text-sm text-brand-text-primary">
-                  {faq.question}
-                </p>
-                {open === faq.id ? (
-                  <ChevronUp size={16} className="text-brand-green shrink-0 mt-0.5" />
-                ) : (
-                  <ChevronDown size={16} className="text-brand-text-muted shrink-0 mt-0.5" />
-                )}
-              </div>
-              {open === faq.id && (
-                <p className="font-sans text-sm text-brand-text-secondary mt-3 border-t border-brand-border pt-3 leading-relaxed">
-                  {faq.answer}
-                </p>
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-brand-text-secondary mb-5"
+      >
+        <ArrowLeft size={18} />
+        <span className="font-sans text-sm">Go back</span>
+      </button>
+      <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
+        FAQs
+      </h1>
+      <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5 max-w-[760px]">
+        Answers to common questions about the agent app.
+      </p>
+      <div className="space-y-3 max-w-[760px]">
+        {agentFAQs.map((faq) => (
+          <button
+            key={faq.id}
+            onClick={() => setOpen(open === faq.id ? null : faq.id)}
+            className="w-full text-left bg-white border border-[#E6E6E6] rounded-[20px] p-4 active:scale-[0.99] transition-transform"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-sans font-semibold text-sm text-brand-text-primary">
+                {faq.question}
+              </p>
+              {open === faq.id ? (
+                <ChevronUp size={16} className="text-brand-green shrink-0 mt-0.5" />
+              ) : (
+                <ChevronDown size={16} className="text-brand-text-muted shrink-0 mt-0.5" />
               )}
-            </button>
-          ))}
-        </div>
+            </div>
+            {open === faq.id && (
+              <p className="font-sans text-sm text-brand-text-secondary mt-3 border-t border-brand-border pt-3 leading-relaxed">
+                {faq.answer}
+              </p>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
@@ -239,7 +340,6 @@ function FAQScreen({ onBack }) {
   );
 }
 
-// ── Logout modal ───────────────────────────────────────────
 function LogoutModal({ onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center px-4">
@@ -274,76 +374,81 @@ function LogoutModal({ onConfirm, onCancel }) {
   );
 }
 
-// ── Main Settings screen ───────────────────────────────────
-function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
+function SettingsMain({ onChangePassword, onFAQ, onLogout, profile }) {
   const content = (
     <div className="flex-1 w-full md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
-        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
-          Settings
-        </h1>
-        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5 max-w-[760px]">
-          To update your details, contact your administrator
-        </p>
+      <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
+        Settings
+      </h1>
+      <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5 max-w-[760px]">
+        To update your details, contact your administrator
+      </p>
 
-        {/* Agent profile */}
-        <div className="flex items-center gap-3 mb-5 max-w-[760px] rounded-[20px] border border-[#E6E6E6] bg-white p-4">
-          <div className="relative shrink-0">
-            <img
-              src={agentData.photo}
-              alt={agentData.fullName}
-              className="w-16 h-16 rounded-2xl object-cover"
-            />
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand-green flex items-center justify-center">
-              <span className="text-white text-xs">📷</span>
-            </div>
+      <div className="flex items-center gap-3 mb-5 max-w-[760px] rounded-[20px] border border-[#E6E6E6] bg-white p-4">
+        <div className="relative shrink-0">
+          <div className="w-16 h-16 rounded-2xl bg-brand-green-muted flex items-center justify-center overflow-hidden">
+            {profile.photo ? (
+              <img
+                src={profile.photo}
+                alt={profile.fullName}
+                className="w-16 h-16 rounded-2xl object-cover"
+              />
+            ) : (
+              <span className="text-brand-green text-xl font-bold">
+                {profile.fullName.slice(0, 1).toUpperCase()}
+              </span>
+            )}
           </div>
-          <div>
-            <p className="font-display font-bold text-lg text-brand-text-primary leading-tight">
-              {agentData.fullName}
-            </p>
-            <p className="font-sans text-sm text-brand-text-secondary flex items-center gap-1 mt-0.5">
-              <span className="text-brand-green text-xs">✉</span>
-              {agentData.email}
-            </p>
-            <p className="font-sans text-sm text-brand-text-secondary flex items-center gap-1 mt-0.5">
-              <span className="text-brand-green text-xs">📱</span>
-              {agentData.phone}
-            </p>
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand-green flex items-center justify-center">
+            <span className="text-white text-xs">+</span>
           </div>
         </div>
-
-        {/* Menu items */}
-        <div className="max-w-[760px] bg-white rounded-[20px] border border-[#E6E6E6] overflow-hidden divide-y divide-brand-border">
-          <button
-            onClick={onChangePassword}
-            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
-          >
-            <Lock size={20} strokeWidth={1.8} className="text-brand-text-secondary shrink-0" />
-            <span className="flex-1 font-sans text-sm font-medium text-brand-text-primary">
-              Change password
-            </span>
-            <ChevronRight size={16} className="text-brand-text-muted shrink-0" />
-          </button>
-          <button
-            onClick={onFAQ}
-            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
-          >
-            <HelpCircle size={20} strokeWidth={1.8} className="text-brand-text-secondary shrink-0" />
-            <span className="flex-1 font-sans text-sm font-medium text-brand-text-primary">
-              FAQs
-            </span>
-            <ChevronRight size={16} className="text-brand-text-muted shrink-0" />
-          </button>
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
-          >
-            <LogOut size={20} strokeWidth={1.8} className="text-red-500 shrink-0" />
-            <span className="flex-1 font-sans text-sm font-medium text-red-500">
-              Logout
-            </span>
-          </button>
+        <div>
+          <p className="font-display font-bold text-lg text-brand-text-primary leading-tight">
+            {profile.fullName}
+          </p>
+          <p className="font-sans text-sm text-brand-text-secondary flex items-center gap-1 mt-0.5">
+            <span className="text-brand-green text-xs">E</span>
+            {profile.email}
+          </p>
+          <p className="font-sans text-sm text-brand-text-secondary flex items-center gap-1 mt-0.5">
+            <span className="text-brand-green text-xs">P</span>
+            {profile.phone}
+          </p>
         </div>
+      </div>
+
+      <div className="max-w-[760px] bg-white rounded-[20px] border border-[#E6E6E6] overflow-hidden divide-y divide-brand-border">
+        <button
+          onClick={onChangePassword}
+          className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
+        >
+          <Lock size={20} strokeWidth={1.8} className="text-brand-text-secondary shrink-0" />
+          <span className="flex-1 font-sans text-sm font-medium text-brand-text-primary">
+            Change password
+          </span>
+          <ChevronRight size={16} className="text-brand-text-muted shrink-0" />
+        </button>
+        <button
+          onClick={onFAQ}
+          className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
+        >
+          <HelpCircle size={20} strokeWidth={1.8} className="text-brand-text-secondary shrink-0" />
+          <span className="flex-1 font-sans text-sm font-medium text-brand-text-primary">
+            FAQs
+          </span>
+          <ChevronRight size={16} className="text-brand-text-muted shrink-0" />
+        </button>
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
+        >
+          <LogOut size={20} strokeWidth={1.8} className="text-red-500 shrink-0" />
+          <span className="flex-1 font-sans text-sm font-medium text-red-500">
+            Logout
+          </span>
+        </button>
+      </div>
     </div>
   );
 
@@ -358,20 +463,51 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout }) {
   );
 }
 
-// ── Main export ────────────────────────────────────────────
 export default function AgentSettings() {
   const navigate = useNavigate();
-  const [view, setView] = useState("main"); // main | password | faq
+  const [view, setView] = useState("main");
   const [showLogout, setShowLogout] = useState(false);
+  const [dashboard, setDashboard] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    getAgentDashboard()
+      .then((payload) => {
+        if (active) setDashboard(payload);
+      })
+      .catch(() => {
+        if (active) setDashboard(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const session = getAgentSession();
+  const profile = useMemo(
+    () => ({
+      fullName:
+        dashboard?.agent?.full_name ||
+        session?.fullName ||
+        session?.full_name ||
+        "Agent",
+      email: dashboard?.agent?.email || session?.email || "No email available",
+      phone: dashboard?.agent?.phone_number || session?.phone || "No phone available",
+      photo: "",
+    }),
+    [dashboard, session]
+  );
 
   const handleLogout = () => {
     try {
-      sessionStorage.removeItem("hcx_agent_auth");
+      clearAgentSession();
       sessionStorage.removeItem("hcx_agent_registration");
       sessionStorage.removeItem("hcx_agent_review_refresh_count");
       sessionStorage.removeItem("hcx_agent_reset_otp_ok");
       localStorage.removeItem("hcx_agent_farmers_list");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     navigate("/agent/login");
   };
 
@@ -388,6 +524,7 @@ export default function AgentSettings() {
         onChangePassword={() => setView("password")}
         onFAQ={() => setView("faq")}
         onLogout={() => setShowLogout(true)}
+        profile={profile}
       />
       {showLogout && (
         <LogoutModal

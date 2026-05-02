@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ChevronDown, CreditCard, LayoutGrid, List, MoreVertical, RefreshCw, Search, Share2 } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
-import { agentData } from "../../mockData/agent";
 import { useAgentFarmersSync } from "../../hooks/useAgentFarmersSync";
 import AgentStatusPanel from "../../components/agent/AgentStatusPanel";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
+import { getAgentSession } from "../../services/cropexApi";
 
 function FilterPill({ value, onChange, options }) {
   return (
@@ -291,16 +291,24 @@ function ListScreen({
   );
 }
 
-function SearchScreen({ farmers, query, setQuery, statusFilter, setStatusFilter, onBack, onSelect, onSyncFarmer }) {
+function SearchScreen({
+  farmers,
+  query,
+  setQuery,
+  statusFilter,
+  setStatusFilter,
+  onBack,
+  onSelect,
+  onSyncFarmer,
+  onSearch,
+  searching,
+  searchError,
+}) {
   const results = useMemo(() => {
     let arr = [...farmers];
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      arr = arr.filter((f) => f.name.toLowerCase().includes(q) || f.id.toLowerCase().includes(q));
-    }
     if (statusFilter !== "all") arr = arr.filter((f) => f.status === statusFilter);
     return arr;
-  }, [farmers, query, statusFilter]);
+  }, [farmers, statusFilter]);
 
   const SearchContent = () => (
     <>
@@ -309,10 +317,34 @@ function SearchScreen({ farmers, query, setQuery, statusFilter, setStatusFilter,
       <div className="flex items-center gap-2 mb-3 md:mb-4">
         <div className="flex-1 flex items-center bg-white border border-brand-border rounded-2xl px-3 gap-2">
           <Search size={16} className="text-brand-text-muted" />
-          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search farmer by name, farmer ID...." className="flex-1 py-3 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void onSearch();
+              }
+            }}
+            placeholder="Search farmer by name, farmer ID...."
+            className="flex-1 py-3 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
+          />
         </div>
-        <button className="px-4 py-3 bg-brand-green rounded-2xl text-white font-sans text-sm font-semibold">Search</button>
+        <button
+          type="button"
+          onClick={() => void onSearch()}
+          disabled={searching}
+          className="px-4 py-3 bg-brand-green rounded-2xl text-white font-sans text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {searching ? "Searching..." : "Search"}
+        </button>
       </div>
+      {searchError && (
+        <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-800">
+          Could not run search: {searchError}
+        </div>
+      )}
       <div className="flex justify-between items-center mb-4 md:mb-5">
         <FilterPill value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "Status" }, { value: "synced", label: "Synced" }, { value: "pending", label: "Sync pending" }]} />
         <span className="font-sans text-xs text-brand-text-secondary">Search Result ({results.length})</span>
@@ -362,6 +394,9 @@ function tabBtnClass(active) {
 function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
   const [tab, setTab] = useState("details");
   const display = { ...farmer };
+  const canViewId = !farmer.offline || farmer.hasOfficialId;
+  const session = getAgentSession();
+  const agentName = session?.fullName || session?.full_name || "Assigned agent";
 
   const shareId = () => {
     const msg = `Farmer ID: *${display.id}*\nName: ${display.name}\nVerify: https://cropex.hashmarcropex.com/verify/${display.id}`;
@@ -396,27 +431,38 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         <button type="button" onClick={() => setTab("details")} className={tabBtnClass(tab === "details")}>
           Details
         </button>
-        <button type="button" onClick={() => setTab("id")} className={tabBtnClass(tab === "id")}>
-          ID
-        </button>
+        {canViewId && (
+          <button type="button" onClick={() => setTab("id")} className={tabBtnClass(tab === "id")}>
+            ID
+          </button>
+        )}
       </div>
 
       {tab === "details" ? (
         <>
-          <button
-            type="button"
-            onClick={() => setTab("id")}
-            className="w-full md:max-w-md mb-6 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-brand-border bg-white hover:border-brand-green hover:bg-brand-green/5 transition-colors text-left shadow-sm"
-          >
-            <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center shrink-0">
-              <CreditCard className="text-brand-green" size={22} />
+          {canViewId ? (
+            <button
+              type="button"
+              onClick={() => setTab("id")}
+              className="w-full md:max-w-md mb-6 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-brand-border bg-white hover:border-brand-green hover:bg-brand-green/5 transition-colors text-left shadow-sm"
+            >
+              <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center shrink-0">
+                <CreditCard className="text-brand-green" size={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-sans font-semibold text-sm text-brand-text-primary">View digital ID card</p>
+                <p className="font-sans text-xs text-brand-text-secondary">Tap to see the farmer&apos;s official ID</p>
+              </div>
+              <span className="text-brand-text-muted text-sm font-semibold shrink-0">&gt;</span>
+            </button>
+          ) : (
+            <div className="w-full md:max-w-md mb-6 rounded-2xl border border-brand-border bg-white px-4 py-3.5 text-left shadow-sm">
+              <p className="font-sans font-semibold text-sm text-brand-text-primary">Digital ID pending sync</p>
+              <p className="font-sans text-xs text-brand-text-secondary mt-1">
+                This farmer will receive an official ID after the record is synced to the server.
+              </p>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-sans font-semibold text-sm text-brand-text-primary">View digital ID card</p>
-              <p className="font-sans text-xs text-brand-text-secondary">Tap to see the farmer&apos;s official ID</p>
-            </div>
-            <span className="text-brand-text-muted text-sm font-semibold shrink-0">›</span>
-          </button>
+          )}
           <div className="md:grid md:grid-cols-2 md:gap-8">
             <div>
               <Section title="Online synchronization" rows={[["Status", farmer.status === "synced" ? "Synced" : "Sync pending"]]} />
@@ -425,7 +471,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
             </div>
             <div>
               <Section title="Farm Information" rows={[["Primary Crop", display.primaryCrop], ["Farm Size", display.farmSize], ["Land Ownership", display.landOwnership], ["Reg date", display.regDate]]} />
-              <Section title="Cooperative & Association" rows={[["Name", display.cooperative], ["Agent", agentData.fullName]]} />
+              <Section title="Cooperative & Association" rows={[["Name", display.cooperative], ["Agent", agentName]]} />
             </div>
           </div>
         </>
@@ -452,7 +498,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
             <div className="grid grid-cols-2 gap-4 w-full mb-3">
               <div>
                 <p className="text-white/60 text-xs">Agent name</p>
-                <p className="font-sans font-semibold text-sm">{agentData.fullName}</p>
+                <p className="font-sans font-semibold text-sm">{agentName}</p>
               </div>
               <div>
                 <p className="text-white/60 text-xs">Agent signature</p>
@@ -507,17 +553,43 @@ export default function AgentSavedFarmers() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("date-desc");
   const [lastRootView, setLastRootView] = useState("list");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
 
-  const { farmers, syncing, syncMessage, listError, syncFarmer, syncAllPending, counts } =
+  const { farmers, syncing, syncMessage, listError, syncFarmer, syncAllPending, searchFarmersByQuery, counts } =
     useAgentFarmersSync();
 
+  useEffect(() => {
+    if (view !== "search") return;
+    setSearchResults(farmers);
+  }, [farmers, view]);
+
+  const runSearch = async () => {
+    setSearching(true);
+    setSearchError("");
+    try {
+      const results = await searchFarmersByQuery(query);
+      setSearchResults(results);
+    } catch (error) {
+      setSearchResults([]);
+      setSearchError(error instanceof Error ? error.message : "Search failed.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const openDetail = (farmer) => {
-    setSelectedId(farmer.id);
+    setSelectedId(farmer.clientId || farmer.id);
     setLastRootView(view === "detail" ? "list" : view);
     setView("detail");
   };
 
-  const selectedFarmer = selectedId ? farmers.find((f) => f.id === selectedId) : null;
+  const selectedFarmer = selectedId
+    ? farmers.find((farmer) =>
+        [farmer.clientId, farmer.id, farmer.officialFarmerId].filter(Boolean).includes(selectedId)
+      )
+    : null;
 
   const toast = syncMessage && (
     <div
@@ -567,7 +639,7 @@ export default function AgentSavedFarmers() {
         {syncOverlay}
         {toast}
         <SearchScreen
-          farmers={farmers}
+          farmers={searchResults}
           query={query}
           setQuery={setQuery}
           statusFilter={statusFilter}
@@ -575,6 +647,9 @@ export default function AgentSavedFarmers() {
           onBack={() => setView("list")}
           onSelect={openDetail}
           onSyncFarmer={syncFarmer}
+          onSearch={runSearch}
+          searching={searching}
+          searchError={searchError}
         />
       </>
     );
@@ -587,7 +662,13 @@ export default function AgentSavedFarmers() {
         <DetailScreen
           farmer={selectedFarmer}
           onBack={() => setView(lastRootView)}
-          onSyncFarmer={syncFarmer}
+          onSyncFarmer={async (id) => {
+            const syncedFarmer = await syncFarmer(id);
+            if (syncedFarmer) {
+              setSelectedId(syncedFarmer.clientId || syncedFarmer.id);
+            }
+            return syncedFarmer;
+          }}
           syncing={syncing}
         />
       </>
@@ -595,3 +676,4 @@ export default function AgentSavedFarmers() {
   }
   return null;
 }
+

@@ -1,14 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ChevronRight,
   ChevronDown, X, Plus, FileDown,
 } from "lucide-react";
-import { nigerianStates, nigerianLGAs } from "../../mockData/agent";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
 import { upsertFarmerInStorage } from "../../hooks/useAgentFarmersSync";
+import { CropexHttpError } from "../../services/cropexHttp";
+import {
+  draftToEnrollmentPayload,
+  enrollFarmer,
+  extractFarmerRecord,
+  extractGeoArray,
+  getAgentIdFromSession,
+  getAgentSession,
+  getGeoLgas,
+  getGeoStates,
+  mapApiFarmerToUi,
+  mapGeoLgaOption,
+  mapGeoStateOption,
+} from "../../services/cropexApi";
 
 const DEMO_FARMER_PHOTO = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop";
 
@@ -16,6 +29,13 @@ const DRAFT_KEY  = "hcx_reg_draft";
 const getDraft   = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
 const setDraft   = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...getDraft(), ...d })); } catch {} };
 const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
+const readString = (...values) => {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return "";
+};
 const formatToday = () => {
   const now = new Date();
   const dd = String(now.getDate()).padStart(2, "0");
@@ -23,6 +43,37 @@ const formatToday = () => {
   const yyyy = now.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
 };
+const isOfflineCapableFailure = (error) =>
+  error instanceof CropexHttpError && error.status === 0;
+const toSelectOptions = (options = []) =>
+  options.map((option) =>
+    typeof option === "object" && option !== null
+      ? {
+          value: String(option.value ?? option.id ?? option.name ?? ""),
+          label: readString(option.label, option.name, option.value, option.id),
+        }
+      : { value: String(option ?? ""), label: String(option ?? "") }
+  );
+const buildQueuedFarmerRecord = (draft, agentId) => ({
+  ownerAgentId: agentId,
+  payload: draftToEnrollmentPayload(draft, agentId),
+  name: draft.personal?.fullName || "New Farmer",
+  photo: DEMO_FARMER_PHOTO,
+  regDate: formatToday(),
+  status: "pending",
+  primaryCrop: draft.farm?.cropType || draft.personal?.primaryCrops?.[0] || "-",
+  state: draft.personal?.state || "-",
+  lga: draft.personal?.lga || "-",
+  phone: draft.personal?.phone || "-",
+  cooperative: draft.cooperative?.name || "-",
+  farmSize: draft.farm?.farmSize || "-",
+  landOwnership: draft.farm?.landOwnership || "-",
+  gender: draft.personal?.gender || "-",
+  dob: draft.personal?.dob || "-",
+  nin: draft.personal?.nin || "-",
+  address: draft.personal?.address || "-",
+  biometric: { face: true, fingerprint: true },
+});
 
 // ── Step indicator ─────────────────────────────────────────
 function Steps({ current }) {
@@ -58,7 +109,11 @@ const Sel = ({ value, onChange, options, placeholder }) => (
   <div className="relative">
     <select value={value} onChange={onChange} className="input-field appearance-none pr-8 w-full">
       <option value="">{placeholder || "Select"}</option>
-      {options.map((o) => <option key={o}>{o}</option>)}
+      {toSelectOptions(options).map((option) => (
+        <option key={`${option.value}-${option.label}`} value={option.value}>
+          {option.label}
+        </option>
+      ))}
     </select>
     <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-muted pointer-events-none" />
   </div>
@@ -306,31 +361,100 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
 }
 
 // ── RF09: Personal info (all fields including optional) ────
-function PersonalStep({ onNext, onBack, embedded }) {
+function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, statesError }) {
   const d = getDraft().personal || {};
   const [form, setForm] = useState({
     fullName: "", phone: "", dob: "", gender: "Male",
-    state: "", lga: "", address: "", nin: "", bvn: "",
-    // Optional fields from RF09
+    stateId: "", state: "", lgaId: "", lga: "", address: "", nin: "", bvn: "",
     maritalStatus: "", educationLevel: "", yearsExperience: "",
     primaryCrops: [],
     nextKinName: "", nextKinPhone: "", nextKinRelationship: "",
     ...d,
   });
-  const set = (k) => (e) => setForm((f) => ({
-    ...f,
-    [k]: e.target.value,
-    ...(k === "state" ? { lga: "" } : {}),
-  }));
+  const [lgaOptions, setLgaOptions] = useState([]);
+  const [lgasLoading, setLgasLoading] = useState(false);
+  const [lgasError, setLgasError] = useState("");
 
-  // Primary crop tags
-  const CROP_OPTIONS = ["Maize","Rice","Cassava","Yam","Soybean","Green Beans","Tomato","Pepper","Groundnut","Wheat"];
+  useEffect(() => {
+    if (form.stateId || !form.state || stateOptions.length === 0) return;
+    const matchedState = stateOptions.find((option) => option.name === form.state);
+    if (matchedState) {
+      setForm((current) => ({ ...current, stateId: String(matchedState.id) }));
+    }
+  }, [form.state, form.stateId, stateOptions]);
+
+  useEffect(() => {
+    if (!form.stateId) {
+      setLgaOptions([]);
+      setLgasError("");
+      return;
+    }
+
+    let active = true;
+    setLgasLoading(true);
+    setLgasError("");
+
+    getGeoLgas(form.stateId)
+      .then((payload) => {
+        if (!active) return;
+        setLgaOptions(extractGeoArray(payload).map(mapGeoLgaOption).filter(Boolean));
+      })
+      .catch((error) => {
+        if (!active) return;
+        setLgaOptions([]);
+        setLgasError(error instanceof Error ? error.message : "Could not load LGAs right now.");
+      })
+      .finally(() => {
+        if (active) setLgasLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [form.stateId]);
+
+  useEffect(() => {
+    if (form.lgaId || !form.lga || lgaOptions.length === 0) return;
+    const matchedLga = lgaOptions.find((option) => option.name === form.lga);
+    if (matchedLga) {
+      setForm((current) => ({ ...current, lgaId: String(matchedLga.id) }));
+    }
+  }, [form.lga, form.lgaId, lgaOptions]);
+
+  const set = (key) => (event) => {
+    const value = event.target.value;
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+  const handleStateChange = (event) => {
+    const selected = stateOptions.find((option) => String(option.id) === event.target.value);
+    setForm((current) => ({
+      ...current,
+      stateId: event.target.value,
+      state: selected?.name || "",
+      lgaId: "",
+      lga: "",
+    }));
+  };
+  const handleLgaChange = (event) => {
+    const selected = lgaOptions.find((option) => String(option.id) === event.target.value);
+    setForm((current) => ({
+      ...current,
+      lgaId: event.target.value,
+      lga: selected?.name || "",
+    }));
+  };
+
+  const CROP_OPTIONS = ["Maize", "Rice", "Cassava", "Yam", "Soybean", "Green Beans", "Tomato", "Pepper", "Groundnut", "Wheat"];
   const addCrop = (crop) => {
     if (crop && !form.primaryCrops.includes(crop)) {
-      setForm((f) => ({ ...f, primaryCrops: [...f.primaryCrops, crop] }));
+      setForm((current) => ({ ...current, primaryCrops: [...current.primaryCrops, crop] }));
     }
   };
-  const removeCrop = (crop) => setForm((f) => ({ ...f, primaryCrops: f.primaryCrops.filter((c) => c !== crop) }));
+  const removeCrop = (crop) =>
+    setForm((current) => ({
+      ...current,
+      primaryCrops: current.primaryCrops.filter((item) => item !== crop),
+    }));
 
   const navLayout = embedded ? "inline" : "fixed";
   const scrollPb = embedded ? "pb-4" : "pb-36";
@@ -346,113 +470,176 @@ function PersonalStep({ onNext, onBack, embedded }) {
           Personal Information
         </h1>
         <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">
-          Enter the farmer's basic details and identification number.
+          Enter the farmer&apos;s basic details and identification number.
         </p>
+        {(statesError || lgasError) && (
+          <p className="font-sans text-sm text-red-600" role="alert">
+            {statesError || lgasError}
+          </p>
+        )}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
-        <F label="Full legal name" required>
-          <Input value={form.fullName} onChange={set("fullName")} placeholder="Write farmer full name here"
-            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} />
-        </F>
-        <F label="Date of birth" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <input type="date" value={form.dob} onChange={set("dob")} placeholder="DD/MM/YYYY"
-              className="flex-1 bg-transparent focus:outline-none text-sm text-brand-text-primary placeholder:text-brand-text-muted" />
-          </div>
-        </F>
-        <F label="Gender" required><Sel value={form.gender} onChange={set("gender")} options={["Male","Female","Other"]} /></F>
-        <F label="Phone number" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
-            <div className="w-px h-5 bg-brand-border shrink-0" />
-            <span className="text-sm text-brand-text-muted shrink-0">+234</span>
-            <input type="tel" inputMode="numeric" value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, "") }))}
-              placeholder="Input phone number here"
-              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
-          </div>
-        </F>
-        <F label="State of origin" required><Sel value={form.state} onChange={set("state")} options={nigerianStates} placeholder="Select" /></F>
-        <F label="Local government area" required>
-          <Sel
-            value={form.lga}
-            onChange={set("lga")}
-            options={nigerianLGAs[form.state] || []}
-            placeholder={form.state ? "Select LGA" : "Select state first"}
-          />
-        </F>
-        <F label="NIN (National ID No.)" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <input value={form.nin} onChange={set("nin")} placeholder="Write farmer full name here"
-              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
-          </div>
-        </F>
-        <F label="BVN" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h3m0 0v6m0-6h4"/></svg>
-            <input value={form.bvn} onChange={set("bvn")} placeholder="Write farmer full name here"
-              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
-          </div>
-        </F>
-        <F label="Marital Status (optional)">
-          <Sel value={form.maritalStatus} onChange={set("maritalStatus")}
-            options={["Single","Married","Divorced","Widowed"]} placeholder="Select" />
-        </F>
-        <F label="Education Level (optional)">
-          <Sel value={form.educationLevel} onChange={set("educationLevel")}
-            options={["No formal education","Primary","Secondary","OND/NCE","HND/BSc","Postgraduate"]} placeholder="Select" />
-        </F>
-        <F label="Years of Farming Experience (optional)">
-          <Sel value={form.yearsExperience} onChange={set("yearsExperience")}
-            options={["Less than 1 year","1-3 years","4-7 years","8-15 years","15+ years"]} placeholder="Select" />
-        </F>
-        <F label="Primary Crop(s) (optional)">
-          <div className="flex flex-wrap gap-2 min-h-[42px] p-3 rounded-2xl border border-brand-border bg-white">
-            {form.primaryCrops.map((crop) => (
-              <span key={crop} className="flex items-center gap-1 bg-brand-green-muted text-brand-green text-xs font-sans font-medium px-2.5 py-1 rounded-full">
-                {crop}
-                <button onClick={() => removeCrop(crop)} className="hover:text-brand-green-dark">
-                  <X size={11} />
-                </button>
-              </span>
-            ))}
-            <select onChange={(e) => { addCrop(e.target.value); e.target.value = ""; }}
-              className="text-xs text-brand-text-muted bg-transparent focus:outline-none cursor-pointer">
-              <option value="">+</option>
-              {CROP_OPTIONS.filter((c) => !form.primaryCrops.includes(c)).map((c) => <option key={c}>{c}</option>)}
-            </select>
-          </div>
-        </F>
-        <F label="Next of Kin Name" required>
-          <Input value={form.nextKinName} onChange={set("nextKinName")} placeholder="Write farmer next of kin name here"
-            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} />
-        </F>
-        <F label="Next of Kin phone number" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
-            <div className="w-px h-5 bg-brand-border shrink-0" />
-            <span className="text-sm text-brand-text-muted shrink-0">+234</span>
-            <input type="tel" inputMode="numeric" value={form.nextKinPhone}
-              onChange={(e) => setForm((f) => ({ ...f, nextKinPhone: e.target.value.replace(/\D/g, "") }))}
-              placeholder="Input your phone number here"
-              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
-          </div>
-        </F>
-        <F label="Residential address" required>
-          <div className="flex items-center input-field gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <input value={form.address} onChange={set("address")} placeholder="Write farmer full address here"
-              className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
-          </div>
-        </F>
-        <F label="Next of Kin Relationship" required>
-          <Sel value={form.nextKinRelationship} onChange={set("nextKinRelationship")}
-            options={["Spouse","Parent","Sibling","Child","Relative","Friend"]} placeholder="Select" />
-        </F>
+          <F label="Full legal name" required>
+            <Input
+              value={form.fullName}
+              onChange={set("fullName")}
+              placeholder="Write farmer full name here"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
+            />
+          </F>
+          <F label="Date of birth" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              <input
+                type="date"
+                value={form.dob}
+                onChange={set("dob")}
+                placeholder="DD/MM/YYYY"
+                className="flex-1 bg-transparent focus:outline-none text-sm text-brand-text-primary placeholder:text-brand-text-muted"
+              />
+            </div>
+          </F>
+          <F label="Gender" required>
+            <Sel value={form.gender} onChange={set("gender")} options={["Male", "Female", "Other"]} />
+          </F>
+          <F label="Phone number" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="5" y="2" width="14" height="20" rx="2" /></svg>
+              <div className="w-px h-5 bg-brand-border shrink-0" />
+              <span className="text-sm text-brand-text-muted shrink-0">+234</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={form.phone}
+                onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value.replace(/\D/g, "") }))}
+                placeholder="Input phone number here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+          </F>
+          <F label="State of origin" required>
+            <Sel
+              value={form.stateId}
+              onChange={handleStateChange}
+              options={stateOptions}
+              placeholder={statesLoading ? "Loading states..." : "Select state"}
+            />
+          </F>
+          <F label="Local government area" required>
+            <Sel
+              value={form.lgaId}
+              onChange={handleLgaChange}
+              options={lgaOptions}
+              placeholder={!form.stateId ? "Select state first" : lgasLoading ? "Loading LGAs..." : "Select LGA"}
+            />
+          </F>
+          <F label="NIN (National ID No.)" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+              <input
+                value={form.nin}
+                onChange={set("nin")}
+                placeholder="Input NIN here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+          </F>
+          <F label="BVN" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 9h3m0 0v6m0-6h4" /></svg>
+              <input
+                value={form.bvn}
+                onChange={set("bvn")}
+                placeholder="Input BVN here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+          </F>
+          <F label="Marital Status (optional)">
+            <Sel value={form.maritalStatus} onChange={set("maritalStatus")} options={["Single", "Married", "Divorced", "Widowed"]} placeholder="Select" />
+          </F>
+          <F label="Education Level (optional)">
+            <Sel value={form.educationLevel} onChange={set("educationLevel")} options={["No formal education", "Primary", "Secondary", "OND/NCE", "HND/BSc", "Postgraduate"]} placeholder="Select" />
+          </F>
+          <F label="Years of Farming Experience (optional)">
+            <Sel value={form.yearsExperience} onChange={set("yearsExperience")} options={["Less than 1 year", "1-3 years", "4-7 years", "8-15 years", "15+ years"]} placeholder="Select" />
+          </F>
+          <F label="Primary Crop(s) (optional)">
+            <div className="flex flex-wrap gap-2 min-h-[42px] p-3 rounded-2xl border border-brand-border bg-white">
+              {form.primaryCrops.map((crop) => (
+                <span key={crop} className="flex items-center gap-1 bg-brand-green-muted text-brand-green text-xs font-sans font-medium px-2.5 py-1 rounded-full">
+                  {crop}
+                  <button type="button" onClick={() => removeCrop(crop)} className="hover:text-brand-green-dark">
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
+              <select
+                onChange={(event) => {
+                  addCrop(event.target.value);
+                  event.target.value = "";
+                }}
+                className="text-xs text-brand-text-muted bg-transparent focus:outline-none cursor-pointer"
+              >
+                <option value="">+</option>
+                {CROP_OPTIONS.filter((crop) => !form.primaryCrops.includes(crop)).map((crop) => (
+                  <option key={crop}>{crop}</option>
+                ))}
+              </select>
+            </div>
+          </F>
+          <F label="Next of Kin Name" required>
+            <Input
+              value={form.nextKinName}
+              onChange={set("nextKinName")}
+              placeholder="Write farmer next of kin name here"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
+            />
+          </F>
+          <F label="Next of Kin phone number" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="5" y="2" width="14" height="20" rx="2" /></svg>
+              <div className="w-px h-5 bg-brand-border shrink-0" />
+              <span className="text-sm text-brand-text-muted shrink-0">+234</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={form.nextKinPhone}
+                onChange={(event) => setForm((current) => ({ ...current, nextKinPhone: event.target.value.replace(/\D/g, "") }))}
+                placeholder="Input your phone number here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+          </F>
+          <F label="Residential address" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+              <input
+                value={form.address}
+                onChange={set("address")}
+                placeholder="Write farmer full address here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+          </F>
+          <F label="Next of Kin Relationship" required>
+            <Sel value={form.nextKinRelationship} onChange={set("nextKinRelationship")} options={["Spouse", "Parent", "Sibling", "Child", "Relative", "Friend"]} placeholder="Select" />
+          </F>
         </div>
       </div>
-      <NavRow layout={navLayout} onBack={onBack} onNext={() => { setDraft({ personal: form }); onNext(); }} />
+      <NavRow
+        layout={navLayout}
+        onBack={onBack}
+        onNext={() => {
+          setDraft({
+            personal: {
+              ...form,
+              state: form.state,
+              lga: form.lga,
+            },
+          });
+          onNext();
+        }}
+      />
     </div>
   );
 }
@@ -513,10 +700,75 @@ function FarmStep({ onNext, onBack, embedded }) {
 }
 
 // ── Cooperative info ───────────────────────────────────────
-function CoopStep({ onNext, onBack, embedded }) {
+function CoopStep({ onNext, onBack, embedded, stateOptions }) {
   const d = getDraft().cooperative || {};
-  const [form, setForm] = useState({ name:"",regNo:"",role:"Member",joinedDate:"",lga:"",commodity:"",size:"",landType:"",supplier:"", ...d });
+  const personal = getDraft().personal || {};
+  const derivedStateId =
+    personal.stateId || readString(stateOptions.find((option) => option.name === personal.state)?.id);
+  const [form, setForm] = useState({
+    name: "",
+    regNo: "",
+    role: "Member",
+    joinedDate: "",
+    lgaId: "",
+    lga: "",
+    commodity: "",
+    size: "",
+    landType: "",
+    supplier: "",
+    ...d,
+  });
+  const [lgaOptions, setLgaOptions] = useState([]);
+  const [lgasLoading, setLgasLoading] = useState(false);
+  const [lgasError, setLgasError] = useState("");
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  useEffect(() => {
+    if (!derivedStateId) {
+      setLgaOptions([]);
+      setLgasError("");
+      return;
+    }
+
+    let active = true;
+    setLgasLoading(true);
+    setLgasError("");
+
+    getGeoLgas(derivedStateId)
+      .then((payload) => {
+        if (!active) return;
+        setLgaOptions(extractGeoArray(payload).map(mapGeoLgaOption).filter(Boolean));
+      })
+      .catch((error) => {
+        if (!active) return;
+        setLgaOptions([]);
+        setLgasError(error instanceof Error ? error.message : "Could not load cooperative LGAs.");
+      })
+      .finally(() => {
+        if (active) setLgasLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [derivedStateId]);
+
+  useEffect(() => {
+    if (form.lgaId || !form.lga || lgaOptions.length === 0) return;
+    const matchedLga = lgaOptions.find((option) => option.name === form.lga);
+    if (matchedLga) {
+      setForm((current) => ({ ...current, lgaId: String(matchedLga.id) }));
+    }
+  }, [form.lga, form.lgaId, lgaOptions]);
+
+  const handleLgaChange = (event) => {
+    const selected = lgaOptions.find((option) => String(option.id) === event.target.value);
+    setForm((current) => ({
+      ...current,
+      lgaId: event.target.value,
+      lga: selected?.name || "",
+    }));
+  };
 
   const navLayout = embedded ? "inline" : "fixed";
   const scrollPb = embedded ? "pb-4" : "pb-36";
@@ -530,6 +782,11 @@ function CoopStep({ onNext, onBack, embedded }) {
         <Steps current={4} />
         <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Cooperative & Association</h1>
         <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">Add cooperative details if the farmer belongs to one.</p>
+        {lgasError && (
+          <p className="font-sans text-sm text-red-600" role="alert">
+            {lgasError}
+          </p>
+        )}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
           <F label="Cooperative Name">
             <Input value={form.name} onChange={set("name")} placeholder="Enter cooperative name" />
@@ -544,7 +801,12 @@ function CoopStep({ onNext, onBack, embedded }) {
             <Input value={form.joinedDate} onChange={set("joinedDate")} placeholder="DD/MM/YYYY" />
           </F>
           <F label="LGA of Cooperative">
-            <Sel value={form.lga} onChange={set("lga")} options={nigerianLGAs[getDraft().personal?.state] || []} placeholder="Select LGA" />
+            <Sel
+              value={form.lgaId}
+              onChange={handleLgaChange}
+              options={lgaOptions}
+              placeholder={!derivedStateId ? "Select farmer state first" : lgasLoading ? "Loading LGAs..." : "Select LGA"}
+            />
           </F>
           <F label="Commodity Focus">
             <Input value={form.commodity} onChange={set("commodity")} placeholder="e.g. Maize, Cassava" />
@@ -563,7 +825,15 @@ function CoopStep({ onNext, onBack, embedded }) {
       <NavRow
         layout={navLayout}
         onBack={onBack}
-        onNext={() => { setDraft({ cooperative: form }); onNext(); }}
+        onNext={() => {
+          setDraft({
+            cooperative: {
+              ...form,
+              lga: form.lga,
+            },
+          });
+          onNext();
+        }}
         nextLabel="Review"
       />
     </div>
@@ -622,6 +892,8 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
           ["Date of Birth", p.dob],
           ["Gender",       p.gender],
           ["Phone Number", p.phone],
+          ["State",        p.state],
+          ["LGA",          p.lga],
           ["Address",      p.address],
           ["NIN",          p.nin],
         ]} />
@@ -696,6 +968,21 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
   const rootClass = embedded
     ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
     : "page-container";
+  const isOnlineSubmission = idCard?.mode === "online";
+  const title = isOnlineSubmission ? "Registration Complete" : "Saved for Sync";
+  const description = isOnlineSubmission
+    ? "This farmer has been submitted to the server. Any official farmer ID returned by the backend is shown below."
+    : "This farmer has been saved on this device and queued for sync. An official farmer ID will appear after a successful sync.";
+  const referenceLabel = isOnlineSubmission
+    ? idCard.farmerId
+      ? "Farmer ID"
+      : "Registration status"
+    : "Sync Reference";
+  const referenceValue = isOnlineSubmission
+    ? idCard.farmerId || "Submitted online"
+    : idCard.clientId;
+  const statusText = isOnlineSubmission ? "Registered online" : "Pending sync";
+  const officialIdText = idCard.farmerId || (isOnlineSubmission ? "Assigned by server" : "After sync");
 
   return (
     <div className={rootClass}>
@@ -704,14 +991,12 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
           <ArrowLeft size={16} /><span className="font-sans text-sm">Go back home</span>
         </button>
 
-        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Farmer ID</h1>
+        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">{title}</h1>
         <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5">
-          Farmer has been successfully registered. View and share their ID below.
+          {description}
         </p>
 
-        {/* Green ID card — compact width to match desktop reference */}
         <div className="max-w-sm mx-auto w-full bg-brand-green rounded-2xl p-4 flex flex-col items-center text-white shadow-md">
-          {/* HFEI Primary Logo White on green ID card */}
           <div className="self-start mb-3">
             <img
               src="/brand/HFEI_Primary_Logo_White.png"
@@ -721,7 +1006,6 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
             />
           </div>
 
-          {/* Photo — reference size for biometric capture pill width */}
           <img src={idCard.photo || DEMO_FARMER_PHOTO} alt={idCard.name}
             className="w-28 h-28 rounded-2xl object-cover border-[3px] border-white/35 mb-3" />
 
@@ -730,24 +1014,24 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
             <p className="font-display font-bold text-lg mt-0.5 leading-tight">{idCard.name}</p>
           </div>
           <div className="text-center mb-2">
-            <p className="text-white/60 text-[11px]">Farmer ID</p>
-            <p className="font-display font-bold text-sm tracking-widest mt-0.5 break-all px-1">{idCard.farmerID}</p>
+            <p className="text-white/60 text-[11px]">{referenceLabel}</p>
+            <p className="font-display font-bold text-sm tracking-widest mt-0.5 break-all px-1">{referenceValue}</p>
           </div>
           <div className="text-center mb-3">
             <p className="text-white/60 text-[11px]">Corporative name</p>
-            <p className="font-display font-semibold text-sm mt-0.5">{idCard.cooperative || "—"}</p>
+            <p className="font-display font-semibold text-sm mt-0.5">{idCard.cooperative || "-"}</p>
           </div>
 
           <div className="w-full h-px bg-white/20 mb-3" />
 
           <div className="grid grid-cols-2 gap-3 w-full mb-3 text-left">
-            <div><p className="text-white/60 text-[11px]">Agent name</p><p className="font-sans font-semibold text-xs mt-0.5">Adesipe Tomide</p></div>
-            <div><p className="text-white/60 text-[11px]">Agent signature</p><p className="font-sans italic text-xs mt-0.5 text-white/85">Paladise</p></div>
+            <div><p className="text-white/60 text-[11px]">Agent name</p><p className="font-sans font-semibold text-xs mt-0.5">{idCard.agentName || "-"}</p></div>
+            <div><p className="text-white/60 text-[11px]">Queue status</p><p className="font-sans font-semibold text-xs mt-0.5 text-white/85">{statusText}</p></div>
           </div>
           <div className="flex items-center justify-center gap-5 w-full">
-            <div className="text-center"><p className="text-white/60 text-[11px]">Issue date</p><p className="font-display font-bold text-xs mt-0.5">20/04/2026</p></div>
+            <div className="text-center"><p className="text-white/60 text-[11px]">{isOnlineSubmission ? "Submitted on" : "Saved on"}</p><p className="font-display font-bold text-xs mt-0.5">{idCard.savedAt}</p></div>
             <div className="w-px h-7 bg-white/30" />
-            <div className="text-center"><p className="text-white/60 text-[11px]">Expiry date</p><p className="font-display font-bold text-xs mt-0.5">20/04/2027</p></div>
+            <div className="text-center"><p className="text-white/60 text-[11px]">Official ID</p><p className="font-display font-bold text-xs mt-0.5">{officialIdText}</p></div>
           </div>
         </div>
       </div>
@@ -757,18 +1041,8 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
       >
         <button
           type="button"
-          onClick={() => {
-            const msg = `Farmer ID: *${idCard.farmerID}*\nName: ${idCard.name}\nVerify: https://cropex.hashmarcropex.com/verify/${idCard.farmerID}`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-          }}
-          className="order-2 sm:order-1 inline-flex items-center justify-center min-h-12 py-2.5 box-border px-8 rounded-full border-2 border-brand-green bg-white text-brand-green font-display font-semibold text-sm hover:bg-brand-green/5 transition-colors w-full sm:w-auto sm:min-w-[11rem] text-center leading-snug"
-        >
-          Share ID
-        </button>
-        <button
-          type="button"
           onClick={onRegisterAnother}
-          className="order-1 sm:order-2 inline-flex items-center justify-center min-h-12 py-2.5 box-border px-8 rounded-full border-2 border-brand-green bg-brand-green text-white font-display font-semibold text-sm hover:brightness-95 active:scale-[0.99] transition-all w-full sm:w-auto sm:min-w-[13rem] text-center leading-snug"
+          className="order-1 inline-flex items-center justify-center min-h-12 py-2.5 box-border px-8 rounded-full border-2 border-brand-green bg-brand-green text-white font-display font-semibold text-sm hover:brightness-95 active:scale-[0.99] transition-all w-full sm:w-auto sm:min-w-[13rem] text-center leading-snug"
         >
           Register Another Farmer
         </button>
@@ -784,54 +1058,97 @@ export default function AgentRegisterFarmer() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [idCard, setIdCard]         = useState(null);
+  const [stateOptions, setStateOptions] = useState([]);
+  const [statesLoading, setStatesLoading] = useState(true);
+  const [statesError, setStatesError] = useState("");
 
   // Biometric state LIFTED — survives sub-screen navigation
   const [faceCapture,   setFaceCapture]   = useState("idle");
   const [fingerCapture, setFingerCapture] = useState("idle");
 
   const goHome = () => navigate("/agent/home");
+  const agentSession = getAgentSession();
+  const agentName =
+    readString(agentSession?.fullName, agentSession?.full_name) || "Assigned agent";
+
+  useEffect(() => {
+    let active = true;
+    setStatesLoading(true);
+    setStatesError("");
+
+    getGeoStates()
+      .then((payload) => {
+        if (!active) return;
+        setStateOptions(extractGeoArray(payload).map(mapGeoStateOption).filter(Boolean));
+      })
+      .catch((error) => {
+        if (!active) return;
+        setStateOptions([]);
+        setStatesError(error instanceof Error ? error.message : "Could not load states right now.");
+      })
+      .finally(() => {
+        if (active) setStatesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSubmit = async () => {
     setSubmitting(true);
     setSubmitError("");
     const draft = getDraft();
     try {
-      await new Promise((r) => setTimeout(r, 700));
-      const id =
-        `HSH-IB-2026-${String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6)}`;
-      setIdCard({
-        farmerID: String(id),
-        name: draft.personal?.fullName || "New Farmer",
-        photo: DEMO_FARMER_PHOTO,
-        cooperative: draft.cooperative?.name || "—",
-      });
+      const agentId = getAgentIdFromSession();
+      const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
+      const savedAt = formatToday();
+      const canTryOnline = typeof navigator === "undefined" || navigator.onLine;
 
-      upsertFarmerInStorage({
-        id: String(id),
-        name: draft.personal?.fullName || "New Farmer",
-        photo: DEMO_FARMER_PHOTO,
-        regDate: formatToday(),
-        status: "pending",
-        primaryCrop: draft.farm?.cropType || draft.personal?.primaryCrops?.[0] || "—",
-        state: draft.personal?.state || "—",
-        lga: draft.personal?.lga || "—",
-        phone: draft.personal?.phone || "—",
-        cooperative: draft.cooperative?.name || "—",
-        farmSize: draft.farm?.farmSize || "—",
-        landOwnership: draft.farm?.landOwnership || "—",
-        gender: draft.personal?.gender || "—",
-        dob: draft.personal?.dob || "—",
-        nin: draft.personal?.nin || "—",
-        address: draft.personal?.address || "—",
-        biometric: { face: true, fingerprint: true },
+      if (canTryOnline) {
+        try {
+          const response = await enrollFarmer(queuedPayload.payload);
+          const liveFarmer = mapApiFarmerToUi(extractFarmerRecord(response));
+          const liveFarmerId = readString(liveFarmer?.officialFarmerId, liveFarmer?.id);
+
+          setIdCard({
+            mode: "online",
+            farmerId: liveFarmerId,
+            clientId: liveFarmer?.clientId || "",
+            name: liveFarmer?.name && liveFarmer.name !== "Farmer" ? liveFarmer.name : queuedPayload.name,
+            photo: liveFarmer?.photo || queuedPayload.photo,
+            cooperative: liveFarmer?.cooperative || queuedPayload.cooperative,
+            savedAt,
+            agentName,
+          });
+
+          clearDraft();
+          setStep("done");
+          return;
+        } catch (error) {
+          if (!isOfflineCapableFailure(error)) {
+            throw error;
+          }
+        }
+      }
+
+      const queuedFarmer = await upsertFarmerInStorage(queuedPayload);
+
+      setIdCard({
+        mode: "offline",
+        clientId: queuedFarmer.clientId,
+        farmerId: queuedFarmer.officialFarmerId || "",
+        name: queuedFarmer.name,
+        photo: queuedFarmer.photo,
+        cooperative: queuedFarmer.cooperative,
+        savedAt,
+        agentName,
       });
 
       clearDraft();
       setStep("done");
-      window.dispatchEvent(new CustomEvent("hcx-farmers-refresh"));
-      window.dispatchEvent(new CustomEvent("hcx-farmers-sync"));
-    } catch {
-      setSubmitError("Enrollment failed. Check required fields.");
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Enrollment failed. Check required fields.");
     } finally {
       setSubmitting(false);
     }
@@ -928,11 +1245,24 @@ export default function AgentRegisterFarmer() {
     return (
       <>
         <div className="md:hidden">
-          <PersonalStep onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />
+          <PersonalStep
+            onNext={() => setStep("farm")}
+            onBack={() => setStep("biometric")}
+            stateOptions={stateOptions}
+            statesLoading={statesLoading}
+            statesError={statesError}
+          />
         </div>
         <AgentDesktopShell active="farmers">
           <div className="w-full max-w-[862.81px]">
-            <PersonalStep embedded onNext={() => setStep("farm")} onBack={() => setStep("biometric")} />
+            <PersonalStep
+              embedded
+              onNext={() => setStep("farm")}
+              onBack={() => setStep("biometric")}
+              stateOptions={stateOptions}
+              statesLoading={statesLoading}
+              statesError={statesError}
+            />
           </div>
         </AgentDesktopShell>
       </>
@@ -956,11 +1286,11 @@ export default function AgentRegisterFarmer() {
     return (
       <>
         <div className="md:hidden">
-          <CoopStep onNext={() => setStep("review")} onBack={() => setStep("farm")} />
+          <CoopStep onNext={() => setStep("review")} onBack={() => setStep("farm")} stateOptions={stateOptions} />
         </div>
         <AgentDesktopShell active="farmers">
           <div className="w-full max-w-[862.81px]">
-            <CoopStep embedded onNext={() => setStep("review")} onBack={() => setStep("farm")} />
+            <CoopStep embedded onNext={() => setStep("review")} onBack={() => setStep("farm")} stateOptions={stateOptions} />
           </div>
         </AgentDesktopShell>
       </>
@@ -1017,3 +1347,4 @@ export default function AgentRegisterFarmer() {
 
   return null;
 }
+

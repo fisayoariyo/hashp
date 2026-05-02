@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { agentData } from "../../mockData/agent";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import {
+  agentLogin,
+  clearAgentSession,
+  getAgentSession,
+  setAgentSessionFromAuthResponse,
+} from "../../services/cropexApi";
 
 export default function AgentLogin() {
   const navigate = useNavigate();
@@ -32,29 +37,35 @@ export default function AgentLogin() {
     }
   }, []);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       setError("Please enter your email and password.");
       return;
     }
     setError("");
     setLoading(true);
-    setTimeout(() => {
-      if (email === agentData.email && password === "password123") {
-        try {
-          sessionStorage.setItem(
-            "hcx_agent_auth",
-            JSON.stringify({ accessToken: "mock-token", agentId: agentData.id, email })
-          );
-        } catch {
-          /* ignore */
-        }
-        navigate("/agent/home");
+
+    try {
+      const response = await agentLogin({ email: email.trim(), password });
+      setAgentSessionFromAuthResponse(response);
+
+      const session = getAgentSession();
+      if (session?.role && session.role !== "AGENT") {
+        clearAgentSession();
+        setError("This account is not registered as an agent.");
+        return;
+      }
+
+      navigate("/agent/home");
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message || "Invalid email or password.");
       } else {
         setError("Invalid email or password.");
       }
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   const formFields = (
@@ -88,10 +99,6 @@ export default function AgentLogin() {
           Forgot password?
         </button>
       </div>
-
-      <p className="font-sans text-xs text-brand-text-muted">
-        Demo: <strong>{agentData.email}</strong> / <strong>password123</strong>
-      </p>
     </div>
   );
 

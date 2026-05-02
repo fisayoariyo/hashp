@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Mail, Phone, User } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { AgentBottomNav } from "./AgentHome";
-import { agentData } from "../../mockData/agent";
+import { agentSupportContact } from "../../mockData/agent";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { createSupportTicket, getAgentDashboard, getAgentSession } from "../../services/cropexApi";
 
 export default function AgentContactSupport() {
   const navigate = useNavigate();
@@ -14,14 +15,12 @@ export default function AgentContactSupport() {
   const [issueType, setIssueType] = useState("Profile Update");
   const [farmerId, setFarmerId] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
+  const [agentProfile, setAgentProfile] = useState(null);
 
-  const hasAuthSession = (() => {
-    try {
-      return Boolean(sessionStorage.getItem("hcx_agent_auth"));
-    } catch {
-      return false;
-    }
-  })();
+  const session = getAgentSession();
+  const hasAuthSession = Boolean(session);
   const isPreAuthSupport = Boolean(location.state?.preAuth) || !hasAuthSession;
   const goBackPath =
     location.state?.from === "under-review"
@@ -30,8 +29,47 @@ export default function AgentContactSupport() {
         ? "/agent/verification-failed"
         : "/agent/login";
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (!hasAuthSession) return undefined;
+    let active = true;
+    getAgentDashboard()
+      .then((payload) => {
+        if (active) setAgentProfile(payload?.agent || null);
+      })
+      .catch(() => {
+        if (active) setAgentProfile(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [hasAuthSession]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!issueDescription.trim()) {
+      setFeedback({ type: "error", message: "Please describe the issue." });
+      return;
+    }
+
+    setSubmitting(true);
+    setFeedback({ type: "", message: "" });
+    try {
+      await createSupportTicket({
+        issue_type: issueType,
+        description: issueDescription.trim(),
+        farmer_id: farmerId.trim() || undefined,
+      });
+      setIssueDescription("");
+      setFarmerId("");
+      setFeedback({ type: "success", message: "Support ticket submitted successfully." });
+    } catch (submitError) {
+      setFeedback({
+        type: "error",
+        message: submitError instanceof Error ? submitError.message : "Could not submit support ticket.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const content = (
@@ -45,6 +83,18 @@ export default function AgentContactSupport() {
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 max-w-[760px]">
+        {feedback.message && (
+          <div
+            className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+              feedback.type === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-green-200 bg-green-50 text-green-700"
+            }`}
+          >
+            {feedback.message}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
           <label className="block">
             <span className="mb-2 block text-[28px] md:text-[20px] font-bold leading-6 text-[#030F0F]">
@@ -53,7 +103,7 @@ export default function AgentContactSupport() {
             <div className="relative">
               <select
                 value={issueType}
-                onChange={(e) => setIssueType(e.target.value)}
+                onChange={(event) => setIssueType(event.target.value)}
                 className="h-[52px] w-full appearance-none rounded-[15px] border border-[#E6E6E6] bg-white px-4 pr-10 text-[14px] text-[#030F0F] outline-none focus:border-[#03624D]"
               >
                 <option>Profile Update</option>
@@ -75,7 +125,7 @@ export default function AgentContactSupport() {
               <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#030F0F]/55" />
               <input
                 value={farmerId}
-                onChange={(e) => setFarmerId(e.target.value)}
+                onChange={(event) => setFarmerId(event.target.value)}
                 placeholder="Enter farmer ID"
                 className="h-[52px] w-full rounded-[15px] border border-[#E6E6E6] bg-white pl-10 pr-4 text-[14px] text-[#030F0F] outline-none placeholder:text-[#030F0F]/40 focus:border-[#03624D]"
               />
@@ -89,7 +139,7 @@ export default function AgentContactSupport() {
           </span>
           <textarea
             value={issueDescription}
-            onChange={(e) => setIssueDescription(e.target.value)}
+            onChange={(event) => setIssueDescription(event.target.value)}
             placeholder="Description of the issue"
             className="h-[153px] w-full resize-none rounded-[15px] border border-[#E6E6E6] bg-white px-4 py-3 text-[14px] text-[#030F0F] outline-none placeholder:text-[#030F0F]/40 focus:border-[#03624D]"
           />
@@ -97,9 +147,10 @@ export default function AgentContactSupport() {
 
         <button
           type="submit"
-          className="mt-5 inline-flex h-[47px] w-[187px] items-center justify-center rounded-[15px] bg-[#03624D] text-[20px] font-medium leading-6 text-white"
+          disabled={submitting}
+          className="mt-5 inline-flex h-[47px] w-[187px] items-center justify-center rounded-[15px] bg-[#03624D] text-[20px] font-medium leading-6 text-white disabled:opacity-50"
         >
-          Submit
+          {submitting ? "Submitting..." : "Submit"}
         </button>
       </form>
 
@@ -110,11 +161,15 @@ export default function AgentContactSupport() {
         <div className="mt-4 space-y-3 text-[14px] leading-5 text-[#030F0F]">
           <p className="flex items-center gap-2">
             <User size={14} className="text-[#030F0F]" />
-            <span>Agent Name: {agentData.fullName}</span>
+            <span>
+              Agent Name: {agentProfile?.full_name || session?.fullName || session?.full_name || "Unavailable"}
+            </span>
           </p>
           <p className="flex items-center gap-2">
             <Phone size={14} className="text-[#030F0F]" />
-            <span>Phone Number: {agentData.phone}</span>
+            <span>
+              Phone Number: {agentProfile?.phone_number || session?.phone || "Unavailable"}
+            </span>
           </p>
         </div>
       </div>
@@ -138,13 +193,13 @@ export default function AgentContactSupport() {
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-brand-green text-white">
               <Phone size={14} />
             </span>
-            <span>+234 XXX XXX XXXX</span>
+            <span>{agentSupportContact.phoneDisplay}</span>
           </p>
           <p className="flex items-center gap-2.5 text-[18px] text-[#030F0F]">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-brand-green text-white">
               <Mail size={14} />
             </span>
-            <span>support@hashmar.com</span>
+            <span>{agentSupportContact.email}</span>
           </p>
         </div>
       </div>

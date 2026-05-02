@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { resetPassword } from "../../services/cropexApi";
 
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
+const RESET_PHONE_KEY = "hcx_agent_reset_phone";
+const RESET_OTP_KEY = "hcx_agent_reset_otp";
 
 export default function AgentResetPasswordNew() {
   const navigate = useNavigate();
@@ -18,7 +21,11 @@ export default function AgentResetPasswordNew() {
 
   useEffect(() => {
     try {
-      if (sessionStorage.getItem(RESET_FLAG) !== "1") {
+      if (
+        sessionStorage.getItem(RESET_FLAG) !== "1" ||
+        !sessionStorage.getItem(RESET_PHONE_KEY) ||
+        !sessionStorage.getItem(RESET_OTP_KEY)
+      ) {
         navigate("/agent/forgot-password", { replace: true });
       }
     } catch {
@@ -35,20 +42,26 @@ export default function AgentResetPasswordNew() {
       setError("Passwords do not match.");
       return;
     }
+
     setError("");
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
     try {
+      const phone = sessionStorage.getItem(RESET_PHONE_KEY) || "";
+      const otp = sessionStorage.getItem(RESET_OTP_KEY) || "";
+      await resetPassword({ phone, otp, newPassword: password });
       sessionStorage.removeItem(RESET_FLAG);
-    } catch { /* ignore */ }
-    setLoading(false);
-    try {
+      sessionStorage.removeItem(RESET_PHONE_KEY);
+      sessionStorage.removeItem(RESET_OTP_KEY);
       sessionStorage.setItem(
         "hcx_agent_login_message",
         "Password reset successfully. Sign in with your new password."
       );
-    } catch { /* ignore */ }
-    navigate("/agent/login");
+      navigate("/agent/login");
+    } catch (resetError) {
+      setError(resetError instanceof Error ? resetError.message : "Could not reset password.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fields = (
@@ -65,7 +78,7 @@ export default function AgentResetPasswordNew() {
             placeholder="Enter your new password"
             className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
           />
-          <button type="button" onClick={() => setShowPass((v) => !v)} className="text-brand-text-muted shrink-0">
+          <button type="button" onClick={() => setShowPass((value) => !value)} className="text-brand-text-muted shrink-0">
             {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
@@ -82,7 +95,7 @@ export default function AgentResetPasswordNew() {
             placeholder="Confirm your new password"
             className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
           />
-          <button type="button" onClick={() => setShowPass((v) => !v)} className="text-brand-text-muted shrink-0">
+          <button type="button" onClick={() => setShowPass((value) => !value)} className="text-brand-text-muted shrink-0">
             {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
@@ -93,7 +106,7 @@ export default function AgentResetPasswordNew() {
 
   const actions = (
     <div className="space-y-3 w-full">
-      <button type="button" onClick={handleContinue} disabled={loading} className="btn-primary w-full">
+      <button type="button" onClick={() => void handleContinue()} disabled={loading} className="btn-primary w-full">
         {loading ? "Saving..." : "Continue"}
       </button>
       <button
@@ -108,7 +121,11 @@ export default function AgentResetPasswordNew() {
 
   if (isDesktop) {
     return (
-      <AgentAuthDesktopLayout title="Reset password" subtitle="Choose a new password for your account." actions={actions}>
+      <AgentAuthDesktopLayout
+        title="Reset password"
+        subtitle="Choose a new password for your account."
+        actions={actions}
+      >
         {fields}
       </AgentAuthDesktopLayout>
     );
@@ -122,7 +139,9 @@ export default function AgentResetPasswordNew() {
           <span className="font-sans text-sm">Go back</span>
         </button>
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Reset password</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">Choose a new password for your account.</p>
+        <p className="font-sans text-sm text-brand-text-secondary mb-8">
+          Choose a new password for your account.
+        </p>
         {fields}
       </div>
       <div className="px-5 pb-8">{actions}</div>

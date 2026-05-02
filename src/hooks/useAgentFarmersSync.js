@@ -1,90 +1,192 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { agentRegisteredFarmers } from "../mockData/agent";
+import {
+  getAgentAccessToken,
+  getAgentIdFromSession,
+  getAgentSession,
+  listFarmers,
+  searchFarmers,
+  mapApiFarmerToUi,
+  syncFarmers,
+  extractFarmersArray,
+} from "../services/cropexApi";
+import {
+  applyOfflineSyncResults,
+  createOfflineFarmerRecord,
+  getOfflineSyncCounts,
+  getPendingOfflineFarmerRecords,
+  listOfflineFarmers,
+  setOfflineFarmersSyncing,
+} from "../services/offlineFarmersDb";
 
-export const FARMERS_SYNC_STORAGE_KEY = "hcx_agent_farmers_sync";
-const FARMERS_LIST_CACHE_KEY = "hcx_agent_farmers_list";
+function mergeFarmers(offlineFarmers, remoteFarmers = []) {
+  const takenIds = new Set(
+    offlineFarmers.flatMap((farmer) =>
+      [farmer.id, farmer.officialFarmerId, farmer.clientId].filter(Boolean)
+    )
+  );
 
-export function loadFarmersFromStorage() {
-  let map = {};
-  try {
-    const raw = localStorage.getItem(FARMERS_SYNC_STORAGE_KEY);
-    map = raw ? JSON.parse(raw) : {};
-  } catch {
-    map = {};
-  }
+  const liveFarmers = remoteFarmers.filter(
+    (farmer) =>
+      farmer &&
+      !takenIds.has(farmer.id) &&
+      !takenIds.has(farmer.officialFarmerId) &&
+      !takenIds.has(farmer.clientId)
+  );
 
-  try {
-    const listRaw = localStorage.getItem(FARMERS_LIST_CACHE_KEY);
-    if (listRaw) {
-      const parsed = JSON.parse(listRaw);
-      if (Array.isArray(parsed)) {
-        return parsed.map((f) => ({
-          ...f,
-          status: map[f.id] === "synced" || map[f.id] === "pending" ? map[f.id] : f.status,
-        }));
-      }
-    }
-  } catch {
-    /* fall through */
-  }
-  return agentRegisteredFarmers.map((f) => ({
-    ...f,
-    status: map[f.id] === "synced" || map[f.id] === "pending" ? map[f.id] : f.status,
-  }));
+  return [...offlineFarmers, ...liveFarmers];
 }
 
-export function saveFarmerStatuses(farmers) {
-  localStorage.setItem(FARMERS_LIST_CACHE_KEY, JSON.stringify(farmers));
-  const map = {};
-  farmers.forEach((f) => {
-    map[f.id] = f.status;
+function hasAgentApiCredentials() {
+  const session = getAgentSession();
+  return Boolean(getAgentAccessToken() || session?.refreshToken || session?.refresh_token);
+}
+
+function matchesFarmerQuery(farmer, query) {
+  const search = String(query || "").trim().toLowerCase();
+  if (!search) return true;
+  return [
+    farmer?.name,
+    farmer?.id,
+    farmer?.officialFarmerId,
+    farmer?.clientId,
+    farmer?.phone,
+    farmer?.nin,
+  ]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(search));
+}
+
+async function fetchRemoteFarmers() {
+  const payload = await listFarmers({
+    page: 1,
+    page_size: 200,
+    agent_id: getAgentIdFromSession() || undefined,
   });
-  localStorage.setItem(FARMERS_SYNC_STORAGE_KEY, JSON.stringify(map));
-  window.dispatchEvent(new CustomEvent("hcx-farmers-sync"));
+  return extractFarmersArray(payload).map(mapApiFarmerToUi).filter(Boolean);
+}
+
+async function fetchRemoteFarmerSearchResults(query) {
+  const payload = await searchFarmers(query);
+  return extractFarmersArray(payload).map(mapApiFarmerToUi).filter(Boolean);
+}
+
+async function syncPendingOfflineFarmers(references = []) {
+  const ownerAgentId = getAgentIdFromSession();
+  const pendingRecords = await getPendingOfflineFarmerRecords(ownerAgentId);
+  const refSet = new Set((references || []).filter(Boolean));
+  const recordsToSync =
+    refSet.size === 0
+      ? pendingRecords
+      : pendingRecords.filter((record) =>
+          [record.clientId, record.id, record.officialFarmerId].some((value) => refSet.has(value))
+        );
+
+  if (recordsToSync.length === 0) {
+    return { syncedRecords: [], failedRecords: [] };
+  }
+
+  const submittedIds = recordsToSync.map((record) => record.clientId);
+  await setOfflineFarmersSyncing(submittedIds, ownerAgentId);
+
+  try {
+    const response = await syncFarmers(
+      recordsToSync.map((record) => ({
+        ...(record.payload || {}),
+        client_id: record.clientId,
+        enrolled_by_agent_id:
+          record.payload?.enrolled_by_agent_id || record.ownerAgentId || ownerAgentId || undefined,
+      }))
+    );
+
+    return applyOfflineSyncResults({
+      ownerAgentId,
+      submittedIds,
+      successes: response.successes,
+      failures: response.failures,
+      assumeAllSucceeded: response.assumeAllSucceeded,
+    });
+  } catch (error) {
+    return applyOfflineSyncResults({
+      ownerAgentId,
+      submittedIds,
+      failures: recordsToSync.map((record) => ({
+        clientId: record.clientId,
+        phone: record.payload?.phone_number,
+        nin: record.payload?.nin,
+        name: record.payload?.full_name,
+        errorMessage: error instanceof Error ? error.message : "Sync failed.",
+      })),
+    }).then((result) => {
+      throw Object.assign(error instanceof Error ? error : new Error("Sync failed."), {
+        syncResult: result,
+      });
+    });
+  }
+}
+
+export async function loadFarmersFromStorage() {
+  const ownerAgentId = getAgentIdFromSession();
+  const offlineFarmers = await listOfflineFarmers(ownerAgentId);
+
+  if (!hasAgentApiCredentials()) {
+    return mergeFarmers(offlineFarmers, []);
+  }
+
+  try {
+    const remoteFarmers = await fetchRemoteFarmers();
+    return mergeFarmers(offlineFarmers, remoteFarmers);
+  } catch {
+    return mergeFarmers(offlineFarmers, []);
+  }
 }
 
 export function upsertFarmerInStorage(farmer) {
-  const current = loadFarmersFromStorage();
-  const next = [
-    farmer,
-    ...current.filter((item) => item.id !== farmer.id),
-  ];
-  saveFarmerStatuses(next);
+  return createOfflineFarmerRecord(farmer);
 }
 
 export function getFarmerSyncCountsFromStorage() {
-  const farmers = loadFarmersFromStorage();
-  return {
-    completed: farmers.filter((f) => f.status === "synced").length,
-    pending: farmers.filter((f) => f.status === "pending").length,
-  };
+  return getOfflineSyncCounts(getAgentIdFromSession());
 }
 
-/** Local mock: mark all pending as synced (dashboard “Sync now”). */
 export function syncAllPendingFarmersStorage() {
-  const next = loadFarmersFromStorage().map((f) =>
-    f.status === "pending" ? { ...f, status: "synced" } : f
-  );
-  saveFarmerStatuses(next);
+  return syncPendingOfflineFarmers();
 }
 
-/** Local mutable copy with mock sync actions. */
 export function useAgentFarmersSync() {
-  const [farmers, setFarmers] = useState(loadFarmersFromStorage);
+  const [farmers, setFarmers] = useState([]);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState(null);
   const [listError, setListError] = useState(null);
 
   const refreshFromApi = useCallback(async () => {
+    const ownerAgentId = getAgentIdFromSession();
     setListError(null);
-    // Backend sync is paused; always use local/mock storage.
-    setFarmers(loadFarmersFromStorage());
+
+    try {
+      const offlineFarmers = await listOfflineFarmers(ownerAgentId);
+
+      if (!hasAgentApiCredentials()) {
+        setFarmers(mergeFarmers(offlineFarmers, []));
+        return;
+      }
+
+      try {
+        const remoteFarmers = await fetchRemoteFarmers();
+        setFarmers(mergeFarmers(offlineFarmers, remoteFarmers));
+      } catch (error) {
+        setListError(error instanceof Error ? error.message : "Could not load farmers from the server.");
+        setFarmers(mergeFarmers(offlineFarmers, []));
+      }
+    } catch {
+      setListError("Could not load offline farmers.");
+      setFarmers([]);
+    }
   }, []);
 
   useEffect(() => {
-    refreshFromApi();
+    void refreshFromApi();
     const onExternal = () => {
-      refreshFromApi();
+      void refreshFromApi();
     };
     window.addEventListener("hcx-farmers-sync", onExternal);
     window.addEventListener("hcx-farmers-refresh", onExternal);
@@ -96,36 +198,89 @@ export function useAgentFarmersSync() {
 
   const showMessage = useCallback((text) => {
     setSyncMessage(text);
-    window.setTimeout(() => setSyncMessage(null), 2800);
+    window.setTimeout(() => setSyncMessage(null), 3200);
   }, []);
 
   const syncFarmer = useCallback(
-    (id) => {
-      setFarmers((prev) => {
-        const next = prev.map((f) => (f.id === id ? { ...f, status: "synced" } : f));
-        saveFarmerStatuses(next);
-        return next;
-      });
-      showMessage("Farmer record synced successfully.");
+    async (id) => {
+      setSyncing(true);
+      try {
+        const result = await syncPendingOfflineFarmers([id]);
+        await refreshFromApi();
+
+        if (result.failedRecords.length > 0 && result.syncedRecords.length === 0) {
+          showMessage(result.failedRecords[0].lastError || "Farmer sync failed.");
+          return result.failedRecords[0];
+        }
+
+        showMessage("Farmer record synced successfully.");
+        return result.syncedRecords[0] || null;
+      } catch (error) {
+        await refreshFromApi();
+        showMessage(error instanceof Error ? error.message : "Farmer sync failed.");
+        return null;
+      } finally {
+        setSyncing(false);
+      }
     },
-    [showMessage]
+    [refreshFromApi, showMessage]
   );
 
   const syncAllPending = useCallback(async () => {
     setSyncing(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setFarmers((prev) => {
-      const next = prev.map((f) => (f.status === "pending" ? { ...f, status: "synced" } : f));
-      saveFarmerStatuses(next);
-      return next;
-    });
-    setSyncing(false);
-    showMessage("All pending farmers synced.");
-  }, [showMessage]);
+    try {
+      const result = await syncPendingOfflineFarmers();
+      await refreshFromApi();
+
+      if (result.failedRecords.length > 0 && result.syncedRecords.length === 0) {
+        showMessage(result.failedRecords[0].lastError || "Sync failed.");
+        return result;
+      }
+
+      if (result.failedRecords.length > 0) {
+        showMessage(
+          `${result.syncedRecords.length} farmer(s) synced, ${result.failedRecords.length} still pending.`
+        );
+        return result;
+      }
+
+      showMessage("All pending farmers synced.");
+      return result;
+    } catch (error) {
+      await refreshFromApi();
+      showMessage(error instanceof Error ? error.message : "Sync failed.");
+      return error?.syncResult || { syncedRecords: [], failedRecords: [] };
+    } finally {
+      setSyncing(false);
+    }
+  }, [refreshFromApi, showMessage]);
+
+  const searchFarmersByQuery = useCallback(async (query) => {
+    const trimmed = String(query || "").trim();
+    const ownerAgentId = getAgentIdFromSession();
+    const offlineFarmers = await listOfflineFarmers(ownerAgentId);
+    const offlineMatches = offlineFarmers.filter((farmer) => matchesFarmerQuery(farmer, trimmed));
+
+    if (!trimmed) {
+      if (!hasAgentApiCredentials()) {
+        return mergeFarmers(offlineFarmers, []);
+      }
+      const remoteFarmers = await fetchRemoteFarmers();
+      return mergeFarmers(offlineFarmers, remoteFarmers);
+    }
+
+    if (!hasAgentApiCredentials()) {
+      return mergeFarmers(offlineMatches, []);
+    }
+
+    const remoteFarmers = await fetchRemoteFarmerSearchResults(trimmed);
+    return mergeFarmers(offlineMatches, remoteFarmers);
+  }, []);
 
   const counts = useMemo(() => {
-    const completed = farmers.filter((f) => f.status === "synced").length;
-    const pending = farmers.filter((f) => f.status === "pending").length;
+    const queuedFarmers = farmers.filter((farmer) => farmer.offline);
+    const completed = queuedFarmers.filter((farmer) => farmer.status === "synced").length;
+    const pending = queuedFarmers.filter((farmer) => farmer.status === "pending").length;
     return { completed, pending };
   }, [farmers]);
 
@@ -136,6 +291,7 @@ export function useAgentFarmersSync() {
     listError,
     syncFarmer,
     syncAllPending,
+    searchFarmersByQuery,
     counts,
     refreshFromApi,
   };

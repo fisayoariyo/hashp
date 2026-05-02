@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { ArrowLeft, BadgeCheck } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { getAgentSession } from "../../services/cropexApi";
 
 const REG_KEY = "hcx_agent_registration";
 
@@ -12,7 +13,7 @@ export default function AgentAccountVerified() {
 
   useEffect(() => {
     try {
-      if (!sessionStorage.getItem(REG_KEY)) {
+      if (!sessionStorage.getItem(REG_KEY) || !getAgentSession()?.accessToken) {
         navigate("/agent/login", { replace: true });
       }
     } catch {
@@ -22,23 +23,9 @@ export default function AgentAccountVerified() {
 
   const goDashboard = () => {
     try {
-      const raw = sessionStorage.getItem(REG_KEY);
-      const reg = raw ? JSON.parse(raw) : {};
-      sessionStorage.setItem(
-        "hcx_agent_auth",
-        JSON.stringify({
-          agentId: "AGT-001",
-          fullName: reg.fullName || "Agent",
-          email: reg.email || "",
-          phone: reg.phone || "",
-          state: reg.state,
-          lga: reg.lga,
-        })
-      );
       sessionStorage.removeItem(REG_KEY);
-      sessionStorage.removeItem("hcx_agent_review_refresh_count");
     } catch {
-      sessionStorage.setItem("hcx_agent_auth", JSON.stringify({ agentId: "AGT-001" }));
+      /* ignore */
     }
     navigate("/agent/home");
   };
@@ -81,7 +68,8 @@ export default function AgentAccountVerified() {
     <div className="page-white flex flex-col min-h-dvh">
       <div className="flex-1 px-5 pt-6 flex flex-col items-center text-center">
         <button type="button" onClick={() => navigate("/agent/account-under-review")} className="self-start flex items-center gap-2 text-brand-text-secondary mb-6">
-          <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
+          <ArrowLeft size={18} />
+          <span className="font-sans text-sm">Go back</span>
         </button>
         <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2">You&apos;re Verified</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-6">Your account has been successfully verified.</p>

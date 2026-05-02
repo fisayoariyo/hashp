@@ -1,6 +1,7 @@
+import { useEffect, useMemo, useState } from "react";
 import { Headset, Home, Plus, Wifi } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { agentData } from "../../mockData/agent";
+import { getAgentDashboard, getAgentSession } from "../../services/cropexApi";
 
 // ── Custom sidebar icon assets ────────────────────────────
 import tractorIcon from "../../assets/comps/tractor.svg";
@@ -15,6 +16,32 @@ const NAV_LINKS = [
 
 export default function AgentDesktopShell({ active = "dashboard", isOnline = true, children }) {
   const navigate = useNavigate();
+  const session = getAgentSession();
+  const [dashboard, setDashboard] = useState(null);
+
+  useEffect(() => {
+    let activeRequest = true;
+    getAgentDashboard()
+      .then((payload) => {
+        if (activeRequest) setDashboard(payload);
+      })
+      .catch(() => {
+        if (activeRequest) setDashboard(null);
+      });
+
+    return () => {
+      activeRequest = false;
+    };
+  }, []);
+
+  const agentName = useMemo(
+    () =>
+      dashboard?.agent?.full_name ||
+      session?.fullName ||
+      session?.full_name ||
+      "Agent",
+    [dashboard, session]
+  );
 
   return (
     <div className="hidden h-dvh overflow-hidden bg-brand-bg-page  md:block">
@@ -70,7 +97,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
               <div className="flex items-center gap-6">
                 <div className="min-w-0">
                   <h1 className="truncate font-display text-[20px] font-bold leading-6 text-brand-text-primary">
-                    Welcome, Agent {agentData.name}
+                    Welcome, {agentName}
                   </h1>
                   <p className="mt-2 text-[15px] font-light leading-[18px] text-brand-text-secondary">
                     Ready to manage farmer registration and track activities

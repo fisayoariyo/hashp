@@ -2,11 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, ChevronRight, Home, Plus, Settings, UserPlus, Search, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
-import { agentData, agentRegisteredFarmers } from "../../mockData/agent";
 import {
   getFarmerSyncCountsFromStorage,
   syncAllPendingFarmersStorage,
 } from "../../hooks/useAgentFarmersSync";
+import { getAgentDashboard, getAgentSession, mapApiFarmerToUi } from "../../services/cropexApi";
 
 // ── Asset imports ─────────────────────────────────────────
 import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.svg";
@@ -97,13 +97,28 @@ export default function AgentHome() {
   const navigate = useNavigate();
   const [syncing,    setSyncing]    = useState(false);
   const [syncDone,   setSyncDone]   = useState(false);
-  const [syncCounts, setSyncCounts] = useState(getFarmerSyncCountsFromStorage);
+  const [syncError,  setSyncError]  = useState("");
+  const [syncCounts, setSyncCounts] = useState({ completed: 0, pending: 0 });
   const [isOnline,   setIsOnline]   = useState(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [dashboard,  setDashboard]  = useState(null);
 
   useEffect(() => {
-    const refresh = () => setSyncCounts(getFarmerSyncCountsFromStorage());
-    window.addEventListener("hcx-farmers-sync", refresh);
-    return () => window.removeEventListener("hcx-farmers-sync", refresh);
+    let active = true;
+    const refresh = async () => {
+      const counts = await getFarmerSyncCountsFromStorage();
+      if (active) {
+        setSyncCounts(counts);
+      }
+    };
+    void refresh();
+    const onExternal = () => {
+      void refresh();
+    };
+    window.addEventListener("hcx-farmers-sync", onExternal);
+    return () => {
+      active = false;
+      window.removeEventListener("hcx-farmers-sync", onExternal);
+    };
   }, []);
 
   useEffect(() => {
@@ -117,30 +132,65 @@ export default function AgentHome() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    getAgentDashboard()
+      .then((payload) => {
+        if (active) {
+          setDashboard(payload);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setDashboard(null);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const syncProgressPct = useMemo(() => {
     const t = syncCounts.completed + syncCounts.pending;
     if (t === 0) return 100;
     return Math.round((syncCounts.completed / t) * 100);
   }, [syncCounts]);
 
-  const registeredFarmersChange = useMemo(
-    () => getChangePct(agentData.totalFarmersRegistered, agentData.previousPeriodFarmersRegistered),
-    []
-  );
-  const idsIssuedChange = useMemo(
-    () => getChangePct(agentData.syncedFarmers, agentData.previousPeriodDigitalIdsIssued),
-    []
-  );
+  const liveAgent = dashboard?.agent || null;
+  const liveStats = dashboard?.stats || null;
+  const recentFarmers = useMemo(() => {
+    if (Array.isArray(dashboard?.recent_farmers) && dashboard.recent_farmers.length > 0) {
+      return dashboard.recent_farmers.map(mapApiFarmerToUi).filter(Boolean).slice(0, 4);
+    }
+    return [];
+  }, [dashboard]);
+
+  const displayAgentName = useMemo(() => {
+    const session = getAgentSession();
+    const fullName = liveAgent?.full_name || session?.fullName || session?.full_name || "Agent";
+    return fullName.split(" ")[0] || "Agent";
+  }, [liveAgent]);
+
+  const registeredFarmersValue = liveStats?.total_registered_farmers ?? 0;
+  const idsIssuedValue = liveStats?.total_ids_issued ?? 0;
+
+  const registeredFarmersChange = useMemo(() => getChangePct(registeredFarmersValue, 0), [registeredFarmersValue]);
+  const idsIssuedChange = useMemo(() => getChangePct(idsIssuedValue, 0), [idsIssuedValue]);
 
   const handleSync = async () => {
     if (syncCounts.pending === 0) return;
+    setSyncError("");
     setSyncing(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    syncAllPendingFarmersStorage();
-    setSyncCounts(getFarmerSyncCountsFromStorage());
-    setSyncing(false);
-    setSyncDone(true);
-    setTimeout(() => setSyncDone(false), 3000);
+    try {
+      await syncAllPendingFarmersStorage();
+      setSyncCounts(await getFarmerSyncCountsFromStorage());
+      setSyncDone(true);
+      setTimeout(() => setSyncDone(false), 3000);
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : "Sync failed.");
+    } finally {
+      setSyncing(false);
+    }
   };
 
   // ── Mobile layout (unchanged) ───────────────────────────
@@ -161,10 +211,10 @@ export default function AgentHome() {
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#fef9c3]/16 mix-blend-soft-light" />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#016A53]/22 mix-blend-multiply" />
         <div className="relative z-10 flex items-center justify-between mb-1">
-          <h1 className="font-display font-bold text-xl text-white">Welcome, Agent {agentData.name}</h1>
+          <h1 className="font-display font-bold text-xl text-white">Welcome, Agent {displayAgentName}</h1>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20">
             <Wifi size={12} className="text-white" />
-            <span className="text-xs font-sans font-semibold text-white">{agentData.status}</span>
+            <span className="text-xs font-sans font-semibold text-white">{isOnline ? "Online" : "Offline"}</span>
           </div>
         </div>
         <p className="relative z-10 font-sans text-white/70 text-sm mb-5">
@@ -194,7 +244,7 @@ export default function AgentHome() {
               <span className="text-xs font-sans font-semibold text-brand-amber bg-brand-amber/20 px-2 py-0.5 rounded-full">+12%</span>
             </div>
             <p className="relative z-10 font-sans text-white/70 text-sm">Registered Farmers</p>
-            <p className="relative z-10 font-display font-bold text-4xl text-white mt-1">{agentData.totalFarmersRegistered}</p>
+            <p className="relative z-10 font-display font-bold text-4xl text-white mt-1">{registeredFarmersValue}</p>
           </div>
           {/* Two half-width cards */}
           <div className="grid grid-cols-2 gap-3">
@@ -220,7 +270,7 @@ export default function AgentHome() {
                 <span className="text-xs font-sans font-semibold text-brand-amber bg-brand-amber/20 px-2 py-0.5 rounded-full">+12%</span>
               </div>
               <p className="relative z-10 font-sans text-white/70 text-xs">Digital IDs Issued</p>
-              <p className="relative z-10 font-display font-bold text-2xl text-white mt-1">{agentData.syncedFarmers}</p>
+              <p className="relative z-10 font-display font-bold text-2xl text-white mt-1">{idsIssuedValue}</p>
             </div>
             <div className="relative isolate overflow-hidden rounded-2xl border border-white/10 bg-[#016A53] p-4">
               <div
@@ -319,6 +369,11 @@ export default function AgentHome() {
             <span className="text-brand-green text-xs font-semibold">✓ Sync complete — all records uploaded</span>
           </div>
         )}
+        {syncError && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <span className="text-red-700 text-xs font-semibold">{syncError}</span>
+          </div>
+        )}
         <div className="relative isolate overflow-hidden bg-white rounded-2xl p-4 border border-[#EDEDED]">
           <div
             aria-hidden
@@ -382,7 +437,7 @@ export default function AgentHome() {
             icon={statFarmersIcon}
             iconClassName="brightness-0 invert"
             label="Registered Farmers"
-            value={agentData.totalFarmersRegistered}
+            value={registeredFarmersValue}
             badge={
               <span className="inline-flex h-10 items-center rounded-[50px] bg-[#007158] px-4 text-[20px] font-light leading-none text-[#F6F6F6]">
                 {formatChangePct(registeredFarmersChange)}
@@ -392,7 +447,7 @@ export default function AgentHome() {
           <DesktopStatCard
             icon={statIdIcon}
             label="Digital IDs Issued"
-            value={agentData.syncedFarmers.toLocaleString()}
+            value={idsIssuedValue.toLocaleString()}
             badge={
               <span className="inline-flex h-10 items-center rounded-[50px] bg-[#007158] px-4 text-[20px] font-light leading-none text-[#F6F6F6]">
                 {formatChangePct(idsIssuedChange)}
@@ -477,6 +532,11 @@ export default function AgentHome() {
                 </div>
               )}
 
+              {syncError && (
+                <div className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-semibold text-red-700">
+                  {syncError}
+                </div>
+              )}
               {/* Status row */}
               <div className="mb-[14px] flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -541,7 +601,7 @@ export default function AgentHome() {
             </h3>
             <div className="flex h-[422px] flex-col rounded-[20px] border border-[#e4e4e4] bg-[#FFFFFF] px-[17px] pb-3 pt-[17px]">
               <div className="flex-1 space-y-[15px]">
-                {agentRegisteredFarmers.slice(0, 4).map((farmer) => (
+                {recentFarmers.map((farmer) => (
                   <div key={farmer.id} className="h-[74px] w-full rounded-[10px] bg-[#F6F6F6] px-[9px] pb-[10px] pt-[8px]">
                     <div className="flex items-center gap-[10px]">
                       <img
@@ -567,6 +627,11 @@ export default function AgentHome() {
                     </div>
                   </div>
                 ))}
+                {recentFarmers.length === 0 && (
+                  <div className="flex h-full items-center justify-center rounded-[10px] bg-[#F6F6F6] px-6 text-center text-[13px] text-[#6B7280]">
+                    No recent registrations from the server yet.
+                  </div>
+                )}
               </div>
               <button
                 type="button"

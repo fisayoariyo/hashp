@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, BadgeCheck } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { getAgentDashboard, getAgentSession } from "../../services/cropexApi";
 
 const REG_KEY = "hcx_agent_registration";
-const REFRESH_KEY = "hcx_agent_review_refresh_count";
 
 export default function AgentAccountUnderReview() {
   const navigate = useNavigate();
@@ -16,6 +16,7 @@ export default function AgentAccountUnderReview() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(REG_KEY);
+      const session = getAgentSession();
       if (!raw) {
         navigate("/agent/create-account", { replace: true });
         return;
@@ -23,6 +24,10 @@ export default function AgentAccountUnderReview() {
       const reg = JSON.parse(raw);
       if (!reg.state || !reg.lga) {
         navigate("/agent/select-location", { replace: true });
+        return;
+      }
+      if (!session?.accessToken) {
+        navigate("/agent/verify-phone", { replace: true, state: { mode: "register" } });
       }
     } catch {
       navigate("/agent/create-account", { replace: true });
@@ -32,18 +37,18 @@ export default function AgentAccountUnderReview() {
   const handleRefresh = async () => {
     setLoading(true);
     setToast("");
-    await new Promise((r) => setTimeout(r, 1400));
     try {
-      const n = parseInt(sessionStorage.getItem(REFRESH_KEY) || "0", 10) + 1;
-      sessionStorage.setItem(REFRESH_KEY, String(n));
-      if (n >= 2) {
+      const payload = await getAgentDashboard();
+      if (payload?.agent?.is_active === true) {
         navigate("/agent/account-verified");
-        setLoading(false);
         return;
       }
-    } catch { /* ignore */ }
-    setLoading(false);
-    setToast("Still under review. An administrator must verify your account before you can use the app.");
+      setToast("Still under review. An administrator must verify your account before you can use the app.");
+    } catch (refreshError) {
+      setToast(refreshError instanceof Error ? refreshError.message : "Could not refresh your review status.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const iconBlock = (
@@ -60,7 +65,6 @@ export default function AgentAccountUnderReview() {
       </p>
       <p className="font-sans text-xs text-brand-text-secondary max-w-md mb-6">
         This usually takes a short while. We will notify you once an administrator has approved your application.
-        <span className="block mt-2 text-brand-text-muted">Demo: tap &quot;Refresh status&quot; twice to simulate admin approval.</span>
       </p>
       {toast && (
         <p className="font-sans text-sm text-brand-amber font-medium max-w-md mb-4" role="status">
@@ -74,7 +78,7 @@ export default function AgentAccountUnderReview() {
     <div className="space-y-3 w-full max-w-sm">
       <button
         type="button"
-        onClick={handleRefresh}
+        onClick={() => void handleRefresh()}
         disabled={loading}
         className="btn-primary w-full disabled:opacity-50"
       >
@@ -107,7 +111,8 @@ export default function AgentAccountUnderReview() {
     <div className="page-white flex flex-col min-h-dvh">
       <div className="flex-1 px-5 pt-6 flex flex-col items-center text-center">
         <button type="button" onClick={() => navigate("/agent/select-location")} className="self-start flex items-center gap-2 text-brand-text-secondary mb-6">
-          <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
+          <ArrowLeft size={18} />
+          <span className="font-sans text-sm">Go back</span>
         </button>
         <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2">Account Under Review</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-6 max-w-sm">

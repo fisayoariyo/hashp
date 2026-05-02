@@ -1,12 +1,17 @@
-import { useState, useRef, useEffect } from "react";
+import { createRef, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
-import { farmerData } from "../../mockData/farmer";
 import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
 import FarmerOnboarding from "../../components/farmer/FarmerOnboarding";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import {
+  sendOtp,
+  setFarmerSessionFromAuthResponse,
+  verifyOtp,
+} from "../../services/cropexApi";
 
-// ── PHONE step (mobile + desktop) — one input tree; avoids remount + double-input ref bugs on mobile ──
+const OTP_LENGTH = 6;
+
 function PhoneStep({ onSubmit, onBack }) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [phone, setPhone] = useState("");
@@ -14,17 +19,33 @@ function PhoneStep({ onSubmit, onBack }) {
   const [loading, setLoading] = useState(false);
 
   const handle = async () => {
-    if (phone.trim().length < 10) { setError("Please enter a valid phone number."); return; }
-    setError(""); setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    onSubmit(phone.trim());
-    setLoading(false);
+    if (phone.trim().length < 10) {
+      setError("Please enter a valid phone number.");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+    try {
+      await sendOtp(phone.trim());
+      onSubmit(phone.trim());
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error ? submitError.message : "Could not send the verification code."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const phoneField = (
     <div className="flex flex-col gap-1.5 mb-6">
       <label className="font-sans text-sm font-medium text-brand-text-primary">Phone Number</label>
-      <div className={`flex items-center bg-white border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${error ? "border-red-400" : "border-brand-border"}`}>
+      <div
+        className={`flex items-center bg-white border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
+          error ? "border-red-400" : "border-brand-border"
+        }`}
+      >
         <Smartphone size={18} className="text-brand-text-muted shrink-0" />
         <div className="w-px h-5 bg-brand-border shrink-0" />
         <span className="text-sm text-brand-text-secondary shrink-0">+234</span>
@@ -34,7 +55,7 @@ function PhoneStep({ onSubmit, onBack }) {
           autoComplete="tel-national"
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-          onKeyDown={(e) => e.key === "Enter" && handle()}
+          onKeyDown={(e) => e.key === "Enter" && void handle()}
           placeholder="Input your phone number here"
           className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
         />
@@ -51,8 +72,8 @@ function PhoneStep({ onSubmit, onBack }) {
         centered
         actions={
           <div className="space-y-3">
-            <button type="button" onClick={handle} disabled={loading} className="btn-primary">
-              {loading ? "Checking..." : "Continue"}
+            <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary">
+              {loading ? "Sending code..." : "Continue"}
             </button>
             <button
               type="button"
@@ -78,10 +99,14 @@ function PhoneStep({ onSubmit, onBack }) {
         {phoneField}
       </div>
       <div className="px-5 pb-8 space-y-3">
-        <button type="button" onClick={handle} disabled={loading} className="btn-primary">
-          {loading ? "Checking..." : "Continue"}
+        <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary">
+          {loading ? "Sending code..." : "Continue"}
         </button>
-        <button type="button" onClick={onBack} className="w-full text-center font-sans text-sm text-brand-text-secondary py-2">
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full text-center font-sans text-sm text-brand-text-secondary py-2"
+        >
           I do not have an account
         </button>
       </div>
@@ -89,89 +114,109 @@ function PhoneStep({ onSubmit, onBack }) {
   );
 }
 
-// ── OTP step (mobile + desktop) — single OTP row in DOM so refs + focus stay on the visible inputs ──
 function OTPStep({ phone, onSuccess, onBack }) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [digits, setDigits] = useState(["", "", "", ""]);
+  const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const r0 = useRef(null); const r1 = useRef(null);
-  const r2 = useRef(null); const r3 = useRef(null);
-  const refs = [r0, r1, r2, r3];
+  const refs = useMemo(() => Array.from({ length: OTP_LENGTH }, () => createRef()), []);
 
-  useEffect(() => { r0.current?.focus(); }, []);
+  useEffect(() => {
+    refs[0].current?.focus();
+  }, []);
 
-  const handleChange = (i, e) => {
-    const raw = e.target.value.replace(/\D/g, "");
-    // Take only the last character typed (handles paste and auto-fill)
-    const val = raw.length > 1 ? raw[raw.length - 1] : raw;
+  const handleChange = (index, event) => {
+    const raw = event.target.value.replace(/\D/g, "");
+    const value = raw.length > 1 ? raw[raw.length - 1] : raw;
     const next = [...digits];
-    next[i] = val;
+    next[index] = value;
     setDigits(next);
     setError("");
-    if (val && i < 3) {
-      // setTimeout 0 ensures focus happens after React re-render
-      setTimeout(() => refs[i + 1].current?.focus(), 0);
+    if (value && index < OTP_LENGTH - 1) {
+      setTimeout(() => refs[index + 1].current?.focus(), 0);
     }
   };
 
-  const handleKeyDown = (i, e) => {
-    if (e.key === "Backspace") {
-      if (digits[i]) {
-        // Clear current box
+  const handleKeyDown = (index, event) => {
+    if (event.key === "Backspace") {
+      if (digits[index]) {
         const next = [...digits];
-        next[i] = "";
+        next[index] = "";
         setDigits(next);
-      } else if (i > 0) {
-        // Move to previous box
-        setTimeout(() => refs[i - 1].current?.focus(), 0);
+      } else if (index > 0) {
+        setTimeout(() => refs[index - 1].current?.focus(), 0);
       }
     }
   };
 
-  const handlePaste = (e) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
+  const handlePaste = (event) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
     if (!pasted) return;
-    const next = ["", "", "", ""];
-    pasted.split("").forEach((ch, idx) => { next[idx] = ch; });
+    const next = Array.from({ length: OTP_LENGTH }, () => "");
+    pasted.split("").forEach((char, index) => {
+      next[index] = char;
+    });
     setDigits(next);
-    const lastIdx = Math.min(pasted.length, 3);
-    setTimeout(() => refs[lastIdx].current?.focus(), 0);
+    setTimeout(() => refs[Math.min(pasted.length, OTP_LENGTH) - 1].current?.focus(), 0);
   };
 
   const handleLogin = async () => {
     const otp = digits.join("");
-    if (otp.length < 4) { setError("Enter the complete 4-digit code."); return; }
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    if (otp === "1234") {
-      sessionStorage.setItem("hcx_farmer_auth", JSON.stringify({ phone, farmerId: farmerData.id }));
-      onSuccess();
-    } else {
-      setError("Incorrect code. Try 1234 for demo.");
-      setDigits(["", "", "", ""]);
-      r0.current?.focus();
+    if (otp.length < OTP_LENGTH) {
+      setError(`Enter the complete ${OTP_LENGTH}-digit code.`);
+      return;
     }
-    setLoading(false);
+
+    setLoading(true);
+    setError("");
+    try {
+      const response = await verifyOtp(phone, otp);
+      setFarmerSessionFromAuthResponse(response);
+      onSuccess();
+    } catch (verifyError) {
+      setError(
+        verifyError instanceof Error ? verifyError.message : "Verification failed. Try again."
+      );
+      setDigits(Array.from({ length: OTP_LENGTH }, () => ""));
+      setTimeout(() => refs[0].current?.focus(), 0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await sendOtp(phone);
+    } catch (resendError) {
+      setError(
+        resendError instanceof Error ? resendError.message : "Could not resend the verification code."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const otpGrid = (
-    <div className={`mb-4 ${isDesktop ? "flex justify-center gap-4" : "grid grid-cols-4 gap-4"}`}>
-      {digits.map((d, i) => (
+    <div className={`mb-4 ${isDesktop ? "flex justify-center gap-3" : "grid grid-cols-6 gap-3"}`}>
+      {digits.map((digit, index) => (
         <input
-          key={i}
-          ref={refs[i]}
+          key={index}
+          ref={refs[index]}
           type="tel"
           inputMode="numeric"
           maxLength={1}
-          value={d}
-          onChange={(e) => handleChange(i, e)}
-          onKeyDown={(e) => handleKeyDown(i, e)}
-          onPaste={i === 0 ? handlePaste : undefined}
+          value={digit}
+          onChange={(event) => handleChange(index, event)}
+          onKeyDown={(event) => handleKeyDown(index, event)}
+          onPaste={index === 0 ? handlePaste : undefined}
           autoComplete="one-time-code"
-          className={`${isDesktop ? "w-16" : "w-full"} h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${d ? "border-brand-green text-brand-green" : "border-brand-border"} focus:border-brand-green`}
+          className={`${isDesktop ? "w-14" : "w-full"} h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${
+            digit ? "border-brand-green text-brand-green" : "border-brand-border"
+          } focus:border-brand-green`}
         />
       ))}
     </div>
@@ -182,24 +227,30 @@ function OTPStep({ phone, onSuccess, onBack }) {
       {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
       <p className="font-sans text-sm text-brand-text-secondary mb-1">
         I did not receive a code,{" "}
-        <button type="button" className="text-brand-green font-semibold">Resend Code</button>
+        <button type="button" onClick={() => void handleResend()} className="text-brand-green font-semibold">
+          Resend Code
+        </button>
       </p>
-      <p className="font-sans text-xs text-brand-text-muted mb-0 md:mb-6">Demo OTP: <strong>1234</strong></p>
     </div>
   );
 
   if (isDesktop) {
     return (
       <FarmerAuthDesktopLayout
-        title="Enter 4-Digit code"
-        subtitle="Enter the 4-digit code we sent to your registered phone number"
+        title={`Enter ${OTP_LENGTH}-Digit code`}
+        subtitle={`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
         heroImage="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=1400&q=80"
         heroTitle="Your Digital Identity"
         heroSub="One verified ID that proves you're a registered farmer and unlocks access to services."
         centered
         actions={
           <div className="space-y-3">
-            <button type="button" onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
+            <button
+              type="button"
+              onClick={() => void handleLogin()}
+              disabled={loading || digits.join("").length < OTP_LENGTH}
+              className="btn-primary"
+            >
               {loading ? "Verifying..." : "Login"}
             </button>
             <button
@@ -222,20 +273,30 @@ function OTPStep({ phone, onSuccess, onBack }) {
     <div className="page-white flex flex-col">
       <div className="flex-1 px-5 pt-5">
         <button type="button" onClick={onBack} className="flex items-center gap-2 text-brand-text-secondary mb-6">
-          <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
+          <ArrowLeft size={18} />
+          <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Enter 4-Digit code</h1>
+        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">{`Enter ${OTP_LENGTH}-Digit code`}</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-8">
-          Enter the 4-digit code we sent to your registered phone number
+          {`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
         </p>
         {otpGrid}
         {otpFooter}
       </div>
       <div className="px-5 pb-8 space-y-3">
-        <button type="button" onClick={handleLogin} disabled={loading || digits.join("").length < 4} className="btn-primary">
+        <button
+          type="button"
+          onClick={() => void handleLogin()}
+          disabled={loading || digits.join("").length < OTP_LENGTH}
+          className="btn-primary"
+        >
           {loading ? "Verifying..." : "Login"}
         </button>
-        <button type="button" onClick={onBack} className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium">
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium"
+        >
           Back
         </button>
       </div>
@@ -243,7 +304,6 @@ function OTPStep({ phone, onSuccess, onBack }) {
   );
 }
 
-// ── Main export ────────────────────────────────────────────
 export default function FarmerVerify() {
   const navigate = useNavigate();
   const [step, setStep] = useState("onboarding");
@@ -256,7 +316,10 @@ export default function FarmerVerify() {
   if (step === "phone") {
     return (
       <PhoneStep
-        onSubmit={(p) => { setPhone(p); setStep("otp"); }}
+        onSubmit={(nextPhone) => {
+          setPhone(nextPhone);
+          setStep("otp");
+        }}
         onBack={() => setStep("onboarding")}
       />
     );

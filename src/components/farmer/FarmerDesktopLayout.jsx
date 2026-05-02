@@ -1,6 +1,7 @@
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, User, BadgeCheck, Copy } from "lucide-react";
-import { farmerData } from "../../mockData/farmer";
+import { getFarmerDashboard, getFarmerSession } from "../../services/cropexApi";
 
 const NAV = [
   { label: "Home",    path: "/farmer/home",    Icon: Home },
@@ -18,9 +19,32 @@ export default function FarmerDesktopLayout({
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const active = activeNav || (pathname.includes("profile") ? "Profile" : "Home");
+  const session = getFarmerSession();
+  const [dashboard, setDashboard] = useState(null);
+
+  useEffect(() => {
+    let activeRequest = true;
+    getFarmerDashboard()
+      .then((payload) => {
+        if (activeRequest) setDashboard(payload);
+      })
+      .catch(() => {
+        if (activeRequest) setDashboard(null);
+      });
+
+    return () => {
+      activeRequest = false;
+    };
+  }, []);
+
+  const farmerName = dashboard?.farmer?.full_name || session?.fullName || session?.full_name || "Farmer";
+  const farmerFirstName = useMemo(() => farmerName.split(" ")[0] || "Farmer", [farmerName]);
+  const farmerId = dashboard?.farmer?.farmer_id || "Unavailable";
+  const badgeLabel = dashboard?.farmer ? "Verified" : "Unavailable";
 
   const copyID = () => {
-    navigator.clipboard?.writeText(farmerData.id).catch(() => {});
+    if (farmerId === "Unavailable") return;
+    navigator.clipboard?.writeText(farmerId).catch(() => {});
   };
 
   const desktopHeader = (
@@ -43,16 +67,16 @@ export default function FarmerDesktopLayout({
       <div className="flex flex-col items-start">
         <div className="flex items-center gap-2">
           <span className="font-display font-bold text-lg text-brand-text-primary">
-            Welcome, {farmerData.firstName}
+            Welcome, {farmerFirstName}
           </span>
           <span className="flex items-center gap-1 rounded-full bg-brand-green px-2.5 py-1 font-sans text-xs font-semibold text-white">
             <BadgeCheck size={11} />
-            Verified
+            {badgeLabel}
           </span>
         </div>
         <div className="mt-0.5 flex items-center gap-1.5">
           <span className="font-sans text-sm text-brand-text-secondary">
-            your ID: <span className="font-semibold text-brand-green">{farmerData.id}</span>
+            your ID: <span className="font-semibold text-brand-green">{farmerId}</span>
           </span>
           <button
             onClick={copyID}
