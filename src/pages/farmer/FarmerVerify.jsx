@@ -12,7 +12,7 @@ import {
 
 const OTP_LENGTH = 6;
 
-function PhoneStep({ onSubmit, onBack }) {
+function PhoneStep({ onSubmit }) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
@@ -76,13 +76,6 @@ function PhoneStep({ onSubmit, onBack }) {
             <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary w-full">
               {loading ? "Sending code..." : "Continue"}
             </button>
-            <button
-              type="button"
-              onClick={onBack}
-              className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium hover:bg-gray-100 transition-colors"
-            >
-              I do not have an account
-            </button>
           </div>
         }
       >
@@ -102,13 +95,6 @@ function PhoneStep({ onSubmit, onBack }) {
       <div className="px-5 pb-8 space-y-3">
         <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary">
           {loading ? "Sending code..." : "Continue"}
-        </button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="w-full text-center font-sans text-sm text-brand-text-secondary py-2"
-        >
-          I do not have an account
         </button>
       </div>
     </div>
@@ -327,7 +313,6 @@ export default function FarmerVerify() {
           setPhone(nextPhone);
           setStep("otp");
         }}
-        onBack={() => setStep("onboarding")}
       />
     );
   }

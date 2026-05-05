@@ -7,6 +7,13 @@ import { getAgentDashboard, getAgentSession } from "../../services/cropexApi";
 
 const REG_KEY = "hcx_agent_registration";
 
+function isAgentApproved(payload) {
+  const agent = payload?.agent && typeof payload.agent === "object" ? payload.agent : {};
+  const status = String(agent.status || payload?.status || "").trim().toUpperCase();
+  if (agent.is_active === true) return true;
+  return status === "ACTIVE" || status === "VERIFIED" || status === "APPROVED";
+}
+
 export default function AgentAccountUnderReview() {
   const navigate = useNavigate();
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -39,7 +46,7 @@ export default function AgentAccountUnderReview() {
     setToast("");
     try {
       const payload = await getAgentDashboard();
-      if (payload?.agent?.is_active === true) {
+      if (isAgentApproved(payload)) {
         navigate("/agent/account-verified");
         return;
       }
