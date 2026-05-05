@@ -220,7 +220,7 @@ async function cropexSessionFetch(storageKey, path, opts = {}, retryOnRefresh = 
     }
 
     try {
-      const refreshed = await cropexFetch("/agents/refresh", {
+      const refreshed = await cropexFetch("/auth/refresh", {
         method: "POST",
         body: { refresh_token: refreshToken },
       });
@@ -351,7 +351,7 @@ export function agentLogin(body) {
 }
 
 export function agentRefresh(refreshToken) {
-  return cropexFetch("/agents/refresh", {
+  return cropexFetch("/auth/refresh", {
     method: "POST",
     body: { refresh_token: refreshToken },
   });
