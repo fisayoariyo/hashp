@@ -8,9 +8,15 @@ import { getAgentDashboard, getAgentSession } from "../../services/cropexApi";
 const REG_KEY = "hcx_agent_registration";
 
 function isAgentApproved(payload) {
-  const agent = payload?.agent && typeof payload.agent === "object" ? payload.agent : {};
-  const status = String(agent.status || payload?.status || "").trim().toUpperCase();
-  if (agent.is_active === true) return true;
+  const root =
+    payload?.data && typeof payload.data === "object"
+      ? payload.data
+      : payload && typeof payload === "object"
+        ? payload
+        : {};
+  const agent = root?.agent && typeof root.agent === "object" ? root.agent : {};
+  const status = String(agent.status || root?.status || payload?.status || "").trim().toUpperCase();
+  if (agent.is_active === true || root?.is_active === true) return true;
   return status === "ACTIVE" || status === "VERIFIED" || status === "APPROVED";
 }
 

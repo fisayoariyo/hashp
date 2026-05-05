@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const ROLE_HERO_CONTENT = {
+  farmer: {
+    image: "/onboarding/farmer-1.jpg",
+    title: "Welcome to your Farmer Profile",
+    description:
+      "You now have a digital identity that helps you access support, loans, and better opportunities.",
+  },
+  agent: {
+    image: "/onboarding/agent-onboard1.png",
+    title: "Digitally Onboard Farmers",
+    description:
+      "Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.",
+  },
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DESKTOP — split panel  (hidden on mobile via `hidden md:flex`)
 // Matches the Select Role design screen exactly.
@@ -9,6 +24,7 @@ function DesktopRoleSelect() {
   const navigate = useNavigate();
   // Farmer is pre-selected per design
   const [selected, setSelected] = useState("farmer");
+  const heroContent = ROLE_HERO_CONTENT[selected] || ROLE_HERO_CONTENT.farmer;
 
   const handleContinue = () => {
     if (selected === "farmer") navigate("/farmer/verify");
@@ -25,7 +41,7 @@ function DesktopRoleSelect() {
       */}
       <div className="relative w-[45%] shrink-0 rounded-3xl overflow-hidden">
         <img
-          src={selected === "agent" ? "/onboarding/agent-onboard1.png" : "/onboarding/farmer-1.jpg"}
+          src={heroContent.image}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -45,11 +61,10 @@ function DesktopRoleSelect() {
             draggable="false"
           />
           <h2 className="font-display font-bold text-[1.85rem] lg:text-[2.1rem] text-white leading-tight mb-2">
-            Welcome to your Farmer Profile
+            {heroContent.title}
           </h2>
           <p className="font-sans text-base lg:text-[1.05rem] text-white/85 leading-snug">
-            You now have a digital identity that helps you access support,
-            loans, and better opportunities.
+            {heroContent.description}
           </p>
         </div>
       </div>
