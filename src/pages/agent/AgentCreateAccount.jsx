@@ -69,6 +69,8 @@ export default function AgentCreateAccount() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const passwordMismatch =
+    form.confirmPassword.length > 0 && form.password !== form.confirmPassword;
 
   const set = (key) => (event) => {
     setError("");
@@ -251,7 +253,7 @@ export default function AgentCreateAccount() {
         {fieldErrors.password ? <p className="font-sans text-xs text-red-500">{fieldErrors.password}</p> : null}
       </div>
 
-      <div className="flex items-center gap-3 py-1">
+      <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Confirm password</label>
         <div className={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
           fieldErrors.confirmPassword ? "border-red-400" : "border-brand-border"
@@ -269,13 +271,21 @@ export default function AgentCreateAccount() {
           </button>
         </div>
         {fieldErrors.confirmPassword ? <p className="font-sans text-xs text-red-500">{fieldErrors.confirmPassword}</p> : null}
+        {!fieldErrors.confirmPassword && passwordMismatch ? (
+          <p className="font-sans text-xs text-red-500">Passwords do not match.</p>
+        ) : null}
       </div>
     </div>
   );
 
   const actions = (
     <div className="space-y-3">
-      <button type="button" onClick={() => void handleSubmit()} disabled={loading} className="btn-primary">
+      <button
+        type="button"
+        onClick={() => void handleSubmit()}
+        disabled={loading || passwordMismatch}
+        className="btn-primary"
+      >
         {loading ? "Creating account..." : "Create account"}
       </button>
       <button
@@ -302,7 +312,12 @@ export default function AgentCreateAccount() {
         <h1 className="font-display font-bold text-[2rem] leading-tight text-brand-text-primary mb-8">Create Agent Account</h1>
         {formFields}
         <div className="space-y-3 pb-[max(2rem,env(safe-area-inset-bottom))] mt-5">
-          <button type="button" onClick={() => void handleSubmit()} disabled={loading} className="btn-primary">
+          <button
+            type="button"
+            onClick={() => void handleSubmit()}
+            disabled={loading || passwordMismatch}
+            className="btn-primary"
+          >
             {loading ? "Creating account..." : "Create account"}
           </button>
           <button
