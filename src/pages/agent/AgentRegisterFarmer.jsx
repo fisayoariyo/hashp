@@ -75,6 +75,52 @@ const buildQueuedFarmerRecord = (draft, agentId) => ({
   biometric: { face: true, fingerprint: true },
 });
 
+function validateDraftForSubmit(draft) {
+  const personal = draft?.personal || {};
+  const farm = draft?.farm || {};
+
+  const fullName = readString(personal.fullName);
+  if (!fullName) return "Full name is required.";
+
+  const dobText = readString(personal.dob);
+  if (!dobText) return "Date of birth is required.";
+  const dob = new Date(dobText);
+  if (Number.isNaN(dob.getTime())) return "Date of birth is invalid.";
+  const today = new Date();
+  if (dob > today) return "Date of birth cannot be in the future.";
+
+  const phoneDigits = readString(personal.phone).replace(/\D/g, "");
+  if (!phoneDigits || phoneDigits.length < 10) return "Phone number must be valid.";
+
+  const ninDigits = readString(personal.nin).replace(/\D/g, "");
+  if (ninDigits.length !== 11) return "NIN must be 11 digits.";
+
+  const bvnDigits = readString(personal.bvn).replace(/\D/g, "");
+  if (bvnDigits.length !== 11) return "BVN must be 11 digits.";
+
+  if (!readString(personal.state, personal.stateId)) return "State is required.";
+  if (!readString(personal.lga, personal.lgaId)) return "LGA is required.";
+  if (!readString(personal.address)) return "Residential address is required.";
+  if (!readString(personal.nextKinName)) return "Next of kin name is required.";
+  if (!readString(personal.nextKinPhone).replace(/\D/g, "")) return "Next of kin phone number is required.";
+  if (!readString(personal.nextKinRelationship)) return "Next of kin relationship is required.";
+
+  if (!readString(farm.farmSize)) return "Farm size is required.";
+  if (!readString(farm.cropType)) return "Crop type is required.";
+  if (!readString(farm.farmLocation)) return "Farm location is required.";
+  if (!readString(farm.soilType)) return "Soil type is required.";
+
+  return "";
+}
+
+function isValidPastDate(value) {
+  const text = readString(value);
+  if (!text) return false;
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return false;
+  return date <= new Date();
+}
+
 // ── Step indicator ─────────────────────────────────────────
 function Steps({ current }) {
   return (
@@ -374,6 +420,31 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
   const [lgaOptions, setLgaOptions] = useState([]);
   const [lgasLoading, setLgasLoading] = useState(false);
   const [lgasError, setLgasError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validatePersonal = (values) => {
+    const next = {};
+    if (!readString(values.fullName)) next.fullName = "Full name is required.";
+    if (!readString(values.dob)) next.dob = "Date of birth is required.";
+    else if (!isValidPastDate(values.dob)) next.dob = "Date of birth cannot be in the future.";
+
+    const phoneDigits = readString(values.phone).replace(/\D/g, "");
+    if (phoneDigits.length < 10) next.phone = "Enter a valid phone number.";
+    if (!readString(values.stateId, values.state)) next.stateId = "State is required.";
+    if (!readString(values.lgaId, values.lga)) next.lgaId = "LGA is required.";
+
+    const ninDigits = readString(values.nin).replace(/\D/g, "");
+    if (ninDigits.length !== 11) next.nin = "NIN must be 11 digits.";
+    const bvnDigits = readString(values.bvn).replace(/\D/g, "");
+    if (bvnDigits.length !== 11) next.bvn = "BVN must be 11 digits.";
+
+    if (!readString(values.address)) next.address = "Residential address is required.";
+    if (!readString(values.nextKinName)) next.nextKinName = "Next of kin name is required.";
+    const kinPhoneDigits = readString(values.nextKinPhone).replace(/\D/g, "");
+    if (kinPhoneDigits.length < 10) next.nextKinPhone = "Enter a valid next of kin phone number.";
+    if (!readString(values.nextKinRelationship)) next.nextKinRelationship = "Relationship is required.";
+    return next;
+  };
 
   useEffect(() => {
     if (form.stateId || !form.state || stateOptions.length === 0) return;
@@ -424,6 +495,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
   const set = (key) => (event) => {
     const value = event.target.value;
     setForm((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => ({ ...current, [key]: "" }));
   };
   const handleStateChange = (event) => {
     const selected = stateOptions.find((option) => String(option.id) === event.target.value);
@@ -434,6 +506,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
       lgaId: "",
       lga: "",
     }));
+    setFieldErrors((current) => ({ ...current, stateId: "", lgaId: "" }));
   };
   const handleLgaChange = (event) => {
     const selected = lgaOptions.find((option) => String(option.id) === event.target.value);
@@ -442,6 +515,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
       lgaId: event.target.value,
       lga: selected?.name || "",
     }));
+    setFieldErrors((current) => ({ ...current, lgaId: "" }));
   };
 
   const CROP_OPTIONS = ["Maize", "Rice", "Cassava", "Yam", "Soybean", "Green Beans", "Tomato", "Pepper", "Groundnut", "Wheat"];
@@ -485,6 +559,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
               placeholder="Write farmer full name here"
               icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
             />
+            {fieldErrors.fullName ? <p className="font-sans text-xs text-red-500">{fieldErrors.fullName}</p> : null}
           </F>
           <F label="Date of birth" required>
             <div className="flex items-center input-field gap-3">
@@ -497,6 +572,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
                 className="flex-1 bg-transparent focus:outline-none text-sm text-brand-text-primary placeholder:text-brand-text-muted"
               />
             </div>
+            {fieldErrors.dob ? <p className="font-sans text-xs text-red-500">{fieldErrors.dob}</p> : null}
           </F>
           <F label="Gender" required>
             <Sel value={form.gender} onChange={set("gender")} options={["Male", "Female", "Other"]} />
@@ -515,6 +591,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
                 className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
               />
             </div>
+            {fieldErrors.phone ? <p className="font-sans text-xs text-red-500">{fieldErrors.phone}</p> : null}
           </F>
           <F label="State of origin" required>
             <Sel
@@ -523,6 +600,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
               options={stateOptions}
               placeholder={statesLoading ? "Loading states..." : "Select state"}
             />
+            {fieldErrors.stateId ? <p className="font-sans text-xs text-red-500">{fieldErrors.stateId}</p> : null}
           </F>
           <F label="Local government area" required>
             <Sel
@@ -531,6 +609,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
               options={lgaOptions}
               placeholder={!form.stateId ? "Select state first" : lgasLoading ? "Loading LGAs..." : "Select LGA"}
             />
+            {fieldErrors.lgaId ? <p className="font-sans text-xs text-red-500">{fieldErrors.lgaId}</p> : null}
           </F>
           <F label="NIN (National ID No.)" required>
             <div className="flex items-center input-field gap-3">
@@ -542,6 +621,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
                 className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
               />
             </div>
+            {fieldErrors.nin ? <p className="font-sans text-xs text-red-500">{fieldErrors.nin}</p> : null}
           </F>
           <F label="BVN" required>
             <div className="flex items-center input-field gap-3">
@@ -553,6 +633,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
                 className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
               />
             </div>
+            {fieldErrors.bvn ? <p className="font-sans text-xs text-red-500">{fieldErrors.bvn}</p> : null}
           </F>
           <F label="Marital Status (optional)">
             <Sel value={form.maritalStatus} onChange={set("maritalStatus")} options={["Single", "Married", "Divorced", "Widowed"]} placeholder="Select" />
@@ -594,6 +675,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
               placeholder="Write farmer next of kin name here"
               icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
             />
+            {fieldErrors.nextKinName ? <p className="font-sans text-xs text-red-500">{fieldErrors.nextKinName}</p> : null}
           </F>
           <F label="Next of Kin phone number" required>
             <div className="flex items-center input-field gap-3">
@@ -609,6 +691,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
                 className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
               />
             </div>
+            {fieldErrors.nextKinPhone ? <p className="font-sans text-xs text-red-500">{fieldErrors.nextKinPhone}</p> : null}
           </F>
           <F label="Residential address" required>
             <div className="flex items-center input-field gap-3">
@@ -620,9 +703,11 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
                 className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
               />
             </div>
+            {fieldErrors.address ? <p className="font-sans text-xs text-red-500">{fieldErrors.address}</p> : null}
           </F>
           <F label="Next of Kin Relationship" required>
             <Sel value={form.nextKinRelationship} onChange={set("nextKinRelationship")} options={["Spouse", "Parent", "Sibling", "Child", "Relative", "Friend"]} placeholder="Select" />
+            {fieldErrors.nextKinRelationship ? <p className="font-sans text-xs text-red-500">{fieldErrors.nextKinRelationship}</p> : null}
           </F>
         </div>
       </div>
@@ -630,6 +715,11 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
         layout={navLayout}
         onBack={onBack}
         onNext={() => {
+          const nextErrors = validatePersonal(form);
+          if (Object.keys(nextErrors).length > 0) {
+            setFieldErrors(nextErrors);
+            return;
+          }
           setDraft({
             personal: {
               ...form,
@@ -648,7 +738,11 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
 function FarmStep({ onNext, onBack, embedded }) {
   const d = getDraft().farm || {};
   const [form, setForm] = useState({ farmSize:"", farmLocation:"", cropType:"", soilType:"", landOwnership:"", ...d });
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const [fieldErrors, setFieldErrors] = useState({});
+  const set = (k) => (e) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+    setFieldErrors((current) => ({ ...current, [k]: "" }));
+  };
 
   const navLayout = embedded ? "inline" : "fixed";
   const scrollPb = embedded ? "pb-4" : "pb-36";
@@ -669,11 +763,13 @@ function FarmStep({ onNext, onBack, embedded }) {
               <input value={form.farmSize} onChange={set("farmSize")} placeholder="Enter farm size (e.g. 2 acres)"
                 className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
             </div>
+            {fieldErrors.farmSize ? <p className="font-sans text-xs text-red-500">{fieldErrors.farmSize}</p> : null}
           </F>
           <F label="Crop Type" required>
             <Sel value={form.cropType} onChange={set("cropType")}
               options={["Maize","Rice","Cassava","Yam","Soybean","Green Beans","Tomato","Pepper","Groundnut"]}
               placeholder="Select crop type" />
+            {fieldErrors.cropType ? <p className="font-sans text-xs text-red-500">{fieldErrors.cropType}</p> : null}
           </F>
           <F label="Farm Location" required>
             <div className="flex items-center input-field gap-3">
@@ -681,11 +777,13 @@ function FarmStep({ onNext, onBack, embedded }) {
               <input value={form.farmLocation} onChange={set("farmLocation")} placeholder="Input farm location"
                 className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
             </div>
+            {fieldErrors.farmLocation ? <p className="font-sans text-xs text-red-500">{fieldErrors.farmLocation}</p> : null}
           </F>
           <F label="Soil Type" required>
             <Sel value={form.soilType} onChange={set("soilType")}
               options={["Loamy soil","Clay soil","Sandy","Silty soil","Peaty soil","Chalky soil"]}
               placeholder="Select soil type" />
+            {fieldErrors.soilType ? <p className="font-sans text-xs text-red-500">{fieldErrors.soilType}</p> : null}
           </F>
           <F label="Land Ownership (Optional)">
             <Sel value={form.landOwnership} onChange={set("landOwnership")}
@@ -694,7 +792,23 @@ function FarmStep({ onNext, onBack, embedded }) {
           </F>
         </div>
       </div>
-      <NavRow layout={navLayout} onBack={onBack} onNext={() => { setDraft({ farm: form }); onNext(); }} />
+      <NavRow
+        layout={navLayout}
+        onBack={onBack}
+        onNext={() => {
+          const nextErrors = {};
+          if (!readString(form.farmSize)) nextErrors.farmSize = "Farm size is required.";
+          if (!readString(form.cropType)) nextErrors.cropType = "Crop type is required.";
+          if (!readString(form.farmLocation)) nextErrors.farmLocation = "Farm location is required.";
+          if (!readString(form.soilType)) nextErrors.soilType = "Soil type is required.";
+          if (Object.keys(nextErrors).length > 0) {
+            setFieldErrors(nextErrors);
+            return;
+          }
+          setDraft({ farm: form });
+          onNext();
+        }}
+      />
     </div>
   );
 }
@@ -920,14 +1034,14 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
       </div>
 
       <div
-        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 sm:items-center ${
-          embedded ? "sm:justify-start" : ""
-        } justify-center`}
+        className={`${footerClass} flex flex-col gap-3 sm:flex-row sm:flex-nowrap sm:items-center ${
+          embedded ? "sm:justify-start" : "sm:justify-center"
+        }`}
       >
         <button
           type="button"
           onClick={onBack}
-          className="order-2 sm:order-1 min-w-[140px] h-[44px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center hover:bg-gray-50 transition-colors"
+          className="order-2 sm:order-1 h-[44px] w-full sm:w-auto sm:min-w-[140px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap hover:bg-gray-50 transition-colors"
         >
           Edit details
         </button>
@@ -941,7 +1055,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
             a.click();
             URL.revokeObjectURL(a.href);
           }}
-          className="order-3 sm:order-2 min-w-[140px] h-[44px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+          className="order-3 sm:order-2 h-[44px] w-full sm:w-auto sm:min-w-[140px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap hover:bg-gray-50 transition-colors"
         >
           <FileDown size={16} /> Download as CSV
         </button>
@@ -949,7 +1063,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
           type="button"
           onClick={onSubmit}
           disabled={submitting}
-          className="order-1 sm:order-3 min-w-[180px] h-[44px] w-full sm:w-auto px-8 rounded-2xl bg-brand-green text-white font-sans font-semibold text-sm inline-flex items-center justify-center transition-all duration-200 active:scale-95 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="order-1 sm:order-3 h-[44px] w-full sm:w-auto sm:min-w-[180px] px-8 rounded-2xl bg-brand-green text-white font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap transition-all duration-200 active:scale-95 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Submitting..." : "Continue and submit"}
         </button>
@@ -1099,6 +1213,12 @@ export default function AgentRegisterFarmer() {
     setSubmitting(true);
     setSubmitError("");
     const draft = getDraft();
+    const validationError = validateDraftForSubmit(draft);
+    if (validationError) {
+      setSubmitError(validationError);
+      setSubmitting(false);
+      return;
+    }
     try {
       const agentId = getAgentIdFromSession();
       const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
