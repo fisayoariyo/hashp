@@ -390,6 +390,76 @@ export function enrollFarmer(body) {
   });
 }
 
+export function startEnrollmentSession({ agent_id, lat, long } = {}) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/start", {
+    method: "POST",
+    body: {
+      ...(agent_id ? { agent_id } : {}),
+      ...(typeof lat === "number" ? { lat } : {}),
+      ...(typeof long === "number" ? { long } : {}),
+    },
+  });
+}
+
+export function getEnrollmentBiometricStatus(sessionId) {
+  return cropexSessionFetch(
+    AGENT_AUTH_KEY,
+    `/enrollment/biometric-status/${encodeURIComponent(String(sessionId || ""))}`
+  );
+}
+
+export function submitEnrollmentFingerprint({ session_id, finger_position, fmr_template }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/fingerprint", {
+    method: "POST",
+    body: { session_id, finger_position, fmr_template },
+  });
+}
+
+const RD_BASE_URL = "http://127.0.0.1:11100";
+const RD_CAPTURE_XML = `<?xml version="1.0"?>
+<PidOptions ver="1.0">
+  <Opts fmr="Y" env="P" timeout="10000" wadh="" posh="UNKNOWN"/>
+</PidOptions>`;
+
+function parseXmlText(xmlText) {
+  const parser = new DOMParser();
+  return parser.parseFromString(xmlText, "text/xml");
+}
+
+export async function checkRdServiceReady() {
+  const response = await fetch(`${RD_BASE_URL}/rd/info`, { method: "RDSERVICE" });
+  const xmlText = await response.text();
+  const xml = parseXmlText(xmlText);
+  const node = xml.querySelector("RDService");
+  const status = readString(node?.getAttribute("status")).toUpperCase();
+  return {
+    ready: status === "READY",
+    status,
+    raw: xmlText,
+  };
+}
+
+export async function captureFingerprintFromRdService() {
+  const response = await fetch(`${RD_BASE_URL}/rd/capture`, {
+    method: "POST",
+    headers: { "Content-Type": "application/xml" },
+    body: RD_CAPTURE_XML,
+  });
+  const xmlText = await response.text();
+  const xml = parseXmlText(xmlText);
+  const resp = xml.querySelector("Resp");
+  const errCode = readString(resp?.getAttribute("errCode"));
+  const errInfo = readString(resp?.getAttribute("errInfo"));
+  const fmr = readString(xml.querySelector("Data")?.textContent);
+  return {
+    ok: errCode === "0" && !!fmr,
+    errCode,
+    errInfo,
+    fmr,
+    raw: xmlText,
+  };
+}
+
 export async function syncFarmers(records) {
   const payload = await cropexSessionFetch(AGENT_AUTH_KEY, "/farmers/sync", {
     method: "POST",
@@ -577,13 +647,8 @@ export function draftToEnrollmentPayload(draft, enrolledByAgentId) {
     crop_type: farm.cropType || undefined,
     farm_location: farm.farmLocation || undefined,
     farm_size: farm.farmSize || undefined,
-    land_ownership: farm.landOwnership || undefined,
     soil_type: farm.soilType || undefined,
   };
-
-  if (enrolledByAgentId) {
-    body.enrolled_by_agent_id = String(enrolledByAgentId);
-  }
 
   return body;
 }

@@ -21,6 +21,7 @@ import {
   mapApiFarmerToUi,
   mapGeoLgaOption,
   mapGeoStateOption,
+  startEnrollmentSession,
 } from "../../services/cropexApi";
 
 const DEMO_FARMER_PHOTO = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop";
@@ -119,6 +120,58 @@ function isValidPastDate(value) {
   const date = new Date(text);
   if (Number.isNaN(date.getTime())) return false;
   return date <= new Date();
+}
+
+function validateEnrollmentPayloadAgainstContract(payload) {
+  const required = [
+    ["full_name", "Full name"],
+    ["phone_number", "Phone number"],
+    ["nin", "NIN"],
+    ["bvn", "BVN"],
+    ["gender", "Gender"],
+    ["date_of_birth", "Date of birth"],
+    ["state_of_origin", "State"],
+    ["lga", "LGA"],
+    ["residential_address", "Residential address"],
+  ];
+  for (const [key, label] of required) {
+    if (!readString(payload?.[key])) return `${label} is missing in submit payload.`;
+  }
+  const gender = readString(payload?.gender);
+  if (!["M", "F", "Other"].includes(gender)) {
+    return "Gender payload value is invalid.";
+  }
+  return "";
+}
+
+function formatEnrollmentError(error, payload) {
+  if (error instanceof CropexHttpError && error.body && typeof error.body === "object") {
+    const body = error.body;
+    if (Array.isArray(body.errors) && body.errors.length > 0) {
+      const details = body.errors
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (!item || typeof item !== "object") return "";
+          const field = readString(item.field, item.path);
+          const message = readString(item.message, item.error, item.details);
+          return field && message ? `${field}: ${message}` : message || field;
+        })
+        .filter(Boolean)
+        .join("; ");
+      if (details) return details;
+    }
+    if (body.errors && typeof body.errors === "object") {
+      const details = Object.entries(body.errors)
+        .map(([key, value]) => `${key}: ${readString(value) || "invalid"}`)
+        .join("; ");
+      if (details) return details;
+    }
+  }
+  if (readString(error?.message).toLowerCase().includes("invalid request body")) {
+    const payloadCheck = validateEnrollmentPayloadAgainstContract(payload);
+    if (payloadCheck) return `${error.message} ${payloadCheck}`;
+  }
+  return error instanceof Error ? error.message : "Enrollment failed. Check required fields.";
 }
 
 // ── Step indicator ─────────────────────────────────────────
@@ -327,6 +380,14 @@ function StartScreen({ onStart, onBack, embedded }) {
 
 // ── RF02/04/08: Biometric capture hub ─────────────────────
 function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onNext, onBack, embedded }) {
+  const FaceIcon = ({ color, size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+      <path d="M9 10.5c0 1.5 1.5 2.5 3 2.5s3-1 3-2.5"/>
+    </svg>
+  );
+
   const done_color = "#155235";
   const idle_color = "#9ca3af";
 
@@ -354,14 +415,6 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
     </div>
   );
 
-  const FaceIcon = ({ color, size }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-      <path d="M9 10.5c0 1.5 1.5 2.5 3 2.5s3-1 3-2.5"/>
-    </svg>
-  );
-
   const navLayout = embedded ? "inline" : "fixed";
   const scrollPb = embedded ? "pb-4" : "pb-32";
   const rootClass = embedded
@@ -386,7 +439,7 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
           />
           <Row
             label="Fingerprint verification"
-            subLabel="Capture your finger to verify"
+            subLabel="Capture 4 fingers to verify"
             done={fingerCapture === "done"}
             Icon={FPIcon}
             onTap={onFingerTap}
@@ -1034,14 +1087,14 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
       </div>
 
       <div
-        className={`${footerClass} flex flex-col gap-3 sm:flex-row sm:flex-nowrap sm:items-center ${
+        className={`${footerClass} grid grid-cols-1 gap-3 sm:grid-cols-[auto_auto_auto] sm:items-center ${
           embedded ? "sm:justify-start" : "sm:justify-center"
         }`}
       >
         <button
           type="button"
           onClick={onBack}
-          className="order-2 sm:order-1 h-[44px] w-full sm:w-auto sm:min-w-[140px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap hover:bg-gray-50 transition-colors"
+          className="h-[44px] w-full sm:w-auto sm:min-w-[140px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap hover:bg-gray-50 transition-colors"
         >
           Edit details
         </button>
@@ -1055,7 +1108,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
             a.click();
             URL.revokeObjectURL(a.href);
           }}
-          className="order-3 sm:order-2 h-[44px] w-full sm:w-auto sm:min-w-[140px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap hover:bg-gray-50 transition-colors"
+          className="h-[44px] w-full sm:w-auto sm:min-w-[140px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap hover:bg-gray-50 transition-colors"
         >
           <FileDown size={16} /> Download as CSV
         </button>
@@ -1063,7 +1116,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
           type="button"
           onClick={onSubmit}
           disabled={submitting}
-          className="order-1 sm:order-3 h-[44px] w-full sm:w-auto sm:min-w-[180px] px-8 rounded-2xl bg-brand-green text-white font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap transition-all duration-200 active:scale-95 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-[44px] w-full sm:w-auto sm:min-w-[180px] px-8 rounded-2xl bg-brand-green text-white font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap transition-all duration-200 active:scale-95 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Submitting..." : "Continue and submit"}
         </button>
@@ -1177,8 +1230,11 @@ export default function AgentRegisterFarmer() {
   const [statesError, setStatesError] = useState("");
 
   // Biometric state LIFTED — survives sub-screen navigation
-  const [faceCapture,   setFaceCapture]   = useState("idle");
+  const [faceCapture, setFaceCapture] = useState("idle");
   const [fingerCapture, setFingerCapture] = useState("idle");
+  const [enrollmentSessionId, setEnrollmentSessionId] = useState("");
+  const [startingEnrollment, setStartingEnrollment] = useState(false);
+  const [enrollmentStartError, setEnrollmentStartError] = useState("");
 
   const goHome = () => navigate("/agent/home");
   const agentSession = getAgentSession();
@@ -1213,6 +1269,7 @@ export default function AgentRegisterFarmer() {
     setSubmitting(true);
     setSubmitError("");
     const draft = getDraft();
+    let enrollmentPayload = null;
     const validationError = validateDraftForSubmit(draft);
     if (validationError) {
       setSubmitError(validationError);
@@ -1222,8 +1279,14 @@ export default function AgentRegisterFarmer() {
     try {
       const agentId = getAgentIdFromSession();
       const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
+      enrollmentPayload = queuedPayload.payload;
       const savedAt = formatToday();
       const canTryOnline = typeof navigator === "undefined" || navigator.onLine;
+
+      const payloadContractError = validateEnrollmentPayloadAgainstContract(queuedPayload.payload);
+      if (payloadContractError) {
+        throw new Error(payloadContractError);
+      }
 
       if (canTryOnline) {
         try {
@@ -1268,13 +1331,36 @@ export default function AgentRegisterFarmer() {
       clearDraft();
       setStep("done");
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Enrollment failed. Check required fields.");
+      setSubmitError(formatEnrollmentError(error, enrollmentPayload));
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Biometric sub-screens (inline — no route change)
+  const handleStartEnrollment = async () => {
+    if (startingEnrollment) return;
+    setEnrollmentStartError("");
+    if (enrollmentSessionId) {
+      setStep("biometric");
+      return;
+    }
+    setStartingEnrollment(true);
+    try {
+      const agentId = getAgentIdFromSession();
+      const response = await startEnrollmentSession({ agent_id: agentId || undefined });
+      const sessionId = readString(response?.data?.session_id, response?.session_id);
+      if (!sessionId) throw new Error("Backend did not return an enrollment session ID.");
+      setEnrollmentSessionId(sessionId);
+      setStep("biometric");
+    } catch (error) {
+      setEnrollmentStartError(
+        error instanceof Error ? error.message : "Could not start enrollment. Try again."
+      );
+    } finally {
+      setStartingEnrollment(false);
+    }
+  };
+
   if (step === "face-capture") {
     return (
       <>
@@ -1296,6 +1382,7 @@ export default function AgentRegisterFarmer() {
       </>
     );
   }
+
   if (step === "fingerprint-capture") {
     return (
       <>
@@ -1303,6 +1390,7 @@ export default function AgentRegisterFarmer() {
           <AgentFingerprintVerification
             onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
             onBack={() => setStep("biometric")}
+            sessionId={enrollmentSessionId}
           />
         </div>
         <AgentDesktopShell active="farmers">
@@ -1311,6 +1399,7 @@ export default function AgentRegisterFarmer() {
               embedded
               onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
               onBack={() => setStep("biometric")}
+              sessionId={enrollmentSessionId}
             />
           </div>
         </AgentDesktopShell>
@@ -1322,11 +1411,23 @@ export default function AgentRegisterFarmer() {
     return (
       <>
         <div className="md:hidden">
-          <StartScreen onStart={() => setStep("biometric")} onBack={goHome} />
+          <StartScreen onStart={handleStartEnrollment} onBack={goHome} />
+          {enrollmentStartError ? (
+            <p className="px-4 pb-3 text-sm text-red-600">{enrollmentStartError}</p>
+          ) : null}
+          {startingEnrollment ? (
+            <p className="px-4 pb-3 text-sm text-brand-text-secondary">Starting enrollment session...</p>
+          ) : null}
         </div>
         <AgentDesktopShell active="farmers">
           <div className="w-full max-w-[862.81px]">
-            <StartScreen embedded onStart={() => setStep("biometric")} onBack={goHome} />
+            <StartScreen embedded onStart={handleStartEnrollment} onBack={goHome} />
+            {enrollmentStartError ? (
+              <p className="px-4 pb-3 text-sm text-red-600">{enrollmentStartError}</p>
+            ) : null}
+            {startingEnrollment ? (
+              <p className="px-4 pb-3 text-sm text-brand-text-secondary">Starting enrollment session...</p>
+            ) : null}
           </div>
         </AgentDesktopShell>
       </>
@@ -1447,7 +1548,12 @@ export default function AgentRegisterFarmer() {
         <div className="md:hidden">
           <DoneStep
             idCard={idCard}
-            onRegisterAnother={() => { setFaceCapture("idle"); setFingerCapture("idle"); setStep("start"); }}
+            onRegisterAnother={() => {
+              setFaceCapture("idle");
+              setFingerCapture("idle");
+              setEnrollmentSessionId("");
+              setStep("start");
+            }}
             onGoHome={goHome}
           />
         </div>
@@ -1456,7 +1562,11 @@ export default function AgentRegisterFarmer() {
             <DoneStep
               embedded
               idCard={idCard}
-              onRegisterAnother={() => { setFaceCapture("idle"); setFingerCapture("idle"); setStep("start"); }}
+              onRegisterAnother={() => {
+                setFingerCapture("idle");
+                setEnrollmentSessionId("");
+                setStep("start");
+              }}
               onGoHome={goHome}
             />
           </div>
