@@ -401,6 +401,13 @@ export function startEnrollmentSession({ agent_id, lat, long } = {}) {
   });
 }
 
+export function submitEnrollmentFace({ session_id, face_photo }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/face", {
+    method: "POST",
+    body: { session_id, face_photo },
+  });
+}
+
 export function getEnrollmentBiometricStatus(sessionId) {
   return cropexSessionFetch(
     AGENT_AUTH_KEY,

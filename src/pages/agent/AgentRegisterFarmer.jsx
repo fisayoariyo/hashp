@@ -408,9 +408,13 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
         <span className={`flex-1 text-left font-sans text-sm ${done ? "text-brand-green font-medium" : "text-brand-text-secondary"}`}>
           {done ? `${label.split(" ")[0]} verification successful` : subLabel}
         </span>
-        {done
-          ? <span className="text-brand-green text-base">✓</span>
-          : <ChevronRight size={16} className="text-brand-text-muted shrink-0" />}
+        {done ? (
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-green/10 text-brand-green text-xs">
+            ✓
+          </span>
+        ) : (
+          <ChevronRight size={16} className="text-brand-text-muted shrink-0" />
+        )}
       </button>
     </div>
   );
@@ -425,8 +429,8 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
     <div className={rootClass}>
       <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
         <Steps current={1} />
-        <h1 className="font-display font-bold text-3xl md:text-[48px] md:leading-[52px] text-brand-text-primary mb-2 md:text-center">Biometric capture</h1>
-        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-8 md:text-center">
+        <h1 className="font-display font-bold text-3xl md:text-[48px] md:leading-[52px] text-brand-text-primary mb-2 text-center">Biometric capture</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-8 text-center">
           Capture fingerprint and face for identity verification.
         </p>
         <div className="space-y-5 md:max-w-[520px] md:mx-auto">
@@ -439,11 +443,14 @@ function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onN
           />
           <Row
             label="Fingerprint verification"
-            subLabel="Capture 4 fingers to verify"
+            subLabel="Capture right thumb, right index, left thumb and left index"
             done={fingerCapture === "done"}
             Icon={FPIcon}
             onTap={onFingerTap}
           />
+          <p className="font-sans text-xs text-brand-text-muted text-center">
+            Required fingers only: right thumb, right index, left thumb, left index.
+          </p>
         </div>
       </div>
       <NavRow
@@ -1368,6 +1375,7 @@ export default function AgentRegisterFarmer() {
           <AgentFacialVerification
             onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
             onBack={() => setStep("biometric")}
+            sessionId={enrollmentSessionId}
           />
         </div>
         <AgentDesktopShell active="farmers">
@@ -1376,6 +1384,7 @@ export default function AgentRegisterFarmer() {
               embedded
               onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
               onBack={() => setStep("biometric")}
+              sessionId={enrollmentSessionId}
             />
           </div>
         </AgentDesktopShell>

@@ -1,18 +1,158 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { getEnrollmentBiometricStatus, submitEnrollmentFace } from "../../services/cropexApi";
 
 // Facial states:
-// idle    → waiting, show Capture button
-// scanning → animated scanning overlay
-// success  → green tick, show "Verification successful"
+// idle      → waiting, show Capture button
+// scanning  → uploading captured frame to backend
+// success   → backend confirmed face capture
+// error     → capture or upload failed
 
-export default function AgentFacialVerification({ onSuccess, onBack, embedded }) {
-  const [status, setStatus] = useState("idle"); // idle | scanning | success
+function readString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
 
-  const handleCapture = () => {
+function collectObjects(value, bucket = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectObjects(item, bucket));
+    return bucket;
+  }
+  if (!value || typeof value !== "object") return bucket;
+  bucket.push(value);
+  Object.values(value).forEach((child) => collectObjects(child, bucket));
+  return bucket;
+}
+
+function hasStoredFaceData(payload) {
+  const objects = collectObjects(payload);
+  return objects.some((obj) => {
+    const captured = String(obj?.face_captured ?? obj?.faceCaptured ?? "").toLowerCase();
+    const hasCaptureFlag = captured === "true" || captured === "1" || obj?.face_captured === true;
+    if (!hasCaptureFlag) return false;
+    const faceTemplate = readString(obj?.face_template, obj?.faceTemplate);
+    const facePhoto = readString(obj?.face_photo, obj?.facePhoto);
+    return Boolean(faceTemplate || facePhoto);
+  });
+}
+
+async function submitAndValidateFace({ sessionId, facePhoto }) {
+  await submitEnrollmentFace({
+    session_id: sessionId,
+    face_photo: facePhoto,
+  });
+  const biometricStatus = await getEnrollmentBiometricStatus(sessionId).catch(() => null);
+  return hasStoredFaceData(biometricStatus);
+}
+
+function pickPreferredCamera(cameras) {
+  if (!Array.isArray(cameras) || cameras.length === 0) return null;
+  return (
+    cameras.find((camera) => /c920/i.test(camera.label || "")) ||
+    cameras.find((camera) => /(webcam|camera|usb)/i.test(camera.label || "")) ||
+    cameras[0]
+  );
+}
+
+export default function AgentFacialVerification({ onSuccess, onBack, embedded, sessionId }) {
+  const [status, setStatus] = useState("idle"); // idle | scanning | success | error
+  const [errorText, setErrorText] = useState("");
+  const [cameraLabel, setCameraLabel] = useState("");
+  const [cameraReady, setCameraReady] = useState(false);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function initCamera() {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        if (mounted) {
+          setStatus("error");
+          setErrorText("Camera API is not available in this browser.");
+        }
+        return;
+      }
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter((device) => device.kind === "videoinput");
+        const preferred = pickPreferredCamera(cameras);
+
+        const constraints = preferred?.deviceId
+          ? { video: { deviceId: { exact: preferred.deviceId } }, audio: false }
+          : { video: true, audio: false };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        streamRef.current = stream;
+        if (!mounted || !videoRef.current) return;
+
+        videoRef.current.srcObject = stream;
+        setCameraLabel(preferred?.label || "Camera ready");
+        setCameraReady(true);
+      } catch (error) {
+        if (!mounted) return;
+        setStatus("error");
+        setErrorText(error instanceof Error ? error.message : "Could not access camera.");
+      }
+    }
+    void initCamera();
+
+    return () => {
+      mounted = false;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleCapture = async () => {
+    if (!sessionId) {
+      setStatus("error");
+      setErrorText("Enrollment session is missing.");
+      return;
+    }
+    if (!videoRef.current || !cameraReady) {
+      setStatus("error");
+      setErrorText("Camera is not ready yet.");
+      return;
+    }
+    setErrorText("");
     setStatus("scanning");
-    // Simulate camera processing for 2 seconds then succeed
-    setTimeout(() => setStatus("success"), 2000);
+
+    try {
+      const video = videoRef.current;
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("Could not prepare image capture canvas.");
+      }
+      context.drawImage(video, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      const base64 = readString(dataUrl.split(",")[1]);
+      if (!base64) {
+        throw new Error("Could not read captured face image.");
+      }
+
+      // Primary format from API docs is base64 payload.
+      let saved = await submitAndValidateFace({ sessionId, facePhoto: base64 });
+      // Fallback for backend variants that expect full data URL format.
+      if (!saved) {
+        saved = await submitAndValidateFace({ sessionId, facePhoto: dataUrl });
+      }
+      if (!saved) {
+        throw new Error("Face capture upload did not include biometric data. Please capture again.");
+      }
+      setStatus("success");
+    } catch (error) {
+      setStatus("error");
+      setErrorText(error instanceof Error ? error.message : "Face capture failed.");
+    }
   };
 
   const handleContinue = () => {
@@ -71,12 +211,14 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
               />
             </svg>
 
-            {/* Camera preview — placeholder face image */}
+            {/* Camera preview */}
             <div className="absolute inset-3 rounded-full overflow-hidden bg-gray-200">
-              <img
-                src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80"
-                alt="Camera preview"
-                className="w-full h-full object-cover"
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="h-full w-full object-cover"
               />
 
               {/* Scanning overlay */}
@@ -123,13 +265,23 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
         {/* Instruction text */}
         <p className="font-sans text-center text-sm text-brand-text-primary leading-relaxed px-4">
           {status === "idle" && "Position your face within the frame and look directly at the camera"}
-          {status === "scanning" && "Hold still — scanning in progress..."}
+          {status === "scanning" && "Hold still — uploading face capture..."}
           {status === "success" && (
             <span className="text-brand-green font-semibold">
               Face verification successful ✓
             </span>
           )}
+          {status === "error" && (
+            <span className="text-red-600 font-semibold">
+              {errorText || "Face verification failed."}
+            </span>
+          )}
         </p>
+        {cameraLabel ? (
+          <p className="mt-2 text-center font-sans text-xs text-brand-text-muted">
+            Camera: {cameraLabel}
+          </p>
+        ) : null}
       </div>
 
       <div className={bottomClass}>
@@ -141,7 +293,7 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded })
           <button
             type="button"
             onClick={handleCapture}
-            disabled={status === "scanning"}
+            disabled={status === "scanning" || !cameraReady}
             className="btn-capture-pill w-[220px] justify-center disabled:opacity-60"
           >
             {status === "scanning" ? "Scanning..." : "Capture"}
