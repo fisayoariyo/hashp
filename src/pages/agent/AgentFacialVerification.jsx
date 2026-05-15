@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { CropexHttpError } from "../../services/cropexHttp";
-import { submitEnrollmentFace } from "../../services/cropexApi";
+import { submitEnrollmentBiometric, submitEnrollmentFace } from "../../services/cropexApi";
 
 // Facial states:
 // idle      → waiting, show Capture button
@@ -15,6 +15,9 @@ function readString(...values) {
   }
   return "";
 }
+
+const MAX_CAPTURE_EDGE = 960;
+const MIN_CAPTURE_EDGE = 320;
 
 function waitUntilVideoReady(video, timeoutMs = 4500) {
   return new Promise((resolve, reject) => {
@@ -49,6 +52,44 @@ function pickPreferredCamera(cameras) {
   );
 }
 
+function buildFaceCapture(video, { mimeType = "image/jpeg", quality = 0.82 } = {}) {
+  const sourceWidth = video.videoWidth || 640;
+  const sourceHeight = video.videoHeight || 480;
+  const cropSize = Math.max(Math.floor(Math.min(sourceWidth, sourceHeight) * 0.84), 1);
+  const sx = Math.max(Math.floor((sourceWidth - cropSize) / 2), 0);
+  const sy = Math.max(Math.floor((sourceHeight - cropSize) / 2), 0);
+  const outputSize = Math.min(Math.max(cropSize, MIN_CAPTURE_EDGE), MAX_CAPTURE_EDGE);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = outputSize;
+  canvas.height = outputSize;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Could not prepare image capture canvas.");
+  }
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+
+  // Normalize to a smaller centered square so uploads stay predictable for the backend.
+  context.drawImage(video, sx, sy, cropSize, cropSize, 0, 0, outputSize, outputSize);
+
+  const dataUrl =
+    mimeType === "image/jpeg" ? canvas.toDataURL(mimeType, quality) : canvas.toDataURL(mimeType);
+  const base64 = readString(dataUrl.split(",")[1]);
+  if (!base64) {
+    throw new Error("Could not read captured face image.");
+  }
+
+  return {
+    mimeType,
+    dataUrl,
+    base64,
+    width: outputSize,
+    height: outputSize,
+  };
+}
+
 export default function AgentFacialVerification({ onSuccess, onBack, embedded, sessionId }) {
   const [status, setStatus] = useState("idle"); // idle | scanning | success | error
   const [errorText, setErrorText] = useState("");
@@ -72,9 +113,14 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
         const cameras = devices.filter((device) => device.kind === "videoinput");
         const preferred = pickPreferredCamera(cameras);
 
+        const baseVideoConstraints = {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: "user",
+        };
         const constraints = preferred?.deviceId
-          ? { video: { deviceId: { exact: preferred.deviceId } }, audio: false }
-          : { video: true, audio: false };
+          ? { video: { ...baseVideoConstraints, deviceId: { exact: preferred.deviceId } }, audio: false }
+          : { video: baseVideoConstraints, audio: false };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         streamRef.current = stream;
@@ -118,36 +164,87 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
       const video = videoRef.current;
       await waitUntilVideoReady(video);
 
-      const width = video.videoWidth || 640;
-      const height = video.videoHeight || 480;
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext("2d");
-      if (!context) {
-        throw new Error("Could not prepare image capture canvas.");
-      }
-      context.drawImage(video, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      const base64 = readString(dataUrl.split(",")[1]);
-      if (!base64) {
-        throw new Error("Could not read captured face image.");
+      const jpegCapture = buildFaceCapture(video, { mimeType: "image/jpeg", quality: 0.82 });
+      const pngCapture = buildFaceCapture(video, { mimeType: "image/png" });
+
+      const attempts = [
+        {
+          label: "/enrollment/face jpeg-base64",
+          run: () =>
+            submitEnrollmentFace({
+              session_id: sessionId,
+              face_photo: jpegCapture.base64,
+            }),
+        },
+        {
+          label: "/enrollment/biometric jpeg-base64",
+          run: () =>
+            submitEnrollmentBiometric({
+              session_id: sessionId,
+              biometric_data: {
+                face_captured: true,
+                face_photo: jpegCapture.base64,
+              },
+            }),
+        },
+        {
+          label: "/enrollment/biometric jpeg-data-url",
+          run: () =>
+            submitEnrollmentBiometric({
+              session_id: sessionId,
+              biometric_data: {
+                face_captured: true,
+                face_photo: jpegCapture.dataUrl,
+              },
+            }),
+        },
+        {
+          label: "/enrollment/face png-base64",
+          run: () =>
+            submitEnrollmentFace({
+              session_id: sessionId,
+              face_photo: pngCapture.base64,
+            }),
+        },
+      ];
+
+      let lastError = null;
+      for (const attempt of attempts) {
+        try {
+          await attempt.run();
+          lastError = null;
+          break;
+        } catch (attemptError) {
+          lastError = attemptError;
+          if (!(attemptError instanceof CropexHttpError) || attemptError.status < 500) {
+            throw attemptError;
+          }
+          console.warn("Face upload attempt failed", {
+            attempt: attempt.label,
+            status: attemptError.status,
+            message: attemptError.message,
+            jpegBytesApprox: Math.round((jpegCapture.base64.length * 3) / 4),
+            pngBytesApprox: Math.round((pngCapture.base64.length * 3) / 4),
+            width: jpegCapture.width,
+            height: jpegCapture.height,
+          });
+        }
       }
 
-      try {
-        await submitEnrollmentFace({
-          session_id: sessionId,
-          face_photo: base64,
-        });
-      } catch (firstError) {
-        if (firstError instanceof CropexHttpError) {
-          await submitEnrollmentFace({
-            session_id: sessionId,
-            face_photo: dataUrl,
+      if (lastError) {
+        if (lastError instanceof CropexHttpError) {
+          console.error("Face upload failed after trying 4 payload variants.", {
+            status: lastError.status,
+            message: lastError.message,
+            attemptedVariants: [
+              "face jpeg-base64",
+              "biometric jpeg-base64",
+              "biometric jpeg-data-url",
+              "face png-base64",
+            ],
           });
-        } else {
-          throw firstError;
         }
+        throw lastError;
       }
       setStatus("success");
     } catch (error) {
@@ -156,8 +253,12 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
       if (error instanceof CropexHttpError) {
         if (/could not reach/i.test(message)) {
           message = `${message} Check your internet connection and that the CropEx API is reachable.`;
-        } else if (/failed to capture face/i.test(message)) {
-          message = `${message} Try facing the camera evenly lit (avoid strong light behind you).`;
+        } else if (error.status === 404) {
+          message = "Enrollment session was not found. Start the farmer registration again.";
+        } else if (error.status === 422) {
+          message = "Failed to capture face. Please try again.";
+        } else if (/failed to capture face/i.test(message) || error.status >= 500) {
+          message = "Failed to capture face. Please try again.";
         }
       }
       setErrorText(message);

@@ -408,6 +408,13 @@ export function submitEnrollmentFace({ session_id, face_photo }) {
   });
 }
 
+export function submitEnrollmentBiometric({ session_id, biometric_data }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/biometric", {
+    method: "POST",
+    body: { session_id, biometric_data },
+  });
+}
+
 export function getEnrollmentBiometricStatus(sessionId) {
   return cropexSessionFetch(
     AGENT_AUTH_KEY,
