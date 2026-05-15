@@ -7,21 +7,24 @@ import {
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
-import { upsertFarmerInStorage } from "../../hooks/useAgentFarmersSync";
 import { CropexHttpError } from "../../services/cropexHttp";
 import {
+  draftToEnrollmentCooperativeInfo,
+  draftToEnrollmentFarmInfo,
   draftToEnrollmentPayload,
-  enrollFarmer,
-  extractFarmerRecord,
+  draftToEnrollmentPersonalInfo,
   extractGeoArray,
   getAgentIdFromSession,
   getAgentSession,
   getGeoLgas,
   getGeoStates,
-  mapApiFarmerToUi,
   mapGeoLgaOption,
   mapGeoStateOption,
+  reviewEnrollmentSession,
   startEnrollmentSession,
+  submitEnrollmentCooperativeInfo,
+  submitEnrollmentFarmInfo,
+  submitEnrollmentPersonalInfo,
 } from "../../services/cropexApi";
 
 const DEMO_FARMER_PHOTO = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop";
@@ -44,8 +47,6 @@ const formatToday = () => {
   const yyyy = now.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
 };
-const isOfflineCapableFailure = (error) =>
-  error instanceof CropexHttpError && error.status === 0;
 const toSelectOptions = (options = []) =>
   options.map((option) =>
     typeof option === "object" && option !== null
@@ -123,6 +124,7 @@ function isValidPastDate(value) {
 }
 
 function validateEnrollmentPayloadAgainstContract(payload) {
+  const personal = payload?.personal_info || payload || {};
   const required = [
     ["full_name", "Full name"],
     ["phone_number", "Phone number"],
@@ -131,13 +133,15 @@ function validateEnrollmentPayloadAgainstContract(payload) {
     ["gender", "Gender"],
     ["date_of_birth", "Date of birth"],
     ["state_of_origin", "State"],
-    ["lga", "LGA"],
+    ["local_govt_area", "LGA"],
     ["residential_address", "Residential address"],
   ];
   for (const [key, label] of required) {
-    if (!readString(payload?.[key])) return `${label} is missing in submit payload.`;
+    if (!readString(personal?.[key], key === "local_govt_area" ? personal?.lga : "")) {
+      return `${label} is missing in submit payload.`;
+    }
   }
-  const gender = readString(payload?.gender);
+  const gender = readString(personal?.gender);
   if (!["M", "F", "Other"].includes(gender)) {
     return "Gender payload value is invalid.";
   }
@@ -172,6 +176,11 @@ function formatEnrollmentError(error, payload) {
     if (payloadCheck) return `${error.message} ${payloadCheck}`;
   }
   return error instanceof Error ? error.message : "Enrollment failed. Check required fields.";
+}
+
+function getPayloadRoot(payload) {
+  if (!payload || typeof payload !== "object") return {};
+  return payload.data && typeof payload.data === "object" ? payload.data : payload;
 }
 
 // ── Step indicator ─────────────────────────────────────────
@@ -1239,7 +1248,9 @@ export default function AgentRegisterFarmer() {
   // Biometric state LIFTED — survives sub-screen navigation
   const [faceCapture, setFaceCapture] = useState("idle");
   const [fingerCapture, setFingerCapture] = useState("idle");
-  const [enrollmentSessionId, setEnrollmentSessionId] = useState("");
+  const [enrollmentSessionId, setEnrollmentSessionId] = useState(() =>
+    readString(getDraft()?.enrollment?.sessionId)
+  );
   const [startingEnrollment, setStartingEnrollment] = useState(false);
   const [enrollmentStartError, setEnrollmentStartError] = useState("");
 
@@ -1277,65 +1288,71 @@ export default function AgentRegisterFarmer() {
     setSubmitError("");
     const draft = getDraft();
     let enrollmentPayload = null;
+    const sessionId = readString(enrollmentSessionId, draft?.enrollment?.sessionId);
     const validationError = validateDraftForSubmit(draft);
     if (validationError) {
       setSubmitError(validationError);
       setSubmitting(false);
       return;
     }
+    if (!sessionId) {
+      setSubmitError("Enrollment session is missing. Go back and start the registration again.");
+      setSubmitting(false);
+      return;
+    }
+    if (faceCapture !== "done" || fingerCapture !== "done") {
+      setSubmitError("Complete face and fingerprint capture before submitting.");
+      setSubmitting(false);
+      return;
+    }
     try {
       const agentId = getAgentIdFromSession();
       const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
-      enrollmentPayload = queuedPayload.payload;
+      const personalInfo = draftToEnrollmentPersonalInfo(draft);
+      const farmInfo = draftToEnrollmentFarmInfo(draft);
+      const cooperativeInfo = draftToEnrollmentCooperativeInfo(draft);
+      enrollmentPayload = {
+        session_id: sessionId,
+        personal_info: personalInfo,
+        farm_info: farmInfo,
+        cooperative: cooperativeInfo,
+      };
       const savedAt = formatToday();
-      const canTryOnline = typeof navigator === "undefined" || navigator.onLine;
 
-      const payloadContractError = validateEnrollmentPayloadAgainstContract(queuedPayload.payload);
+      const payloadContractError = validateEnrollmentPayloadAgainstContract(personalInfo);
       if (payloadContractError) {
         throw new Error(payloadContractError);
       }
 
-      if (canTryOnline) {
-        try {
-          const response = await enrollFarmer(queuedPayload.payload);
-          const liveFarmer = mapApiFarmerToUi(extractFarmerRecord(response));
-          const liveFarmerId = readString(liveFarmer?.officialFarmerId, liveFarmer?.id);
-
-          setIdCard({
-            mode: "online",
-            farmerId: liveFarmerId,
-            clientId: liveFarmer?.clientId || "",
-            name: liveFarmer?.name && liveFarmer.name !== "Farmer" ? liveFarmer.name : queuedPayload.name,
-            photo: liveFarmer?.photo || queuedPayload.photo,
-            cooperative: liveFarmer?.cooperative || queuedPayload.cooperative,
-            savedAt,
-            agentName,
-          });
-
-          clearDraft();
-          setStep("done");
-          return;
-        } catch (error) {
-          if (!isOfflineCapableFailure(error)) {
-            throw error;
-          }
-        }
-      }
-
-      const queuedFarmer = await upsertFarmerInStorage(queuedPayload);
+      await submitEnrollmentPersonalInfo({ session_id: sessionId, personal_info: personalInfo });
+      await submitEnrollmentFarmInfo({ session_id: sessionId, farm_info: farmInfo });
+      await submitEnrollmentCooperativeInfo({ session_id: sessionId, cooperative: cooperativeInfo });
+      const reviewResponse = await reviewEnrollmentSession(sessionId);
+      const reviewRoot = getPayloadRoot(reviewResponse);
+      const farmerRoot =
+        (reviewRoot.farmer && typeof reviewRoot.farmer === "object" ? reviewRoot.farmer : null) ||
+        (reviewRoot.personal_info && typeof reviewRoot.personal_info === "object" ? reviewRoot.personal_info : null) ||
+        reviewRoot;
+      const cooperativeRoot =
+        (reviewRoot.cooperative && typeof reviewRoot.cooperative === "object" ? reviewRoot.cooperative : null) ||
+        (reviewRoot.cooperative_info && typeof reviewRoot.cooperative_info === "object"
+          ? reviewRoot.cooperative_info
+          : null) ||
+        {};
 
       setIdCard({
-        mode: "offline",
-        clientId: queuedFarmer.clientId,
-        farmerId: queuedFarmer.officialFarmerId || "",
-        name: queuedFarmer.name,
-        photo: queuedFarmer.photo,
-        cooperative: queuedFarmer.cooperative,
+        mode: "online",
+        clientId: readString(reviewRoot.client_id, farmerRoot.client_id),
+        farmerId: readString(reviewRoot.farmer_id, farmerRoot.farmer_id, farmerRoot.id),
+        name: readString(farmerRoot.full_name, farmerRoot.name, queuedPayload.name),
+        photo: readString(farmerRoot.profile_photo_url, farmerRoot.photo_url) || queuedPayload.photo,
+        cooperative: readString(cooperativeRoot.cooperative_name, queuedPayload.cooperative),
         savedAt,
         agentName,
       });
 
       clearDraft();
+      setEnrollmentSessionId("");
       setStep("done");
     } catch (error) {
       setSubmitError(formatEnrollmentError(error, enrollmentPayload));
@@ -1354,10 +1371,12 @@ export default function AgentRegisterFarmer() {
     setStartingEnrollment(true);
     try {
       const agentId = getAgentIdFromSession();
-      const response = await startEnrollmentSession({ agent_id: agentId || undefined });
+      if (!agentId) throw new Error("Agent session is missing an agent ID. Log in again and retry.");
+      const response = await startEnrollmentSession({ agent_id: agentId });
       const sessionId = readString(response?.data?.session_id, response?.session_id);
       if (!sessionId) throw new Error("Backend did not return an enrollment session ID.");
       setEnrollmentSessionId(sessionId);
+      setDraft({ enrollment: { sessionId } });
       setStep("biometric");
     } catch (error) {
       setEnrollmentStartError(
@@ -1572,6 +1591,7 @@ export default function AgentRegisterFarmer() {
               embedded
               idCard={idCard}
               onRegisterAnother={() => {
+                setFaceCapture("idle");
                 setFingerCapture("idle");
                 setEnrollmentSessionId("");
                 setStep("start");
@@ -1586,4 +1606,3 @@ export default function AgentRegisterFarmer() {
 
   return null;
 }
-

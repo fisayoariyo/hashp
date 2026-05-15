@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import {
-  captureFingerprintFromRdService,
-  checkRdServiceReady,
-  getEnrollmentBiometricStatus,
-  submitEnrollmentFingerprint,
-} from "../../services/cropexApi";
+  acquireDigitalPersonaFmd,
+  createDigitalPersonaWebApi,
+  enumerateDigitalPersonaReaders,
+  getDigitalPersonaInstallMessage,
+  loadDigitalPersonaSdk,
+} from "../../services/digitalPersonaFingerprint";
+import { getEnrollmentBiometricStatus, submitEnrollmentFingerprint } from "../../services/cropexApi";
 
 const SCAN_ORDER = [
   { id: "right_thumb", label: "Right Thumb" },
@@ -13,6 +15,8 @@ const SCAN_ORDER = [
   { id: "left_thumb", label: "Left Thumb" },
   { id: "left_index", label: "Left Index" },
 ];
+
+const READER_CONNECT_TIMEOUT_MS = 25000;
 
 const STATUS_COLORS = {
   idle: "#9ca3af",
@@ -48,10 +52,10 @@ function FingerRow({ label, state, active }) {
     effectiveState === "success"
       ? "Captured"
       : effectiveState === "failed"
-      ? "Failed"
-      : effectiveState === "scanning"
-      ? "Scanning..."
-      : "Pending";
+        ? "Failed"
+        : effectiveState === "scanning"
+          ? "Scanning..."
+          : "Pending";
   return (
     <div className="flex items-center justify-between rounded-xl border border-brand-border bg-white px-4 py-3">
       <p className="font-sans text-sm text-brand-text-primary">{label}</p>
@@ -112,10 +116,40 @@ function HandsDiagram({ fingerStates, activeFingerId }) {
   );
 }
 
+function mapBackendFingerStatus(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "success") return "success";
+  return "idle";
+}
+
+function getBiometricData(payload) {
+  if (!payload || typeof payload !== "object") return {};
+  return payload.data && typeof payload.data === "object" ? payload.data : payload;
+}
+
+function applyBackendFingerRows(previous, rows) {
+  const next = { ...previous };
+  if (!Array.isArray(rows)) return next;
+  rows.forEach((row) => {
+    if (next[row.position] !== undefined) {
+      next[row.position] = mapBackendFingerStatus(row.status);
+    }
+  });
+  return next;
+}
+
+function nextPendingScanIndex(states) {
+  const nextIndex = SCAN_ORDER.findIndex((finger) => states[finger.id] !== "success");
+  return nextIndex === -1 ? SCAN_ORDER.length - 1 : nextIndex;
+}
+
 export default function AgentFingerprintVerification({ onSuccess, onBack, embedded, sessionId }) {
-  const [rdChecking, setRdChecking] = useState(true);
-  const [rdReady, setRdReady] = useState(false);
-  const [rdError, setRdError] = useState("");
+  const webApiRef = useRef(null);
+  const readerTimerRef = useRef(null);
+
+  const [scannerChecking, setScannerChecking] = useState(true);
+  const [scannerReady, setScannerReady] = useState(false);
+  const [scannerError, setScannerError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [scanning, setScanning] = useState(false);
   const [scanIndex, setScanIndex] = useState(0);
@@ -125,47 +159,124 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
 
   useEffect(() => {
     let mounted = true;
+
+    function clearReaderTimer() {
+      if (readerTimerRef.current) {
+        clearTimeout(readerTimerRef.current);
+        readerTimerRef.current = null;
+      }
+    }
+
+    function detachWebApi() {
+      const api = webApiRef.current;
+      webApiRef.current = null;
+      if (!api) return;
+      try {
+        api.stopAcquisition();
+      } catch {
+        /* ignore */
+      }
+      api.onDeviceConnected = null;
+      api.onDeviceDisconnected = null;
+      api.onReaderConnected = null;
+      api.onReaderDisconnected = null;
+      api.onErrorOccurred = null;
+      api.onSamplesAcquired = null;
+      api.onCommunicationFailed = null;
+    }
+
     async function bootstrap() {
       if (!sessionId) {
-        setRdChecking(false);
-        setRdError("Enrollment session is missing.");
+        setScannerChecking(false);
+        setScannerError("Enrollment session is missing.");
         return;
       }
-      setRdChecking(true);
-      setRdError("");
+      setScannerChecking(true);
+      setScannerError("");
+      setScannerReady(false);
+      clearReaderTimer();
+
       try {
-        const device = await checkRdServiceReady();
+        await loadDigitalPersonaSdk();
         if (!mounted) return;
-        if (!device.ready) {
-          setRdReady(false);
-          setRdError("Scanner not ready. Start RD Service and reconnect MFS100.");
-          return;
+
+        const webApi = createDigitalPersonaWebApi();
+        webApiRef.current = webApi;
+
+        const handleReaderConnected = () => {
+          if (!mounted) return;
+          clearReaderTimer();
+          setScannerReady(true);
+          setScannerError("");
+        };
+
+        const handleReaderDisconnected = () => {
+          if (!mounted) return;
+          setScannerReady(false);
+          setScannerError("Please connect the DigitalPersona U.are.U scanner.");
+        };
+
+        webApi.onDeviceConnected = handleReaderConnected;
+        webApi.onDeviceDisconnected = handleReaderDisconnected;
+        webApi.onReaderConnected = handleReaderConnected;
+        webApi.onReaderDisconnected = handleReaderDisconnected;
+        webApi.onErrorOccurred = (event) => {
+          if (!mounted) return;
+          const msg = event && event.error != null ? String(event.error) : "Scanner error";
+          setScannerError(msg);
+        };
+        webApi.onCommunicationFailed = () => {
+          if (!mounted) return;
+          setScannerReady(false);
+          setScannerError(getDigitalPersonaInstallMessage());
+        };
+
+        const readers = await enumerateDigitalPersonaReaders(webApi).catch(() => []);
+        if (readers.length > 0) {
+          handleReaderConnected();
         }
-        setRdReady(true);
-        const biometricStatus = await getEnrollmentBiometricStatus(sessionId).catch(() => null);
-        const rows = Array.isArray(biometricStatus?.data?.fingers) ? biometricStatus.data.fingers : [];
-        if (rows.length > 0) {
-          setFingerStates((prev) => {
-            const next = { ...prev };
-            rows.forEach((row) => {
-              if (next[row.position] !== undefined) {
-                next[row.position] = String(row.status).toLowerCase() === "success" ? "success" : "idle";
-              }
-            });
-            return next;
+
+        readerTimerRef.current = setTimeout(() => {
+          if (!mounted) return;
+          setScannerReady((ready) => {
+            if (!ready) {
+              setScannerError(
+                (prev) =>
+                  prev ||
+                  "DigitalPersona scanner not detected. Connect the U.are.U reader by USB and confirm the HID Authentication Device Client is installed."
+              );
+            }
+            return ready;
           });
+        }, READER_CONNECT_TIMEOUT_MS);
+
+        const biometricStatus = await getEnrollmentBiometricStatus(sessionId).catch(() => null);
+        if (!mounted) return;
+        const statusData = getBiometricData(biometricStatus);
+        const rows = Array.isArray(statusData.fingers) ? statusData.fingers : [];
+        if (rows.length > 0) {
+          const restoredStates = applyBackendFingerRows(
+            Object.fromEntries(SCAN_ORDER.map((finger) => [finger.id, "idle"])),
+            rows
+          );
+          setFingerStates((prev) => applyBackendFingerRows(prev, rows));
+          setScanIndex(nextPendingScanIndex(restoredStates));
         }
       } catch (error) {
         if (!mounted) return;
-        setRdReady(false);
-        setRdError(error instanceof Error ? error.message : "Could not reach fingerprint service.");
+        setScannerReady(false);
+        setScannerError(error instanceof Error ? error.message : "Could not load fingerprint SDK.");
       } finally {
-        if (mounted) setRdChecking(false);
+        if (mounted) setScannerChecking(false);
       }
     }
+
     void bootstrap();
+
     return () => {
       mounted = false;
+      clearReaderTimer();
+      detachWebApi();
     };
   }, [sessionId]);
 
@@ -175,28 +286,37 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
 
   const captureCurrent = async () => {
     if (!sessionId || !currentFinger || scanning) return;
+    const webApi = webApiRef.current;
+    if (!webApi) {
+      setScannerError("Scanner is not initialized.");
+      return;
+    }
     setScanning(true);
-    setRdError("");
-    setStatusMessage(`Place ${currentFinger.label.toLowerCase()} on scanner.`);
+    setScannerError("");
+    setStatusMessage(`Place ${currentFinger.label.toLowerCase()} on the scanner.`);
     setFingerStates((prev) => ({ ...prev, [currentFinger.id]: "scanning" }));
     try {
-      const rdCapture = await captureFingerprintFromRdService();
-      if (!rdCapture.ok) {
-        throw new Error(rdCapture.errInfo || `Scanner capture failed (${rdCapture.errCode || "unknown"})`);
-      }
+      const fmdTemplate = await acquireDigitalPersonaFmd(webApi);
       const response = await submitEnrollmentFingerprint({
         session_id: sessionId,
         finger_position: currentFinger.id,
-        fmr_template: rdCapture.fmr,
+        fmr_template: fmdTemplate,
       });
-      const rows = Array.isArray(response?.data?.fingers) ? response.data.fingers : [];
+      const responseData = getBiometricData(response);
+      const rows = Array.isArray(responseData.fingers) ? responseData.fingers : [];
       const saved = rows.find((item) => item.position === currentFinger.id);
-      const success = String(saved?.status || "").toLowerCase() === "success";
-      setFingerStates((prev) => ({ ...prev, [currentFinger.id]: success ? "success" : "failed" }));
+      const success = rows.length === 0 || String(saved?.status || "").toLowerCase() === "success";
+      const nextStates =
+        rows.length > 0
+          ? applyBackendFingerRows(fingerStates, rows)
+          : { ...fingerStates, [currentFinger.id]: success ? "success" : "failed" };
+      setFingerStates((prev) =>
+        rows.length > 0
+          ? applyBackendFingerRows(prev, rows)
+          : { ...prev, [currentFinger.id]: success ? "success" : "failed" }
+      );
+      setScanIndex(nextPendingScanIndex(nextStates));
       setStatusMessage(success ? `${currentFinger.label} captured.` : `${currentFinger.label} failed, retry.`);
-      if (success && scanIndex < SCAN_ORDER.length - 1) {
-        setScanIndex((idx) => idx + 1);
-      }
     } catch (error) {
       setFingerStates((prev) => ({ ...prev, [currentFinger.id]: "failed" }));
       setStatusMessage(error instanceof Error ? error.message : "Capture failed.");
@@ -222,7 +342,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
               Fingerprint Verification
             </h1>
             <p className="font-sans text-sm text-brand-text-secondary">
-              Scan each finger to complete identity verification
+              Scan each finger to complete identity verification (DigitalPersona U.are.U)
             </p>
           </div>
         </div>
@@ -287,12 +407,12 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
           {statusMessage ? (
             <p className="mt-3 text-center font-sans text-xs text-brand-text-secondary">{statusMessage}</p>
           ) : null}
-          {rdChecking ? (
+          {scannerChecking ? (
             <p className="mt-3 text-center font-sans text-sm text-brand-text-secondary">
-              Checking scanner readiness...
+              Loading DigitalPersona Web SDK…
             </p>
           ) : null}
-          {rdError ? <p className="mt-3 text-center font-sans text-sm text-red-600">{rdError}</p> : null}
+          {scannerError ? <p className="mt-3 text-center font-sans text-sm text-red-600">{scannerError}</p> : null}
         </div>
 
         <div className="mt-7 flex items-center justify-center gap-3">
@@ -304,7 +424,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             <button
               type="button"
               onClick={() => void captureCurrent()}
-              disabled={!rdReady || rdChecking || scanning}
+              disabled={!scannerReady || scannerChecking || scanning}
               className="btn-capture-pill w-[240px] justify-center disabled:cursor-not-allowed disabled:opacity-45"
             >
               {scanning ? "Scanning..." : `Capture ${currentFinger?.label || "finger"}`}

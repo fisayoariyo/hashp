@@ -422,49 +422,40 @@ export function submitEnrollmentFingerprint({ session_id, finger_position, fmr_t
   });
 }
 
-const RD_BASE_URL = "http://127.0.0.1:11100";
-const RD_CAPTURE_XML = `<?xml version="1.0"?>
-<PidOptions ver="1.0">
-  <Opts fmr="Y" env="P" timeout="10000" wadh="" posh="UNKNOWN"/>
-</PidOptions>`;
-
-function parseXmlText(xmlText) {
-  const parser = new DOMParser();
-  return parser.parseFromString(xmlText, "text/xml");
-}
-
-export async function checkRdServiceReady() {
-  const response = await fetch(`${RD_BASE_URL}/rd/info`, { method: "RDSERVICE" });
-  const xmlText = await response.text();
-  const xml = parseXmlText(xmlText);
-  const node = xml.querySelector("RDService");
-  const status = readString(node?.getAttribute("status")).toUpperCase();
-  return {
-    ready: status === "READY",
-    status,
-    raw: xmlText,
-  };
-}
-
-export async function captureFingerprintFromRdService() {
-  const response = await fetch(`${RD_BASE_URL}/rd/capture`, {
+export function submitEnrollmentPersonalInfo({ session_id, personal_info }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/personal", {
     method: "POST",
-    headers: { "Content-Type": "application/xml" },
-    body: RD_CAPTURE_XML,
+    body: { session_id, personal_info },
   });
-  const xmlText = await response.text();
-  const xml = parseXmlText(xmlText);
-  const resp = xml.querySelector("Resp");
-  const errCode = readString(resp?.getAttribute("errCode"));
-  const errInfo = readString(resp?.getAttribute("errInfo"));
-  const fmr = readString(xml.querySelector("Data")?.textContent);
-  return {
-    ok: errCode === "0" && !!fmr,
-    errCode,
-    errInfo,
-    fmr,
-    raw: xmlText,
-  };
+}
+
+export function submitEnrollmentFarmInfo({ session_id, farm_info }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/farm", {
+    method: "POST",
+    body: { session_id, farm_info },
+  });
+}
+
+export function submitEnrollmentCooperativeInfo({ session_id, cooperative }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/cooperative", {
+    method: "POST",
+    body: { session_id, cooperative },
+  });
+}
+
+export function reviewEnrollmentSession(sessionId) {
+  return cropexSessionFetch(
+    AGENT_AUTH_KEY,
+    `/enrollment/review/${encodeURIComponent(String(sessionId || ""))}`,
+    { method: "POST" }
+  );
+}
+
+export function getEnrollmentSession(sessionId) {
+  return cropexSessionFetch(
+    AGENT_AUTH_KEY,
+    `/enrollment/session/${encodeURIComponent(String(sessionId || ""))}`
+  );
 }
 
 export async function syncFarmers(records) {
@@ -658,4 +649,70 @@ export function draftToEnrollmentPayload(draft, enrolledByAgentId) {
   };
 
   return body;
+}
+
+export function draftToEnrollmentPersonalInfo(draft) {
+  const personal = draft.personal || {};
+  const farm = draft.farm || {};
+  const primaryCrops =
+    Array.isArray(personal.primaryCrops) && personal.primaryCrops.length > 0
+      ? personal.primaryCrops
+      : farm.cropType
+        ? [farm.cropType]
+        : [];
+
+  return {
+    full_name: personal.fullName,
+    phone_number: formatPhoneForApi(personal.phone),
+    nin: personal.nin,
+    bvn: personal.bvn,
+    gender: mapGenderToFarmerApi(personal.gender),
+    date_of_birth: personal.dob,
+    state_of_origin: personal.state,
+    local_govt_area: personal.lga,
+    residential_address: personal.address,
+    marital_status: personal.maritalStatus || undefined,
+    education_level: personal.educationLevel || undefined,
+    years_of_experience: personal.yearsExperience || undefined,
+    primary_crops: primaryCrops,
+    next_of_kin_name: personal.nextKinName || undefined,
+    next_of_kin_phone: personal.nextKinPhone
+      ? formatPhoneForApi(personal.nextKinPhone)
+      : undefined,
+    next_of_kin_relation: personal.nextKinRelationship || undefined,
+  };
+}
+
+export function draftToEnrollmentFarmInfo(draft) {
+  const farm = draft.farm || {};
+  return {
+    farm_size: farm.farmSize,
+    farm_location: farm.farmLocation,
+    crop_type: farm.cropType,
+    soil_type: farm.soilType,
+    land_ownership: farm.landOwnership || undefined,
+  };
+}
+
+function splitCommodityFocus(value) {
+  if (Array.isArray(value)) return value.map((item) => readString(item)).filter(Boolean);
+  return readString(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function draftToEnrollmentCooperativeInfo(draft) {
+  const cooperative = draft.cooperative || {};
+  return {
+    cooperative_name: cooperative.name || undefined,
+    cooperative_reg_number: cooperative.regNo || undefined,
+    membership_role: cooperative.role || undefined,
+    date_joined: cooperative.joinedDate || undefined,
+    lga: cooperative.lga || undefined,
+    commodity_focus: splitCommodityFocus(cooperative.commodity),
+    cooperative_size: cooperative.size || undefined,
+    land_ownership_type: cooperative.landType || undefined,
+    input_supplier_name: cooperative.supplier || undefined,
+  };
 }

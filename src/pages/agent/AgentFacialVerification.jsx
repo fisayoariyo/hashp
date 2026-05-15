@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { getEnrollmentBiometricStatus, submitEnrollmentFace } from "../../services/cropexApi";
+import { CropexHttpError } from "../../services/cropexHttp";
+import { submitEnrollmentFace } from "../../services/cropexApi";
 
 // Facial states:
 // idle      → waiting, show Capture button
@@ -15,36 +16,28 @@ function readString(...values) {
   return "";
 }
 
-function collectObjects(value, bucket = []) {
-  if (Array.isArray(value)) {
-    value.forEach((item) => collectObjects(item, bucket));
-    return bucket;
-  }
-  if (!value || typeof value !== "object") return bucket;
-  bucket.push(value);
-  Object.values(value).forEach((child) => collectObjects(child, bucket));
-  return bucket;
-}
-
-function hasStoredFaceData(payload) {
-  const objects = collectObjects(payload);
-  return objects.some((obj) => {
-    const captured = String(obj?.face_captured ?? obj?.faceCaptured ?? "").toLowerCase();
-    const hasCaptureFlag = captured === "true" || captured === "1" || obj?.face_captured === true;
-    if (!hasCaptureFlag) return false;
-    const faceTemplate = readString(obj?.face_template, obj?.faceTemplate);
-    const facePhoto = readString(obj?.face_photo, obj?.facePhoto);
-    return Boolean(faceTemplate || facePhoto);
+function waitUntilVideoReady(video, timeoutMs = 4500) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      if (!video) {
+        reject(new Error("Camera is not ready yet."));
+        return;
+      }
+      const w = video.videoWidth || 0;
+      const h = video.videoHeight || 0;
+      if (w > 2 && h > 2 && video.readyState >= 2) {
+        resolve();
+        return;
+      }
+      if (Date.now() - start > timeoutMs) {
+        reject(new Error("Camera preview is still starting. Wait two seconds and tap Capture again."));
+        return;
+      }
+      requestAnimationFrame(check);
+    };
+    check();
   });
-}
-
-async function submitAndValidateFace({ sessionId, facePhoto }) {
-  await submitEnrollmentFace({
-    session_id: sessionId,
-    face_photo: facePhoto,
-  });
-  const biometricStatus = await getEnrollmentBiometricStatus(sessionId).catch(() => null);
-  return hasStoredFaceData(biometricStatus);
 }
 
 function pickPreferredCamera(cameras) {
@@ -123,6 +116,8 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
 
     try {
       const video = videoRef.current;
+      await waitUntilVideoReady(video);
+
       const width = video.videoWidth || 640;
       const height = video.videoHeight || 480;
       const canvas = document.createElement("canvas");
@@ -139,19 +134,33 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
         throw new Error("Could not read captured face image.");
       }
 
-      // Primary format from API docs is base64 payload.
-      let saved = await submitAndValidateFace({ sessionId, facePhoto: base64 });
-      // Fallback for backend variants that expect full data URL format.
-      if (!saved) {
-        saved = await submitAndValidateFace({ sessionId, facePhoto: dataUrl });
-      }
-      if (!saved) {
-        throw new Error("Face capture upload did not include biometric data. Please capture again.");
+      try {
+        await submitEnrollmentFace({
+          session_id: sessionId,
+          face_photo: base64,
+        });
+      } catch (firstError) {
+        if (firstError instanceof CropexHttpError) {
+          await submitEnrollmentFace({
+            session_id: sessionId,
+            face_photo: dataUrl,
+          });
+        } else {
+          throw firstError;
+        }
       }
       setStatus("success");
     } catch (error) {
       setStatus("error");
-      setErrorText(error instanceof Error ? error.message : "Face capture failed.");
+      let message = error instanceof Error ? error.message : "Face capture failed.";
+      if (error instanceof CropexHttpError) {
+        if (/could not reach/i.test(message)) {
+          message = `${message} Check your internet connection and that the CropEx API is reachable.`;
+        } else if (/failed to capture face/i.test(message)) {
+          message = `${message} Try facing the camera evenly lit (avoid strong light behind you).`;
+        }
+      }
+      setErrorText(message);
     }
   };
 
