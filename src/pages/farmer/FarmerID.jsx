@@ -2,71 +2,21 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Smartphone } from "lucide-react";
 import FarmerDesktopLayout from "../../components/farmer/FarmerDesktopLayout";
-import farmerIdLogo from "../../assets/HFEI Primary Logo_White.png";
+import FarmerDigitalIdCard from "../../components/agent/FarmerDigitalIdCard";
 import { getFarmerIdCard } from "../../services/cropexApi";
 
 function IDCard({ idCard }) {
   return (
-    <div className="bg-brand-green rounded-3xl p-5 flex flex-col items-center text-white">
-      <div className="self-start mb-5">
-        <img
-          src={farmerIdLogo}
-          alt="HFEI by Hashmar Cropex Ltd"
-          className="h-8 w-auto object-contain"
-          draggable="false"
-        />
-      </div>
-
-      {idCard.profilePhoto ? (
-        <img
-          src={idCard.profilePhoto}
-          alt={idCard.fullName}
-          className="w-28 h-28 rounded-2xl object-cover border-4 border-white/30 mb-4"
-        />
-      ) : (
-        <div className="w-28 h-28 rounded-2xl border-4 border-white/30 mb-4 bg-white/10 flex items-center justify-center">
-          <span className="text-xs text-white/75 font-semibold">No photo</span>
-        </div>
-      )}
-
-      <div className="text-center mb-3">
-        <p className="text-white/60 text-xs">Full Name</p>
-        <p className="font-display font-bold text-xl mt-0.5">{idCard.fullName}</p>
-      </div>
-      <div className="text-center mb-3">
-        <p className="text-white/60 text-xs">Farmer ID</p>
-        <p className="font-display font-bold text-base tracking-widest mt-0.5">{idCard.farmerId}</p>
-      </div>
-      <div className="text-center mb-4">
-        <p className="text-white/60 text-xs">Corporative name</p>
-        <p className="font-display font-bold text-sm mt-0.5">{idCard.cooperativeName}</p>
-      </div>
-
-      <div className="w-full h-px bg-white/20 mb-4" />
-
-      <div className="grid grid-cols-2 gap-4 w-full mb-4">
-        <div>
-          <p className="text-white/60 text-xs">Agent name</p>
-          <p className="font-sans font-semibold text-sm mt-0.5">{idCard.agentName}</p>
-        </div>
-        <div>
-          <p className="text-white/60 text-xs">Agent signature</p>
-          <p className="font-sans italic text-sm mt-0.5 text-white/80">{idCard.agentSignature}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-6 w-full">
-        <div className="text-center">
-          <p className="text-white/60 text-xs">Issue date</p>
-          <p className="font-display font-bold text-sm mt-0.5">{idCard.issueDate}</p>
-        </div>
-        <div className="w-px h-8 bg-white/30" />
-        <div className="text-center">
-          <p className="text-white/60 text-xs">Expiry date</p>
-          <p className="font-display font-bold text-sm mt-0.5">{idCard.expiryDate}</p>
-        </div>
-      </div>
-    </div>
+    <FarmerDigitalIdCard
+      photo={idCard.profilePhoto}
+      name={idCard.fullName}
+      farmerId={idCard.farmerId}
+      cooperativeName={idCard.cooperativeName}
+      agentName={idCard.agentName}
+      agentSignature={idCard.agentSignature}
+      issueDate={idCard.issueDate}
+      expiryDate={idCard.expiryDate}
+    />
   );
 }
 

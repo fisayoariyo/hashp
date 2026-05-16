@@ -5,6 +5,7 @@ import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { useAgentFarmersSync } from "../../hooks/useAgentFarmersSync";
 import AgentStatusPanel from "../../components/agent/AgentStatusPanel";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
+import FarmerDigitalIdCard from "../../components/agent/FarmerDigitalIdCard";
 import { getAgentSession } from "../../services/cropexApi";
 
 function FilterPill({ value, onChange, options }) {
@@ -477,46 +478,16 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         </>
       ) : (
         <>
-          <div className="bg-brand-green rounded-3xl p-5 md:p-8 flex flex-col items-center text-white md:max-w-xl">
-            <div className="self-start mb-4">
-              <img src="/brand/HFEI_Primary_Logo_White.png" alt="HFEI by Hashmar Cropex Ltd" className="h-8 w-auto object-contain" draggable="false" />
-            </div>
-            <img src={display.photo} alt={display.name} className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 mb-3" />
-            <div className="text-center mb-2">
-              <p className="text-white/60 text-xs">Full Name</p>
-              <p className="font-display font-bold text-base">{display.name}</p>
-            </div>
-            <div className="text-center mb-2">
-              <p className="text-white/60 text-xs">Farmer ID</p>
-              <p className="font-display font-bold text-sm tracking-widest">{display.id}</p>
-            </div>
-            <div className="text-center mb-4">
-              <p className="text-white/60 text-xs">Cooperative name</p>
-              <p className="font-display font-bold text-sm">{display.cooperative}</p>
-            </div>
-            <div className="w-full h-px bg-white/20 mb-3" />
-            <div className="grid grid-cols-2 gap-4 w-full mb-3">
-              <div>
-                <p className="text-white/60 text-xs">Agent name</p>
-                <p className="font-sans font-semibold text-sm">{agentName}</p>
-              </div>
-              <div>
-                <p className="text-white/60 text-xs">Agent signature</p>
-                <p className="font-sans italic text-sm text-white/80">Hashmar</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-6 w-full">
-              <div className="text-center">
-                <p className="text-white/60 text-xs">Issue date</p>
-                <p className="font-display font-bold text-sm">20/04/2026</p>
-              </div>
-              <div className="w-px h-8 bg-white/30" />
-              <div className="text-center">
-                <p className="text-white/60 text-xs">Expiry date</p>
-                <p className="font-display font-bold text-sm">20/04/2027</p>
-              </div>
-            </div>
-          </div>
+          <FarmerDigitalIdCard
+            photo={display.photo}
+            name={display.name}
+            farmerId={display.id}
+            cooperativeName={display.cooperative}
+            agentName={agentName}
+            agentSignature="Hashmar"
+            issueDate="20/04/2026"
+            expiryDate="20/04/2027"
+          />
           <div className="mt-5 flex flex-wrap gap-3 justify-center md:justify-start">
             <button
               type="button"
@@ -676,4 +647,3 @@ export default function AgentSavedFarmers() {
   }
   return null;
 }
-
