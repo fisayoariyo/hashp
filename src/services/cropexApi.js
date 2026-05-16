@@ -358,16 +358,22 @@ export function agentRefresh(refreshToken) {
 }
 
 export function listFarmers({ page = 1, page_size = 200, search, status, agent_id } = {}) {
-  return cropexSessionFetch(
-    AGENT_AUTH_KEY,
-    `/farmers${buildQuery({
-      page,
-      page_size,
-      search,
-      status,
-      agent_id,
-    })}`
-  );
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/farmers").catch((error) => {
+    if (!(error instanceof CropexHttpError) || (error.status !== 404 && error.status !== 405)) {
+      throw error;
+    }
+
+    return cropexSessionFetch(
+      AGENT_AUTH_KEY,
+      `/farmers${buildQuery({
+        page,
+        page_size,
+        search,
+        status,
+        agent_id,
+      })}`
+    );
+  });
 }
 
 export function searchFarmers(query) {

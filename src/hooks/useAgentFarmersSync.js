@@ -57,11 +57,7 @@ function matchesFarmerQuery(farmer, query) {
 }
 
 async function fetchRemoteFarmers() {
-  const payload = await listFarmers({
-    page: 1,
-    page_size: 200,
-    agent_id: getAgentIdFromSession() || undefined,
-  });
+  const payload = await listFarmers();
   return extractFarmersArray(payload).map(mapApiFarmerToUi).filter(Boolean);
 }
 

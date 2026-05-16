@@ -14,12 +14,14 @@ import {
   draftToEnrollmentFarmInfo,
   draftToEnrollmentPayload,
   draftToEnrollmentPersonalInfo,
+  extractFarmersArray,
   extractGeoArray,
   getAgentIdFromSession,
   getEnrollmentSession,
   getAgentSession,
   getGeoLgas,
   getGeoStates,
+  listFarmers,
   mapGeoLgaOption,
   mapGeoStateOption,
   reviewEnrollmentSession,
@@ -224,6 +226,43 @@ function requestFarmersRefresh() {
 
   emit();
   window.setTimeout(emit, 1800);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function pickCreatedFarmer(rows, personalInfo) {
+  const candidates = Array.isArray(rows) ? rows : [];
+  if (candidates.length === 0) return null;
+
+  const expectedPhone = readString(personalInfo?.phone_number);
+  const expectedNin = readString(personalInfo?.nin);
+  const expectedName = readString(personalInfo?.full_name).toLowerCase();
+
+  return (
+    candidates.find((row) => readString(row?.phone_number, row?.phone) === expectedPhone) ||
+    candidates.find((row) => readString(row?.nin) === expectedNin) ||
+    candidates.find((row) => readString(row?.full_name, row?.name).toLowerCase() === expectedName) ||
+    candidates[0] ||
+    null
+  );
+}
+
+async function resolveCreatedFarmerFromBackend({ agentId, personalInfo }) {
+  const searchText = readString(personalInfo?.full_name, personalInfo?.phone_number, personalInfo?.nin);
+  if (!agentId || !searchText) return null;
+
+  const runLookup = async () => {
+    const payload = await listFarmers();
+    return pickCreatedFarmer(extractFarmersArray(payload), personalInfo);
+  };
+
+  const firstMatch = await runLookup().catch(() => null);
+  if (firstMatch) return firstMatch;
+
+  await wait(1200);
+  return runLookup().catch(() => null);
 }
 
 // ── Step indicator ─────────────────────────────────────────
@@ -1377,9 +1416,11 @@ export default function AgentRegisterFarmer() {
       } catch {
         sessionResponse = null;
       }
+      const backendCreatedFarmer = await resolveCreatedFarmerFromBackend({ agentId, personalInfo });
       const reviewRoot = getPayloadRoot(reviewResponse);
       const sessionRoot = getPayloadRoot(sessionResponse);
       const farmerRoot =
+        (backendCreatedFarmer && typeof backendCreatedFarmer === "object" ? backendCreatedFarmer : null) ||
         (reviewRoot.farmer && typeof reviewRoot.farmer === "object" ? reviewRoot.farmer : null) ||
         (reviewRoot.personal_info && typeof reviewRoot.personal_info === "object" ? reviewRoot.personal_info : null) ||
         reviewRoot;
