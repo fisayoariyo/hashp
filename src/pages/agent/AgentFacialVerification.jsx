@@ -16,6 +16,16 @@ function readString(...values) {
   return "";
 }
 
+function isGenericFaceFailureMessage(message) {
+  const text = readString(message).toLowerCase();
+  return (
+    text === "failed to capture face" ||
+    text === "failed to capture biometric data" ||
+    text === "request failed with status 500." ||
+    text === "internal server error"
+  );
+}
+
 const MAX_CAPTURE_EDGE = 960;
 const MIN_CAPTURE_EDGE = 320;
 
@@ -256,9 +266,13 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
         } else if (error.status === 404) {
           message = "Enrollment session was not found. Start the farmer registration again.";
         } else if (error.status === 422) {
-          message = "Failed to capture face. Please try again.";
+          message = isGenericFaceFailureMessage(message)
+            ? "Failed to capture face. Please try again."
+            : message;
         } else if (/failed to capture face/i.test(message) || error.status >= 500) {
-          message = "Failed to capture face. Please try again.";
+          message = isGenericFaceFailureMessage(message)
+            ? "Failed to capture face. Please try again."
+            : message;
         }
       }
       setErrorText(message);

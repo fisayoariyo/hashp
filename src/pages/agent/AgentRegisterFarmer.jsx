@@ -8,6 +8,7 @@ import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
 import { CropexHttpError } from "../../services/cropexHttp";
+import { OFFLINE_FARMER_STATUS, createOfflineFarmerRecord } from "../../services/offlineFarmersDb";
 import {
   draftToEnrollmentCooperativeInfo,
   draftToEnrollmentFarmInfo,
@@ -15,6 +16,7 @@ import {
   draftToEnrollmentPersonalInfo,
   extractGeoArray,
   getAgentIdFromSession,
+  getEnrollmentSession,
   getAgentSession,
   getGeoLgas,
   getGeoStates,
@@ -181,6 +183,47 @@ function formatEnrollmentError(error, payload) {
 function getPayloadRoot(payload) {
   if (!payload || typeof payload !== "object") return {};
   return payload.data && typeof payload.data === "object" ? payload.data : payload;
+}
+
+function readEnrollmentPhoto(payload) {
+  const root = getPayloadRoot(payload);
+  const biometric =
+    root.biometric_data && typeof root.biometric_data === "object" ? root.biometric_data : {};
+  const farmer =
+    root.farmer && typeof root.farmer === "object"
+      ? root.farmer
+      : root.personal_info && typeof root.personal_info === "object"
+        ? root.personal_info
+        : {};
+
+  return readString(
+    root.profile_photo_url,
+    root.photo_url,
+    root.profile_photo,
+    root.photo,
+    root.face_photo,
+    farmer.profile_photo_url,
+    farmer.photo_url,
+    farmer.profile_photo,
+    farmer.photo,
+    biometric.profile_photo_url,
+    biometric.photo_url,
+    biometric.profile_photo,
+    biometric.photo,
+    biometric.face_photo
+  );
+}
+
+function requestFarmersRefresh() {
+  if (typeof window === "undefined") return;
+
+  const emit = () => {
+    window.dispatchEvent(new CustomEvent("hcx-farmers-sync"));
+    window.dispatchEvent(new CustomEvent("hcx-farmers-refresh"));
+  };
+
+  emit();
+  window.setTimeout(emit, 1800);
 }
 
 // ── Step indicator ─────────────────────────────────────────
@@ -1328,7 +1371,14 @@ export default function AgentRegisterFarmer() {
       await submitEnrollmentFarmInfo({ session_id: sessionId, farm_info: farmInfo });
       await submitEnrollmentCooperativeInfo({ session_id: sessionId, cooperative: cooperativeInfo });
       const reviewResponse = await reviewEnrollmentSession(sessionId);
+      let sessionResponse = null;
+      try {
+        sessionResponse = await getEnrollmentSession(sessionId);
+      } catch {
+        sessionResponse = null;
+      }
       const reviewRoot = getPayloadRoot(reviewResponse);
+      const sessionRoot = getPayloadRoot(sessionResponse);
       const farmerRoot =
         (reviewRoot.farmer && typeof reviewRoot.farmer === "object" ? reviewRoot.farmer : null) ||
         (reviewRoot.personal_info && typeof reviewRoot.personal_info === "object" ? reviewRoot.personal_info : null) ||
@@ -1339,17 +1389,62 @@ export default function AgentRegisterFarmer() {
           ? reviewRoot.cooperative_info
           : null) ||
         {};
+      const resolvedPhoto =
+        readString(
+          farmerRoot.profile_photo_url,
+          farmerRoot.photo_url,
+          farmerRoot.profile_photo,
+          farmerRoot.photo
+        ) ||
+        readEnrollmentPhoto(reviewRoot) ||
+        readEnrollmentPhoto(sessionRoot) ||
+        queuedPayload.photo;
+      const resolvedFarmerId = readString(reviewRoot.farmer_id, farmerRoot.farmer_id, farmerRoot.id);
+      const resolvedClientId = readString(reviewRoot.client_id, farmerRoot.client_id, queuedPayload.clientId);
 
       setIdCard({
         mode: "online",
-        clientId: readString(reviewRoot.client_id, farmerRoot.client_id),
-        farmerId: readString(reviewRoot.farmer_id, farmerRoot.farmer_id, farmerRoot.id),
+        clientId: resolvedClientId,
+        farmerId: resolvedFarmerId,
         name: readString(farmerRoot.full_name, farmerRoot.name, queuedPayload.name),
-        photo: readString(farmerRoot.profile_photo_url, farmerRoot.photo_url) || queuedPayload.photo,
+        photo: resolvedPhoto,
         cooperative: readString(cooperativeRoot.cooperative_name, queuedPayload.cooperative),
         savedAt,
         agentName,
       });
+
+      await createOfflineFarmerRecord({
+        clientId: resolvedClientId || undefined,
+        officialFarmerId: resolvedFarmerId || undefined,
+        id: resolvedFarmerId || resolvedClientId || undefined,
+        ownerAgentId: agentId,
+        payload: queuedPayload.payload,
+        status: OFFLINE_FARMER_STATUS.SYNCED,
+        syncedAt: new Date().toISOString(),
+        name: readString(farmerRoot.full_name, farmerRoot.name, queuedPayload.name),
+        photo: resolvedPhoto,
+        regDate: savedAt,
+        phone: readString(farmerRoot.phone_number, farmerRoot.phone, queuedPayload.phone),
+        state: readString(farmerRoot.state_of_origin, farmerRoot.state, queuedPayload.state),
+        lga: readString(farmerRoot.lga, farmerRoot.local_govt_area, queuedPayload.lga),
+        address: readString(
+          farmerRoot.residential_address,
+          farmerRoot.address,
+          queuedPayload.address
+        ),
+        nin: readString(farmerRoot.nin, queuedPayload.nin),
+        gender: readString(farmerRoot.gender, queuedPayload.gender),
+        cooperative: readString(cooperativeRoot.cooperative_name, queuedPayload.cooperative),
+        primaryCrop: readString(
+          farmerRoot.primary_crop,
+          farmerRoot.crop_type,
+          queuedPayload.primaryCrop
+        ),
+        farmSize: readString(farmerRoot.farm_size, queuedPayload.farmSize),
+        landOwnership: readString(farmerRoot.land_ownership, queuedPayload.landOwnership),
+        biometric: { face: true, fingerprint: true },
+      });
+      requestFarmersRefresh();
 
       clearDraft();
       setEnrollmentSessionId("");

@@ -137,6 +137,23 @@ function normalizeSample(sample) {
   return text;
 }
 
+function extractSampleTemplate(sample) {
+  if (typeof sample === "string") {
+    return normalizeSample(sample);
+  }
+
+  if (!sample || typeof sample !== "object") {
+    return "";
+  }
+
+  const rawTemplate =
+    (typeof sample.Data === "string" && sample.Data) ||
+    (typeof sample.data === "string" && sample.data) ||
+    "";
+
+  return normalizeSample(rawTemplate);
+}
+
 async function stopAcquisition(webApi) {
   try {
     await webApi.stopAcquisition();
@@ -167,7 +184,7 @@ export function acquireDigitalPersonaFmd(webApi) {
       try {
         const samples = typeof event.samples === "string" ? JSON.parse(event.samples) : event.samples;
         const firstSample = Array.isArray(samples) ? samples[0] : samples;
-        const fmdTemplate = normalizeSample(firstSample);
+        const fmdTemplate = extractSampleTemplate(firstSample);
         if (!fmdTemplate) {
           void finish(new Error("No fingerprint sample returned."));
           return;
