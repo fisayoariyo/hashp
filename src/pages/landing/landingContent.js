@@ -54,6 +54,7 @@ export const LANDING_TABS = {
       href: "/agent/create-account",
       image: "/landing/images/agent-card-cta.png",
       alt: "Agent registration call to action",
+      position: "center",
     },
   },
   farmers: {
@@ -97,6 +98,7 @@ export const LANDING_TABS = {
       href: "/farmer/splash",
       image: "/landing/images/farmer-card-cta.png",
       alt: "Farmer registration call to action",
+      position: "62% 48%",
     },
   },
 };

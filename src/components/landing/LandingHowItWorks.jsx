@@ -21,8 +21,16 @@ function LandingHowCard({ card }) {
 
 function LandingHowCtaCard({ cta }) {
   return (
-    <article className="relative min-h-[280px] overflow-hidden rounded-[15px] tablet:min-h-[310px]">
-      <img src={cta.image} alt={cta.alt} className="absolute inset-0 h-full w-full object-cover" />
+    <article
+      key={cta.image}
+      className="relative min-h-[280px] overflow-hidden rounded-[15px] tablet:min-h-[310px]"
+    >
+      <img
+        src={cta.image}
+        alt={cta.alt}
+        className="absolute inset-0 h-full w-full object-cover"
+        style={{ objectPosition: cta.position || "center" }}
+      />
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-[146px]"
         style={{ background: "var(--landing-image-gradient)" }}
