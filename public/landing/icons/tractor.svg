@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 37.9167 37.9167" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="tractor">
+<rect width="37.9167" height="37.9167" rx="15" fill="var(--fill-0, #FFBB3C)"/>
+<path id="Vector" d="M10.2695 33.1768C14.1959 33.1768 17.3788 29.9938 17.3788 26.0674C17.3788 22.141 14.1959 18.958 10.2695 18.958C6.34307 18.958 3.16009 22.141 3.16009 26.0674C3.16009 29.9938 6.34307 33.1768 10.2695 33.1768Z" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_2" d="M30.0167 33.1775C32.6343 33.1775 34.7563 31.0555 34.7563 28.4379C34.7563 25.8203 32.6343 23.6984 30.0167 23.6984C27.3991 23.6984 25.2771 25.8203 25.2771 28.4379C25.2771 31.0555 27.3991 33.1775 30.0167 33.1775Z" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_3" d="M3.16009 16.5878C5.14043 15.1003 7.60201 14.2188 10.2695 14.2188C16.8134 14.2188 22.1184 19.5238 22.1184 26.0678C22.1184 26.2194 22.1156 26.3703 22.1099 26.5206C22.074 27.4759 22.056 27.9537 22.2892 28.1957C22.5222 28.4376 22.9529 28.4376 23.8143 28.4376H25.2782" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_4" d="M20.5391 14.2188L25.4456 15.1388C29.1439 15.8322 30.9932 16.179 32.0855 17.4953C33.178 18.8115 33.178 20.7037 33.178 24.4879" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_5" d="M31.5973 18.958H30.0175" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_6" d="M20.5391 19.748V15.1459C20.5391 14.5309 20.4493 13.9192 20.2725 13.3301L18.1693 4.73927M6.32032 14.2184V4.73927" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_7" d="M4.74021 4.73927H20.5388" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_8" d="M28.4374 15.0091V12.6393C28.4374 10.8943 29.852 9.47961 31.5971 9.47961" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_9" d="M11.0584 14.2184V4.73927" stroke="var(--stroke-0, #03624D)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // ── Shared ──────────────────────────────────────
+import LandingPage from "./pages/landing/LandingPage";
 import RoleSelect from "./pages/shared/RoleSelect";
 
 // ── Farmer pages ─────────────────────────────────
@@ -35,7 +36,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Shared */}
-        <Route path="/"                        element={<RoleSelect />} />
+        <Route path="/"                        element={<LandingPage />} />
+        <Route path="/get-started"             element={<RoleSelect />} />
 
         {/* Farmer */}
         <Route path="/farmer/splash"           element={<FarmerSplash />} />
