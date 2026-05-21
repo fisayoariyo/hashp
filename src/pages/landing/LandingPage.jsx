@@ -9,7 +9,9 @@ import LandingHowItWorks from "../../components/landing/LandingHowItWorks";
 import { LANDING_FAQS } from "./landingContent";
 
 export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState("agents");
+  const [activeTab, setActiveTab] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 768 ? "farmers" : "agents",
+  );
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
   const handleToggleFaq = (index) => {
