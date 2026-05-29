@@ -8,36 +8,93 @@ import { agentRegister, formatPhoneForApi } from "../../services/cropexApi";
 
 const REG_KEY = "hcx_agent_registration";
 
+function isGenericPhoneEmailConflictMessage(text) {
+  const lower = String(text || "").toLowerCase();
+  if (!/already|exist|duplicate|taken|registered|in use|conflict/.test(lower)) return false;
+  return /phone|phone_number/.test(lower) && /email/.test(lower) && /\b(or|\/|and)\b/.test(lower);
+}
+
+function addConflictFieldFromHint(fields, fieldHint, text) {
+  const hint = String(fieldHint || "").toLowerCase();
+  const lower = String(text || "").toLowerCase();
+
+  if (/phone|phone_number/.test(hint)) {
+    fields.add("phone");
+    return;
+  }
+  if (/email/.test(hint)) {
+    fields.add("email");
+    return;
+  }
+
+  if (!/already|exist|duplicate|taken|registered|in use|conflict/.test(lower)) return;
+  if (isGenericPhoneEmailConflictMessage(lower)) return;
+
+  const mentionsPhone = /phone|phone_number/.test(lower);
+  const mentionsEmail = /email/.test(lower);
+  if (mentionsPhone && !mentionsEmail) fields.add("phone");
+  if (mentionsEmail && !mentionsPhone) fields.add("email");
+}
+
+function parse409ConflictFields(body) {
+  const fields = new Set();
+  const errors = body?.errors;
+
+  if (Array.isArray(errors)) {
+    errors.forEach((item) => {
+      if (typeof item === "string") {
+        addConflictFieldFromHint(fields, "", item);
+        return;
+      }
+      if (!item || typeof item !== "object") return;
+      const hint = [item.field, item.property, item.path, item.param].filter(Boolean).join(" ");
+      const text = [item.message, item.error, item.detail].filter(Boolean).join(" ");
+      addConflictFieldFromHint(fields, hint, text || hint);
+    });
+    return fields;
+  }
+
+  if (typeof errors === "string" && errors.trim()) {
+    addConflictFieldFromHint(fields, "", errors);
+  }
+
+  return fields;
+}
+
 function getSignupFieldErrors(error) {
   const body = error?.body;
   const status = Number(error?.status || 0);
-  const rawMessage =
-    typeof body?.errors === "string"
-      ? body.errors
-      : typeof error?.message === "string"
-        ? error.message
-        : "";
-
-  const message = String(rawMessage || "");
+  const message = String(error?.message || "");
   const next = {};
 
   if (status === 409) {
-    const mentionsEmail = /email/i.test(message);
-    const mentionsPhone = /phone|phone_number/i.test(message);
+    const conflictFields = parse409ConflictFields(body);
 
-    if (mentionsEmail && !mentionsPhone) {
-      next.email = "This email address is already in use.";
+    if (conflictFields.size === 0) {
+      const bodyMessage = typeof body?.message === "string" ? body.message : "";
+      if (bodyMessage && !isGenericPhoneEmailConflictMessage(bodyMessage)) {
+        addConflictFieldFromHint(conflictFields, "", bodyMessage);
+      }
     }
-    if (mentionsPhone && !mentionsEmail) {
+
+    if (conflictFields.size === 0 && message && !isGenericPhoneEmailConflictMessage(message)) {
+      addConflictFieldFromHint(conflictFields, "", message);
+    }
+
+    if (conflictFields.has("phone")) {
       next.phone = "This phone number is already in use.";
     }
+    if (conflictFields.has("email")) {
+      next.email = "This email address is already in use.";
+    }
+
     return next;
   }
 
   if (/registrationrequest\.email/i.test(message) || /email tag/i.test(message)) {
     next.email = "Enter a valid email address.";
   }
-  if (/registrationrequest\.phone/i.test(message) || /phone/i.test(message)) {
+  if (/registrationrequest\.phone/i.test(message) || /phone_number/i.test(message)) {
     next.phone = "Enter a valid phone number.";
   }
   if (/registrationrequest\.password/i.test(message) || /password/i.test(message)) {
@@ -80,7 +137,11 @@ export default function AgentCreateAccount() {
 
   const handleSubmit = async () => {
     const nextFieldErrors = {};
+    const nameParts = form.fullName.trim().split(/\s+/).filter(Boolean);
     if (!form.fullName.trim()) nextFieldErrors.fullName = "Full name is required.";
+    else if (nameParts.length < 2) {
+      nextFieldErrors.fullName = "Enter at least first and last name.";
+    }
     if (!form.phone.trim()) nextFieldErrors.phone = "Phone number is required.";
     if (!form.email.trim()) nextFieldErrors.email = "Email is required.";
     if (!form.password) nextFieldErrors.password = "Password is required.";
@@ -133,12 +194,17 @@ export default function AgentCreateAccount() {
         state: { phone: form.phone, mode: "register" },
       });
     } catch (submitError) {
+      try {
+        sessionStorage.removeItem(REG_KEY);
+      } catch {
+        /* ignore */
+      }
       const mappedFieldErrors = getSignupFieldErrors(submitError);
       if (Object.keys(mappedFieldErrors).length > 0) {
         setFieldErrors(mappedFieldErrors);
         setError("");
       } else if (submitError?.status === 409) {
-        setError("An account already exists with this phone number or email.");
+        setError("This account could not be created. Check your phone number and email, then try again.");
       } else {
         setError(submitError instanceof Error ? submitError.message : "Could not create the account.");
       }
@@ -147,10 +213,12 @@ export default function AgentCreateAccount() {
     }
   };
 
+  const errorNotifier = error ? (
+    <AgentFormFeedback variant="error">{error}</AgentFormFeedback>
+  ) : null;
+
   const formFields = (
     <div className="space-y-5">
-      {error && <AgentFormFeedback variant="error">{error}</AgentFormFeedback>}
-
       <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Full Name</label>
         <div className={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
@@ -161,7 +229,7 @@ export default function AgentCreateAccount() {
             type="text"
             value={form.fullName}
             onChange={set("fullName")}
-            placeholder="Write your full name here"
+            placeholder="First and last name (e.g. Oluwaseun Adeyemi)"
             className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
           />
         </div>
@@ -280,6 +348,7 @@ export default function AgentCreateAccount() {
 
   const actions = (
     <div className="space-y-3">
+      {errorNotifier}
       <button
         type="button"
         onClick={() => void handleSubmit()}
@@ -312,6 +381,7 @@ export default function AgentCreateAccount() {
         <h1 className="font-display font-bold text-[2rem] leading-tight text-brand-text-primary mb-8">Create Agent Account</h1>
         {formFields}
         <div className="space-y-3 pb-[max(2rem,env(safe-area-inset-bottom))] mt-5">
+          {errorNotifier}
           <button
             type="button"
             onClick={() => void handleSubmit()}

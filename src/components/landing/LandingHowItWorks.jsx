@@ -60,7 +60,7 @@ export default function LandingHowItWorks({ activeTab, onTabChange }) {
             <h2 className="mt-[16px] text-[24px] font-extrabold leading-[1.15] text-landing-green tablet:text-[32px] desktop:text-[35px]">
               {tab.title}
             </h2>
-            <p className="mt-[14px] max-w-[350px] text-[13px] leading-[1.28] text-landing-green tablet:text-[18px] desktop:text-[20px]">
+            <p className="mt-[18px] max-w-[380px] text-[13px] leading-[1.45] text-landing-green tablet:mt-[22px] tablet:max-w-[751px] tablet:text-[18px] tablet:leading-[1.5] desktop:text-[20px] desktop:leading-[1.55]">
               {tab.description}
             </p>
           </div>

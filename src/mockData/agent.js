@@ -4,10 +4,10 @@
 // ============================================================
 const agentSplashImage = "/onboarding/agent-splash.png";
 
-// Onboarding photos served from /public/agent-onboarding/
-const agentOnboard1Image = "/onboarding/agent-onboard1.png";
-const agentOnboard2Image = "/onboarding/agent-onboard2.png";
-const agentOnboard3Image = "/onboarding/agent-onboard3.png";
+// Mobile onboarding — matches AWM-CA-02–04 art (public/onboarding)
+const agentOnboard1Image = "/onboarding/agent-role-hero.png";
+const agentOnboard2Image = "/onboarding/agent-role-select.png";
+const agentOnboard3Image = "/onboarding/farmer-1.jpg";
 
 /** AWM-CA-01 */
 export const agentBrandSplash = {
@@ -18,16 +18,19 @@ export const agentBrandSplash = {
 export const agentOnboardingSlides = [
   {
     image: agentOnboard1Image,
+    imagePosition: "center center",
     title: "Digitally Onboard Farmers",
     sub: "Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.",
   },
   {
     image: agentOnboard2Image,
+    imagePosition: "center center",
     title: "Turn Farmer Data Into Opportunity",
     sub: "Each registered farmer gains access to loans, financing, insurance, training, and structured market opportunities.",
   },
   {
     image: agentOnboard3Image,
+    imagePosition: "center 20%",
     title: "Work Anywhere, Sync Anytime",
     sub: "Complete farmer registrations offline and automatically sync data when internet connection is available.",
   },

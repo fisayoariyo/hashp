@@ -137,10 +137,10 @@ export default function AgentSelectLocation() {
   };
 
   const formBody = (
-    <div className="space-y-5 w-full max-w-md mx-auto">
+    <div className="w-full space-y-5 text-left">
       {regError && <AgentFormFeedback variant="error">{regError}</AgentFormFeedback>}
       <div className="flex flex-col gap-1.5">
-        <label className="font-sans text-sm font-medium text-brand-text-primary">State</label>
+        <label className="block text-left font-sans text-sm font-medium text-brand-text-primary">State</label>
         <div className="relative">
           <select
             value={stateId}
@@ -152,7 +152,7 @@ export default function AgentSelectLocation() {
               setLga("");
             }}
             disabled={geoLoading && states.length === 0}
-            className="w-full bg-white border border-brand-border rounded-2xl px-4 py-3.5 text-sm text-brand-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50"
+            className="w-full bg-white border border-brand-border rounded-2xl px-4 py-3.5 text-left text-sm text-brand-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50"
           >
             <option value="">{geoLoading && states.length === 0 ? "Loading states..." : "Select state"}</option>
             {states.map((state) => (
@@ -165,13 +165,13 @@ export default function AgentSelectLocation() {
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="font-sans text-sm font-medium text-brand-text-primary">Local government</label>
+        <label className="block text-left font-sans text-sm font-medium text-brand-text-primary">Local government</label>
         <div className="relative">
           <select
             value={lga}
             onChange={(event) => setLga(event.target.value)}
             disabled={!stateId || (geoLoading && lgas.length === 0)}
-            className="w-full bg-white border border-brand-border rounded-2xl px-4 py-3.5 text-sm text-brand-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50"
+            className="w-full bg-white border border-brand-border rounded-2xl px-4 py-3.5 text-left text-sm text-brand-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50"
           >
             <option value="">
               {!stateId
@@ -193,7 +193,7 @@ export default function AgentSelectLocation() {
   );
 
   const actions = (
-    <div className="space-y-3 w-full max-w-sm">
+    <div className="w-full max-w-[560px] space-y-3">
       <button
         type="button"
         onClick={() => void handleContinue()}
@@ -215,9 +215,10 @@ export default function AgentSelectLocation() {
   if (isDesktop) {
     return (
       <AgentAuthDesktopLayout
-        centerTitle
         title="Select your assigned location"
         subtitle="Select the location you were assigned to"
+        titleClassName="text-left max-w-none"
+        subtitleClassName="text-left max-w-none"
         actions={actions}
       >
         {formBody}

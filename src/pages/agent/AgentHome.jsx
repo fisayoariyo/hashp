@@ -7,6 +7,7 @@ import {
   syncAllPendingFarmersStorage,
 } from "../../hooks/useAgentFarmersSync";
 import { getAgentDashboard, getAgentSession, mapApiFarmerToUi } from "../../services/cropexApi";
+import { getAgentStatusRoute } from "../../utils/agentStatus";
 
 // ── Asset imports ─────────────────────────────────────────
 import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.svg";
@@ -133,12 +134,21 @@ export default function AgentHome() {
   }, []);
 
   useEffect(() => {
+    if (!getAgentSession()?.accessToken) {
+      navigate("/agent/login", { replace: true });
+      return undefined;
+    }
+
     let active = true;
     getAgentDashboard()
       .then((payload) => {
-        if (active) {
-          setDashboard(payload);
+        if (!active) return;
+        const statusRoute = getAgentStatusRoute(payload);
+        if (statusRoute) {
+          navigate(statusRoute, { replace: true });
+          return;
         }
+        setDashboard(payload);
       })
       .catch(() => {
         if (active) {
@@ -148,7 +158,7 @@ export default function AgentHome() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [navigate]);
 
   const syncProgressPct = useMemo(() => {
     const t = syncCounts.completed + syncCounts.pending;

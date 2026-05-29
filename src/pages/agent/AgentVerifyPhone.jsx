@@ -5,12 +5,12 @@ import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayou
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import {
-  agentRegister,
   agentVerifyOtp,
-  sendOtp,
+  resendOtp,
   setAgentSessionFromAuthResponse,
   verifyOtp,
 } from "../../services/cropexApi";
+import { formatPhoneForDisplay } from "../../utils/helpers";
 
 const REG_KEY = "hcx_agent_registration";
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
@@ -160,18 +160,10 @@ export default function AgentVerifyPhone() {
     try {
       if (mode === "reset-password") {
         if (!resetPhone) return;
-        await sendOtp(resetPhone);
+        await resendOtp(resetPhone);
       } else {
-        const raw = sessionStorage.getItem(REG_KEY);
-        const reg = raw ? JSON.parse(raw) : {};
-        const payload = {
-          full_name: reg.fullName,
-          phone_number: reg.phoneNumber || registerPhone,
-          email: reg.email,
-          gender: reg.gender,
-          password: reg.password,
-        };
-        await agentRegister(payload);
+        if (!registerPhone) return;
+        await resendOtp(registerPhone);
       }
     } catch (resendError) {
       const message = resendError instanceof Error ? resendError.message : "Could not resend code.";
@@ -185,8 +177,23 @@ export default function AgentVerifyPhone() {
     }
   };
 
+  const otpDestinationPhone =
+    mode === "register" ? registerPhone : formatPhoneForLocalStore(resetPhone);
+  const otpDestinationLabel = formatPhoneForDisplay(otpDestinationPhone);
+
+  const otpPhoneHint = otpDestinationLabel ? (
+    <p
+      className={`font-sans text-xs text-brand-text-muted ${
+        isDesktop ? "mx-auto mb-4 max-w-[360px] text-center" : "mb-4"
+      }`}
+    >
+      Code sent to{" "}
+      <span className="font-medium text-brand-text-secondary">{otpDestinationLabel}</span>
+    </p>
+  ) : null;
+
   const otpGrid = (
-    <div className={`grid grid-cols-6 mb-4 ${isDesktop ? "max-w-[360px] gap-3 mx-auto" : "gap-3"}`}>
+    <div className={`grid grid-cols-6 ${isDesktop ? "mx-auto max-w-[360px] gap-3" : "gap-3"}`}>
       {digits.map((digit, index) => (
         <input
           key={index}
@@ -260,6 +267,7 @@ export default function AgentVerifyPhone() {
         }
       >
         {otpGrid}
+        {otpPhoneHint}
         {otpMeta}
       </AgentAuthDesktopLayout>
     );
@@ -281,6 +289,7 @@ export default function AgentVerifyPhone() {
           {`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
         </p>
         {otpGrid}
+        {otpPhoneHint}
         {otpMeta}
       </div>
       <div className="px-5 pb-8 space-y-3">

@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { ArrowLeft, BadgeCheck } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
+import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { getAgentSession } from "../../services/cropexApi";
 
@@ -30,11 +31,7 @@ export default function AgentAccountVerified() {
     navigate("/agent/home");
   };
 
-  const iconBlock = (
-    <div className="w-28 h-28 rounded-full bg-brand-green/15 flex items-center justify-center mb-6 shadow-inner">
-      <BadgeCheck className="w-16 h-16 text-brand-green" strokeWidth={2} />
-    </div>
-  );
+  const iconBlock = <AgentStatusBadge variant="verified" className="mb-6" />;
 
   const body = (
     <>

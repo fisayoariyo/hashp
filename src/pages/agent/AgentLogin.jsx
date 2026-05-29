@@ -3,12 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { CropexHttpError } from "../../services/cropexHttp";
 import {
   agentLogin,
   clearAgentSession,
+  getAgentDashboard,
   getAgentSession,
   setAgentSessionFromAuthResponse,
 } from "../../services/cropexApi";
+import {
+  clearAgentStatusPreview,
+  getAgentStatusNavigateOptions,
+  getAgentStatusRoute,
+  inferStatusFromLoginFailure,
+  setAgentStatusPreview,
+} from "../../utils/agentStatus";
 
 export default function AgentLogin() {
   const navigate = useNavigate();
@@ -56,8 +65,36 @@ export default function AgentLogin() {
         return;
       }
 
+      let statusPayload = response;
+      try {
+        statusPayload = await getAgentDashboard();
+      } catch {
+        /* login response may still include status */
+      }
+
+      clearAgentStatusPreview();
+
+      const statusRoute = getAgentStatusRoute(statusPayload);
+      if (statusRoute) {
+        navigate(statusRoute);
+        return;
+      }
+
       navigate("/agent/home");
     } catch (loginError) {
+      if (loginError instanceof CropexHttpError) {
+        const inferred = inferStatusFromLoginFailure(loginError.message, loginError.body);
+        const target = getAgentStatusNavigateOptions(inferred);
+        if (target) {
+          if (!getAgentSession()?.accessToken) {
+            setAgentStatusPreview(inferred);
+          } else {
+            clearAgentStatusPreview();
+          }
+          navigate(target.path, target.state ? { state: target.state } : undefined);
+          return;
+        }
+      }
       if (loginError instanceof Error) {
         setError(loginError.message || "Invalid email or password.");
       } else {

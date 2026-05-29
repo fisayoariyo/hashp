@@ -9,6 +9,7 @@ import {
   setFarmerSessionFromAuthResponse,
   verifyOtp,
 } from "../../services/cropexApi";
+import { formatPhoneForDisplay } from "../../utils/helpers";
 
 const OTP_LENGTH = 6;
 
@@ -187,8 +188,20 @@ function OTPStep({ phone, onSuccess, onBack }) {
     }
   };
 
+  const otpDestinationLabel = formatPhoneForDisplay(phone);
+  const otpPhoneHint = otpDestinationLabel ? (
+    <p
+      className={`font-sans text-xs text-brand-text-muted ${
+        isDesktop ? "mb-4 text-center" : "mb-4"
+      }`}
+    >
+      Code sent to{" "}
+      <span className="font-medium text-brand-text-secondary">{otpDestinationLabel}</span>
+    </p>
+  ) : null;
+
   const otpGrid = (
-    <div className={`mb-4 ${isDesktop ? "flex justify-center gap-3" : "grid grid-cols-6 gap-3"}`}>
+    <div className={`${isDesktop ? "flex justify-center gap-3" : "grid grid-cols-6 gap-3"}`}>
       {digits.map((digit, index) => (
         <input
           key={index}
@@ -250,6 +263,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
         }
       >
         {otpGrid}
+        {otpPhoneHint}
         {otpFooter}
       </FarmerAuthDesktopLayout>
     );
@@ -267,6 +281,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
           {`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
         </p>
         {otpGrid}
+        {otpPhoneHint}
         {otpFooter}
       </div>
       <div className="px-5 pb-8 space-y-3">

@@ -27,7 +27,9 @@ export default function AgentContactSupport() {
       ? "/agent/account-under-review"
       : location.state?.from === "verification-failed"
         ? "/agent/verification-failed"
-        : "/agent/login";
+        : location.state?.from === "login-suspended"
+          ? "/agent/login"
+          : "/agent/login";
 
   useEffect(() => {
     if (!hasAuthSession) return undefined;

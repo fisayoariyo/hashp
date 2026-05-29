@@ -4,7 +4,7 @@ import { ArrowLeft, Phone } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { sendOtp } from "../../services/cropexApi";
+import { resendOtp } from "../../services/cropexApi";
 
 export default function AgentForgotPassword() {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function AgentForgotPassword() {
     setError("");
     setLoading(true);
     try {
-      await sendOtp(normalized);
+      await resendOtp(normalized);
       navigate("/agent/verify-phone", { state: { mode: "reset-password", phone: normalized } });
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not send the reset code.");

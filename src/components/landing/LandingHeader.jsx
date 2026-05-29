@@ -7,7 +7,7 @@ export default function LandingHeader() {
 
   return (
     <header className="landing-max relative px-5 pb-0 pt-7 tablet:px-10 desktop:px-[100px] desktop:pt-[36px]">
-      <div className="flex items-center justify-between gap-4">
+      <div className="relative flex items-center justify-between gap-4">
         <Link to="/" aria-label="HFEI home" className="shrink-0">
           <img
             src="/brand/HFEI_Primary_Logo_.png"
@@ -16,11 +16,11 @@ export default function LandingHeader() {
           />
         </Link>
 
-        <nav className="hidden rounded-[15px] bg-landing-green px-[30px] py-4 text-white desktop:block">
-          <ul className="flex items-center gap-[34px] text-[15px] font-normal">
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 desktop:block">
+          <ul className="flex items-center gap-[34px] text-[17px] font-normal text-landing-green">
             {LANDING_NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <a href={item.href} className="transition-opacity hover:opacity-80">
+                <a href={item.href} className="transition-opacity hover:opacity-70">
                   {item.label}
                 </a>
               </li>

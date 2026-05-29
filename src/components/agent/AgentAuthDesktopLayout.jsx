@@ -1,4 +1,4 @@
-import agentDesktopHeroImage from "../../assets/agent-onboarding/AWD-pic.png";
+const AGENT_AUTH_HERO_IMAGE = "/onboarding/agent-role-hero.png";
 
 export default function AgentAuthDesktopLayout({
   title,
@@ -18,9 +18,10 @@ export default function AgentAuthDesktopLayout({
       <div className="flex min-w-0 min-h-0 items-stretch">
         <div className="relative w-full min-h-[calc(100dvh-3rem)] rounded-3xl overflow-hidden border border-black/8 shadow-[0_12px_40px_rgba(0,0,0,0.1)]">
           <img
-            src={agentDesktopHeroImage}
-            alt="Farmers"
-            className="absolute inset-0 w-full h-full object-cover"
+            src={AGENT_AUTH_HERO_IMAGE}
+            alt="Field agent in greenhouse"
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: "center center" }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/18 to-transparent" />
           <div className="absolute left-6 right-6 bottom-6 lg:left-8 lg:right-8 lg:bottom-8 text-white">
@@ -30,10 +31,10 @@ export default function AgentAuthDesktopLayout({
               className="block h-11 w-auto object-contain mb-4"
               draggable="false"
             />
-            <h2 className="font-display font-bold text-4xl xl:text-[2.6rem] leading-tight mb-2 max-w-[24rem]">
+            <h2 className="font-display font-bold text-4xl xl:text-[2.6rem] leading-[1.12] mb-2 max-w-[38rem] xl:max-w-[44rem]">
               Digitally Onboard Farmers
             </h2>
-            <p className="font-sans text-[0.95rem] lg:text-[1.05rem] text-white/90 leading-[1.35] max-w-[27rem]">
+            <p className="font-sans text-[0.95rem] lg:text-[1.05rem] text-white/90 leading-[1.4] max-w-[40rem] xl:max-w-[46rem]">
               Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.
             </p>
           </div>
@@ -42,7 +43,7 @@ export default function AgentAuthDesktopLayout({
 
       <div
         className={`flex min-w-0 flex-col w-full justify-center py-4 lg:py-6 px-2 lg:px-6 max-w-[560px] mx-auto ${
-          centerTitle ? "items-center text-center" : ""
+          centerTitle ? "items-center text-center" : "items-stretch text-left"
         } ${contentClassName}`}
       >
         {leading}
@@ -58,10 +59,10 @@ export default function AgentAuthDesktopLayout({
             {subtitle}
           </p>
         )}
-        <div className={`flex-1 w-full ${centerTitle ? "flex flex-col items-center" : ""}`}>{children}</div>
+        <div className={`flex-1 w-full ${centerTitle ? "flex flex-col items-center" : "text-left"}`}>{children}</div>
         {actions && (
           <div
-            className={`pt-6 w-full ${centerTitle ? "flex flex-col items-center max-w-sm" : ""} ${actionsClassName}`}
+            className={`pt-6 w-full ${centerTitle ? "flex flex-col items-center max-w-sm" : "text-left"} ${actionsClassName}`}
           >
             {actions}
           </div>

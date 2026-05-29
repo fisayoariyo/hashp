@@ -1,24 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BadgeCheck } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
+import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { getAgentDashboard, getAgentSession } from "../../services/cropexApi";
+import {
+  clearAgentStatusPreview,
+  extractAgentStatus,
+  getAgentStatusPreview,
+  getAgentStatusRoute,
+  isAgentStatusApproved,
+} from "../../utils/agentStatus";
 
 const REG_KEY = "hcx_agent_registration";
-
-function isAgentApproved(payload) {
-  const root =
-    payload?.data && typeof payload.data === "object"
-      ? payload.data
-      : payload && typeof payload === "object"
-        ? payload
-        : {};
-  const agent = root?.agent && typeof root.agent === "object" ? root.agent : {};
-  const status = String(agent.status || root?.status || payload?.status || "").trim().toUpperCase();
-  if (agent.is_active === true || root?.is_active === true) return true;
-  return status === "ACTIVE" || status === "VERIFIED" || status === "APPROVED";
-}
 
 export default function AgentAccountUnderReview() {
   const navigate = useNavigate();
@@ -28,12 +23,17 @@ export default function AgentAccountUnderReview() {
 
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(REG_KEY);
       const session = getAgentSession();
-      if (!raw) {
-        navigate("/agent/create-account", { replace: true });
+      const preview = getAgentStatusPreview();
+      const raw = sessionStorage.getItem(REG_KEY);
+
+      if (!session?.accessToken && !preview) {
+        navigate("/agent/login", { replace: true });
         return;
       }
+
+      if (!raw) return;
+
       const reg = JSON.parse(raw);
       if (!reg.state || !reg.lga) {
         navigate("/agent/select-location", { replace: true });
@@ -43,19 +43,34 @@ export default function AgentAccountUnderReview() {
         navigate("/agent/verify-phone", { replace: true, state: { mode: "register" } });
       }
     } catch {
-      navigate("/agent/create-account", { replace: true });
+      navigate("/agent/login", { replace: true });
     }
   }, [navigate]);
 
   const handleRefresh = async () => {
+    if (!getAgentSession()?.accessToken) {
+      setToast("Sign in to refresh your account status.");
+      return;
+    }
+
     setLoading(true);
     setToast("");
     try {
       const payload = await getAgentDashboard();
-      if (isAgentApproved(payload)) {
+      clearAgentStatusPreview();
+
+      const status = extractAgentStatus(payload);
+      if (isAgentStatusApproved(status)) {
         navigate("/agent/account-verified");
         return;
       }
+
+      const statusRoute = getAgentStatusRoute(payload);
+      if (statusRoute && statusRoute !== "/agent/account-under-review") {
+        navigate(statusRoute);
+        return;
+      }
+
       setToast("Still under review. An administrator must verify your account before you can use the app.");
     } catch (refreshError) {
       setToast(refreshError instanceof Error ? refreshError.message : "Could not refresh your review status.");
@@ -64,26 +79,28 @@ export default function AgentAccountUnderReview() {
     }
   };
 
-  const iconBlock = (
-    <div className="w-28 h-28 rounded-full bg-brand-amber/20 flex items-center justify-center mb-6">
-      <BadgeCheck className="w-16 h-16 text-brand-amber" strokeWidth={1.5} />
+  const iconBlock = <AgentStatusBadge variant="pending" className="mb-6" />;
+
+  const bodyText = (
+    <div className="w-full max-w-[36rem] self-stretch text-left">
+      <p className="font-sans text-sm text-brand-text-primary mb-2">
+        You will be able to start registering farmers once your account is verified.
+      </p>
+      <p className="font-sans text-xs text-brand-text-secondary mb-6">
+        This usually takes a short while. We will notify you once an administrator has approved your application.
+      </p>
+      {toast && (
+        <p className="font-sans text-sm text-brand-amber font-medium mb-4" role="status">
+          {toast}
+        </p>
+      )}
     </div>
   );
 
   const body = (
     <>
-      {iconBlock}
-      <p className="font-sans text-sm text-brand-text-primary max-w-md mb-2">
-        You will be able to start registering farmers once your account is verified.
-      </p>
-      <p className="font-sans text-xs text-brand-text-secondary max-w-md mb-6">
-        This usually takes a short while. We will notify you once an administrator has approved your application.
-      </p>
-      {toast && (
-        <p className="font-sans text-sm text-brand-amber font-medium max-w-md mb-4" role="status">
-          {toast}
-        </p>
-      )}
+      <div className="flex w-full justify-center">{iconBlock}</div>
+      {bodyText}
     </>
   );
 
@@ -113,25 +130,32 @@ export default function AgentAccountUnderReview() {
         centerTitle
         title="Account Under Review"
         subtitle="Your details have been submitted successfully and are currently being reviewed."
+        titleClassName="block w-full max-w-[36rem] self-stretch text-left"
+        subtitleClassName="block w-full max-w-[36rem] self-stretch text-left mb-8"
         actions={actions}
       >
-        <div className="flex flex-col items-center">{body}</div>
+        <div className="flex w-full flex-col items-center">{body}</div>
       </AgentAuthDesktopLayout>
     );
   }
 
   return (
     <div className="page-white flex flex-col min-h-dvh">
-      <div className="flex-1 px-5 pt-6 flex flex-col items-center text-center">
-        <button type="button" onClick={() => navigate("/agent/select-location")} className="self-start flex items-center gap-2 text-brand-text-secondary mb-6">
+      <div className="flex-1 px-5 pt-6 flex flex-col">
+        <button
+          type="button"
+          onClick={() => navigate(sessionStorage.getItem(REG_KEY) ? "/agent/select-location" : "/agent/login")}
+          className="self-start flex items-center gap-2 text-brand-text-secondary mb-6"
+        >
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2">Account Under Review</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-6 max-w-sm">
+        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2 text-left">Account Under Review</h1>
+        <p className="font-sans text-sm text-brand-text-secondary mb-6 text-left max-w-[36rem]">
           Your details have been submitted successfully and are currently being reviewed.
         </p>
-        {body}
+        <div className="flex w-full justify-center">{iconBlock}</div>
+        {bodyText}
       </div>
       <div className="px-5 pb-8">{actions}</div>
     </div>

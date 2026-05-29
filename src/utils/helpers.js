@@ -64,6 +64,29 @@ export function maskPhone(phone) {
 }
 
 /**
+ * Human-readable phone for OTP screens (accepts local digits or +234).
+ * e.g. "8136289427" → "+234 813 628 9427"
+ */
+export function formatPhoneForDisplay(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (!digits) return "";
+
+  let national = digits;
+  if (national.startsWith("234") && national.length > 10) {
+    national = national.slice(3);
+  } else if (national.startsWith("0")) {
+    national = national.slice(1);
+  }
+
+  const parts = [];
+  if (national.length > 0) parts.push(national.slice(0, 3));
+  if (national.length > 3) parts.push(national.slice(3, 6));
+  if (national.length > 6) parts.push(national.slice(6));
+
+  return parts.length ? `+234 ${parts.join(" ")}` : "";
+}
+
+/**
  * Mask a farmer ID for display in low-security contexts.
  * e.g. "HSH-IB-2026-000123" → "HSH-IB-****-000123"
  */

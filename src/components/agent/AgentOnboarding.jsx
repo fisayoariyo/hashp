@@ -62,7 +62,8 @@ export default function AgentOnboarding({ onDone }) {
           <img
             src={slide.image}
             alt=""
-            className="w-full h-full object-cover object-top"
+            className="h-full w-full object-cover"
+            style={{ objectPosition: slide.imagePosition || "center center" }}
           />
         </div>
 
@@ -94,7 +95,8 @@ export default function AgentOnboarding({ onDone }) {
           <img
             src={slide.image}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+            style={{ objectPosition: slide.imagePosition || "center center" }}
           />
           <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/15 to-black/50" />
         </div>

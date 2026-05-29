@@ -298,6 +298,19 @@ export function sendOtp(phone) {
   });
 }
 
+/** Resend OTP using auth resend route. */
+export function resendOtp(phone) {
+  return cropexFetch("/auth/resend-otp", {
+    method: "POST",
+    body: { phone_number: formatPhoneForApi(phone) },
+  });
+}
+
+/** Backward-compatible alias for signup resend usage. */
+export function resendRegistrationOtp(phone) {
+  return resendOtp(phone);
+}
+
 export function verifyOtp(phone, code) {
   return cropexFetch("/auth/verify", {
     method: "POST",

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const AGENT_CARD_IMAGE = "/onboarding/agent-role-select.png";
+const AGENT_CARD_IMAGE_POSITION = "center center";
+
 const ROLE_HERO_CONTENT = {
   farmer: {
     image: "/onboarding/farmer-1.jpg",
@@ -9,7 +12,8 @@ const ROLE_HERO_CONTENT = {
       "You now have a digital identity that helps you access support, loans, and better opportunities.",
   },
   agent: {
-    image: "/onboarding/agent-onboard1.png",
+    image: "/onboarding/agent-role-hero.png",
+    imagePosition: "center center",
     title: "Digitally Onboard Farmers",
     description:
       "Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.",
@@ -43,7 +47,8 @@ function DesktopRoleSelect() {
         <img
           src={heroContent.image}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={heroContent.imagePosition ? { objectPosition: heroContent.imagePosition } : undefined}
         />
         {/* dark gradient from bottom */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -131,9 +136,10 @@ function DesktopRoleSelect() {
             >
               <div className="w-full aspect-square overflow-hidden">
                 <img
-                  src="/onboarding/agent-1.png"
+                  src={AGENT_CARD_IMAGE}
                   alt="Agent"
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
+                  style={{ objectPosition: AGENT_CARD_IMAGE_POSITION }}
                 />
               </div>
               <div

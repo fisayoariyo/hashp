@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, XCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
+import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 const REG_KEY = "hcx_agent_registration";
@@ -18,9 +19,7 @@ export default function AgentVerificationFailed() {
 
   const body = (
     <>
-      <div className="w-28 h-28 rounded-full bg-red-500/15 flex items-center justify-center mb-6">
-        <XCircle className="w-16 h-16 text-red-500" strokeWidth={2} />
-      </div>
+      <AgentStatusBadge variant="error" className="mb-6" />
       <p className="font-sans text-sm text-brand-text-primary max-w-md mb-2">
         We were unable to verify your account with the details provided. This may be due to incorrect or incomplete information.
       </p>
