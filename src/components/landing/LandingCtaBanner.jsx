@@ -25,7 +25,7 @@ export default function LandingCtaBanner() {
             smarter farming and better opportunities.
           </p>
           <Link
-            to="/farmer/get-started"
+            to="/get-started"
             className="mt-[27px] inline-flex h-[50px] w-[236px] items-center justify-center rounded-[14px] bg-landing-green text-[17px] font-medium text-white shadow-landing-cta transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-white/30 tablet:mt-8 tablet:h-auto tablet:w-auto tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px] desktop:mt-12"
           >
             Get Started

@@ -28,7 +28,7 @@ export default function LandingHeader() {
           </ul>
         </nav>
 
-        <Link to="/farmer/get-started" className="landing-secondary-button hidden desktop:inline-flex">
+        <Link to="/get-started" className="landing-secondary-button hidden desktop:inline-flex">
           Get started
         </Link>
 
@@ -63,7 +63,7 @@ export default function LandingHeader() {
             ))}
             <li>
               <Link
-                to="/farmer/get-started"
+                to="/get-started"
                 onClick={() => setIsMenuOpen(false)}
                 className="mt-2 flex h-[49px] items-center justify-center rounded-[15px] bg-landing-green text-[15px] font-medium text-white"
               >
