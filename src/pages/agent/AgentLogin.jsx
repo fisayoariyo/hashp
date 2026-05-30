@@ -155,7 +155,7 @@ export default function AgentLogin() {
       <button type="button" onClick={handleLogin} disabled={loading} className="btn-primary">
         {loading ? "Logging in..." : "Continue"}
       </button>
-      <button type="button" onClick={() => navigate("/agent/create-account")} className="w-full py-4 rounded-3xl bg-gray-100 text-brand-green font-sans font-semibold text-sm">
+      <button type="button" onClick={() => navigate("/agent/create-account", { state: { returnTo: "/agent/login" } })} className="w-full py-4 rounded-3xl bg-gray-100 text-brand-green font-sans font-semibold text-sm">
         I don't have an account
       </button>
     </div>
@@ -179,7 +179,7 @@ export default function AgentLogin() {
           <button type="button" onClick={handleLogin} disabled={loading} className="btn-primary">
             {loading ? "Logging in..." : "Continue"}
           </button>
-          <button type="button" onClick={() => navigate("/agent/create-account")} className="w-full text-center text-brand-green font-sans text-sm font-medium py-2">
+          <button type="button" onClick={() => navigate("/agent/create-account", { state: { returnTo: "/agent/login" } })} className="w-full text-center text-brand-green font-sans text-sm font-medium py-2">
             I don&apos;t have an account
           </button>
         </div>

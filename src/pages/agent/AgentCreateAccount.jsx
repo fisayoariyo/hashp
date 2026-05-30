@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { User, Smartphone, Mail, Lock, Eye, EyeOff, ChevronDown, ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
@@ -149,6 +149,8 @@ function getSignupFieldErrors(error) {
 
 export default function AgentCreateAccount() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const goBackTarget = location.state?.returnTo ?? "/get-started";
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [form, setForm] = useState({
     fullName: "",
@@ -253,7 +255,7 @@ export default function AgentCreateAccount() {
   const goBackButton = (
     <button
       type="button"
-      onClick={() => navigate("/get-started")}
+      onClick={() => navigate(goBackTarget)}
       className="mb-6 flex items-center gap-2 self-start text-brand-text-secondary"
     >
       <ArrowLeft size={18} />

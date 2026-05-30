@@ -52,6 +52,7 @@ export const LANDING_TABS = {
     cta: {
       title: "Register as an Agent",
       href: "/agent/create-account",
+      returnState: { returnTo: "/" },
       image: "/landing/images/agent-card-cta.png",
       alt: "Agent registration call to action",
       position: "center",
@@ -170,7 +171,7 @@ export const LANDING_FOOTER_GROUPS = [
   {
     title: "Get started",
     links: [
-      { label: "Become an Agent", href: "/agent/create-account" },
+      { label: "Become an Agent", href: "/agent/create-account", returnState: { returnTo: "/" } },
       { label: "Login as a farmer", href: "/farmer/verify" },
     ],
   },

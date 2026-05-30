@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
 import { LANDING_FOOTER_GROUPS, LANDING_SOCIAL_LINKS } from "../../pages/landing/landingContent";
 
-function FooterLink({ href, label }) {
+function FooterLink({ href, label, linkState }) {
   const isInternal = href.startsWith("/");
   const isAnchor = href.startsWith("#");
 
   if (isInternal) {
     return (
-      <Link to={href} className="transition-opacity hover:opacity-80">
+      <Link to={href} state={linkState} className="transition-opacity hover:opacity-80">
         {label}
       </Link>
     );
@@ -70,7 +70,7 @@ export default function LandingFooter() {
                 <h3 className="text-[18px] font-medium desktop:text-[20px]">{group.title}</h3>
                 <div className="mt-[15px] flex flex-col gap-[16px] text-[14px] font-light leading-[1.12] desktop:mt-[17px] desktop:gap-[19px] desktop:text-[20px]">
                   {group.links.map((link) => (
-                    <FooterLink key={link.label} href={link.href} label={link.label} />
+                    <FooterLink key={link.label} href={link.href} label={link.label} linkState={link.returnState} />
                   ))}
                 </div>
               </div>

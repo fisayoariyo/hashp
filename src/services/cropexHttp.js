@@ -1,11 +1,22 @@
 const DEFAULT_CROPEX_BASE_URL = "https://hashmaramala-production.up.railway.app";
+const API_PROXY_PREFIX = "/api";
+
+function resolveProxyBaseUrl() {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}${API_PROXY_PREFIX}`;
+  }
+  return DEFAULT_CROPEX_BASE_URL;
+}
 
 export function getCropexBaseUrl() {
-  const raw =
+  const configured =
     typeof import.meta !== "undefined" && import.meta.env?.VITE_CROPEX_API_BASE_URL
       ? import.meta.env.VITE_CROPEX_API_BASE_URL
-      : DEFAULT_CROPEX_BASE_URL;
-  return String(raw || DEFAULT_CROPEX_BASE_URL).replace(/\/+$/, "");
+      : "";
+  if (String(configured || "").trim()) {
+    return String(configured).replace(/\/+$/, "");
+  }
+  return resolveProxyBaseUrl();
 }
 
 function buildCropexUrl(path) {
@@ -144,10 +155,11 @@ export async function cropexFetch(path, opts = {}) {
       ...rest,
     });
   } catch (error) {
+    const cause = error instanceof Error ? error.message : String(error || "");
     throw new CropexHttpError(
-      "Could not reach the Hashmar CropEx server.",
+      "Could not reach the Hashmar CropEx server. Check your internet connection and try again.",
       0,
-      { cause: error instanceof Error ? error.message : String(error || "") }
+      { cause, url: buildCropexUrl(path) },
     );
   }
 

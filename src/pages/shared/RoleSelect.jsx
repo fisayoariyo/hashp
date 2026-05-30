@@ -40,7 +40,7 @@ function useRoleSelect(mode) {
     }
 
     if (role === "farmer") navigate("/farmer/get-started", { state: { returnTo: "/get-started" } });
-    else navigate("/agent/create-account");
+    else navigate("/agent/create-account", { state: { returnTo: "/get-started" } });
   };
 
   const handleContinue = () => {
