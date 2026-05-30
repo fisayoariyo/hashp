@@ -1,10 +1,19 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const GET_STARTED_COPY = {
-  title: "Get Started",
-  description:
-    "Tell us how you'll be using Hashmar, Tap the card that best describes your role",
+const ROLE_SELECT_COPY = {
+  signup: {
+    title: "Get Started",
+    leftTitle: "Get Started",
+    description:
+      "Tell us how you'll be using Hashmar, Tap the card that best describes your role",
+  },
+  login: {
+    title: "Log in as",
+    leftTitle: "Log in to your profile",
+    description:
+      "Tell us how you'll be using Hashmar. Tap the card that best describes your role",
+  },
 };
 
 const LEFT_HERO = {
@@ -18,12 +27,18 @@ const AGENT_CARD_IMAGE = "/onboarding/agent-role-select.png";
 const AGENT_CARD_IMAGE_POSITION = "center center";
 const DOUBLE_TAP_MS = 400;
 
-function useRoleSelect() {
+function useRoleSelect(mode) {
   const navigate = useNavigate();
   const [selected, setSelected] = useState("farmer");
   const lastTapRef = useRef({ role: null, time: 0 });
 
   const navigateForRole = (role) => {
+    if (mode === "login") {
+      if (role === "farmer") navigate("/farmer/verify");
+      else navigate("/agent/login");
+      return;
+    }
+
     if (role === "farmer") navigate("/farmer/get-started");
     else navigate("/agent/create-account");
   };
@@ -127,8 +142,8 @@ function DesktopRoleActions({ onContinue, onGoBack }) {
   );
 }
 
-function DesktopRoleSelect() {
-  const { selected, handleContinue, handleGoBack, handleRoleSelect } = useRoleSelect();
+function DesktopRoleSelect({ copy, mode }) {
+  const { selected, handleContinue, handleGoBack, handleRoleSelect } = useRoleSelect(mode);
 
   return (
     <div className="hidden min-h-dvh gap-5 bg-white p-5 md:flex lg:gap-6 lg:p-6">
@@ -149,10 +164,10 @@ function DesktopRoleSelect() {
             draggable="false"
           />
           <h2 className="mb-2 font-display text-[1.85rem] font-bold leading-tight text-white lg:text-[2.1rem]">
-            {GET_STARTED_COPY.title}
+            {copy.leftTitle}
           </h2>
           <p className="font-sans text-base leading-snug text-white/85 lg:text-[1.05rem]">
-            {GET_STARTED_COPY.description}
+            {copy.description}
           </p>
         </div>
       </div>
@@ -160,10 +175,10 @@ function DesktopRoleSelect() {
       <div className="flex flex-1 flex-col justify-between px-6 py-14 lg:px-14 lg:py-16 xl:px-20">
         <div className="flex w-full flex-col items-center">
           <h1 className="mb-3 text-center font-display text-[2rem] font-bold text-brand-text-primary lg:text-[2.3rem]">
-            {GET_STARTED_COPY.title}
+            {copy.title}
           </h1>
           <p className="mb-10 max-w-xs text-center font-sans text-sm leading-relaxed text-brand-text-secondary">
-            {GET_STARTED_COPY.description}
+            {copy.description}
           </p>
 
           <RoleCards selected={selected} onSelect={handleRoleSelect} />
@@ -175,17 +190,17 @@ function DesktopRoleSelect() {
   );
 }
 
-function MobileRoleSelect() {
-  const { selected, handleContinue, handleGoBack, handleRoleSelect } = useRoleSelect();
+function MobileRoleSelect({ copy, mode }) {
+  const { selected, handleContinue, handleGoBack, handleRoleSelect } = useRoleSelect(mode);
 
   return (
     <div className="flex min-h-dvh flex-col bg-brand-bg-page px-5 pb-8 pt-14 md:hidden">
       <div>
         <h1 className="text-left font-display text-[1.75rem] font-bold leading-tight text-brand-text-primary">
-          {GET_STARTED_COPY.title}
+          {copy.title}
         </h1>
         <p className="mt-3 max-w-[340px] text-left font-sans text-sm font-normal leading-relaxed text-brand-text-secondary">
-          {GET_STARTED_COPY.description}
+          {copy.description}
         </p>
 
         <div className="mt-10">
@@ -218,10 +233,14 @@ function MobileRoleSelect() {
 }
 
 export default function RoleSelect() {
+  const { pathname } = useLocation();
+  const mode = pathname === "/log-in" ? "login" : "signup";
+  const copy = ROLE_SELECT_COPY[mode];
+
   return (
     <>
-      <MobileRoleSelect />
-      <DesktopRoleSelect />
+      <MobileRoleSelect copy={copy} mode={mode} />
+      <DesktopRoleSelect copy={copy} mode={mode} />
     </>
   );
 }

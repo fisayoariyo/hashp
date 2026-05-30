@@ -39,6 +39,7 @@ export default function App() {
         {/* Shared */}
         <Route path="/"                        element={<LandingPage />} />
         <Route path="/get-started"             element={<RoleSelect />} />
+        <Route path="/log-in"                  element={<RoleSelect />} />
 
         {/* Farmer */}
         <Route path="/farmer/splash"           element={<FarmerSplash />} />

@@ -22,6 +22,7 @@ const FARMER_LOGIN_LAYOUT_PROPS = {
 };
 
 function PhoneStep({ onSubmit }) {
+  const navigate = useNavigate();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
@@ -73,6 +74,28 @@ function PhoneStep({ onSubmit }) {
     </div>
   );
 
+  const phoneActions = (
+    <div className="w-full max-w-[560px] space-y-3">
+      <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary w-full">
+        {loading ? "Sending code..." : "Continue"}
+      </button>
+      <button
+        type="button"
+        onClick={() => navigate("/log-in")}
+        className="w-full rounded-3xl bg-[#F6F6F6] px-6 py-4 font-display text-base font-semibold text-brand-green transition-all duration-200 active:scale-95"
+      >
+        Go back
+      </button>
+      <button
+        type="button"
+        onClick={() => navigate("/farmer/get-started")}
+        className="w-full rounded-3xl bg-gray-100 px-6 py-4 font-sans text-sm font-semibold text-brand-green transition-all duration-200 active:scale-95"
+      >
+        I do not have an account
+      </button>
+    </div>
+  );
+
   if (isDesktop) {
     return (
       <FarmerAuthDesktopLayout
@@ -81,13 +104,7 @@ function PhoneStep({ onSubmit }) {
         centerTitle
         contentClassName="max-w-[620px]"
         titleClassName="text-[2.7rem] leading-[1.08]"
-        actions={
-          <div className="w-full max-w-[560px] space-y-3">
-            <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary w-full">
-              {loading ? "Sending code..." : "Continue"}
-            </button>
-          </div>
-        }
+        actions={phoneActions}
       >
         {phoneField}
       </FarmerAuthDesktopLayout>
@@ -105,6 +122,20 @@ function PhoneStep({ onSubmit }) {
       <div className="px-5 pb-8 space-y-3">
         <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary">
           {loading ? "Sending code..." : "Continue"}
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/log-in")}
+          className="w-full rounded-[14px] bg-[#F6F6F6] px-6 py-4 font-display text-base font-semibold text-brand-green transition-all duration-200 active:scale-95"
+        >
+          Go back
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/farmer/get-started")}
+          className="w-full py-4 font-sans text-sm font-semibold text-brand-green"
+        >
+          I do not have an account
         </button>
       </div>
     </div>

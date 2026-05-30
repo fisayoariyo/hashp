@@ -34,7 +34,7 @@ export default function LandingHero() {
               Sign up as agent
             </Link>
             <Link
-              to="/get-started"
+              to="/log-in"
               className="inline-flex h-[52px] w-full items-center justify-center rounded-[14px] border border-landing-green bg-white px-6 text-[17px] font-medium text-landing-green transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-landing-green/30 tablet:h-auto tablet:w-[252px] tablet:shrink-0 tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px]"
             >
               Log in
