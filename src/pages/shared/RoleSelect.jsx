@@ -1,249 +1,224 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const AGENT_CARD_IMAGE = "/onboarding/agent-role-select.png";
-const AGENT_CARD_IMAGE_POSITION = "center center";
-
-const ROLE_HERO_CONTENT = {
-  farmer: {
-    image: "/onboarding/farmer-1.jpg",
-    title: "Welcome to your Farmer Profile",
-    description:
-      "You now have a digital identity that helps you access support, loans, and better opportunities.",
-  },
-  agent: {
-    image: "/onboarding/agent-role-hero.png",
-    imagePosition: "center center",
-    title: "Digitally Onboard Farmers",
-    description:
-      "Capture farmer information and biometrics to create verified digital identities that can be trusted across the platform.",
-  },
+const GET_STARTED_COPY = {
+  title: "Get Started",
+  description:
+    "Tell us how you'll be using Hashmar, Tap the card that best describes your role",
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DESKTOP — split panel  (hidden on mobile via `hidden md:flex`)
-// Matches the Select Role design screen exactly.
-// ─────────────────────────────────────────────────────────────────────────────
-function DesktopRoleSelect() {
-  const navigate = useNavigate();
-  // Farmer is pre-selected per design
-  const [selected, setSelected] = useState("farmer");
-  const heroContent = ROLE_HERO_CONTENT[selected] || ROLE_HERO_CONTENT.farmer;
+const LEFT_HERO = {
+  image: "/landing/images/farmer-card-cta.png",
+  position: "62% 48%",
+};
 
-  const handleContinue = () => {
-    if (selected === "farmer") navigate("/farmer/verify");
+const FARMER_CARD_IMAGE = "/onboarding/farmer-role-select.png";
+const FARMER_CARD_IMAGE_POSITION = "center center";
+const AGENT_CARD_IMAGE = "/onboarding/agent-role-select.png";
+const AGENT_CARD_IMAGE_POSITION = "center center";
+const DOUBLE_TAP_MS = 400;
+
+function useRoleSelect() {
+  const navigate = useNavigate();
+  const [selected, setSelected] = useState("farmer");
+  const lastTapRef = useRef({ role: null, time: 0 });
+
+  const navigateForRole = (role) => {
+    if (role === "farmer") navigate("/farmer/get-started");
     else navigate("/agent/create-account");
   };
 
-  return (
-    <div className="hidden md:flex min-h-dvh bg-white p-5 lg:p-6 gap-5 lg:gap-6">
+  const handleContinue = () => {
+    navigateForRole(selected);
+  };
 
-      {/* ── LEFT: hero photo card ─────────────────────────────── */}
-      {/*
-        Same image as Login screen 1 (farmer-1.jpg = woman with
-        leaves/basket on head).
-      */}
-      <div className="relative w-[45%] shrink-0 rounded-3xl overflow-hidden">
+  const handleGoBack = () => {
+    navigate("/");
+  };
+
+  const handleRoleSelect = (role) => {
+    const now = Date.now();
+    const { role: lastRole, time: lastTime } = lastTapRef.current;
+
+    if (lastRole === role && now - lastTime < DOUBLE_TAP_MS) {
+      navigateForRole(role);
+      return;
+    }
+
+    lastTapRef.current = { role, time: now };
+    setSelected(role);
+  };
+
+  return { selected, handleContinue, handleGoBack, handleRoleSelect };
+}
+
+function RoleCards({ selected, onSelect, className = "max-w-[520px]" }) {
+  return (
+    <div className={`grid w-full grid-cols-2 gap-4 ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSelect("farmer")}
+        className={`overflow-hidden rounded-[15px] text-left transition-all duration-200 ${
+          selected === "farmer"
+            ? "border-2 border-gray-300 shadow-sm"
+            : "border border-gray-200 shadow-sm"
+        }`}
+      >
+        <div className="aspect-square w-full overflow-hidden bg-gray-100">
+          <img
+            src={FARMER_CARD_IMAGE}
+            alt="Farmer"
+            className="h-full w-full object-cover opacity-75 grayscale"
+            style={{ objectPosition: FARMER_CARD_IMAGE_POSITION }}
+          />
+        </div>
+        <div
+          className={`py-4 text-center font-sans text-sm font-medium transition-colors ${
+            selected === "farmer"
+              ? "bg-gray-200 text-gray-600"
+              : "bg-gray-50 text-brand-text-secondary"
+          }`}
+        >
+          Farmer
+        </div>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onSelect("agent")}
+        className={`overflow-hidden rounded-[15px] text-left transition-all duration-200 ${
+          selected === "agent"
+            ? "border-2 border-brand-green shadow-md"
+            : "border border-gray-200 shadow-sm"
+        }`}
+      >
+        <div className="aspect-square w-full overflow-hidden">
+          <img
+            src={AGENT_CARD_IMAGE}
+            alt="Agent"
+            className="h-full w-full object-cover"
+            style={{ objectPosition: AGENT_CARD_IMAGE_POSITION }}
+          />
+        </div>
+        <div
+          className={`py-4 text-center font-sans text-sm font-medium transition-colors ${
+            selected === "agent" ? "bg-brand-green text-white" : "bg-white text-brand-text-primary"
+          }`}
+        >
+          Agent
+        </div>
+      </button>
+    </div>
+  );
+}
+
+function DesktopRoleActions({ onContinue, onGoBack }) {
+  return (
+    <div className="flex w-full max-w-[520px] flex-col gap-3 self-center">
+      <button type="button" onClick={onContinue} className="btn-primary">
+        Continue
+      </button>
+      <button
+        type="button"
+        onClick={onGoBack}
+        className="w-full rounded-3xl bg-[#F6F6F6] px-6 py-4 font-display text-base font-semibold text-brand-green transition-all duration-200 active:scale-95"
+      >
+        Go back
+      </button>
+    </div>
+  );
+}
+
+function DesktopRoleSelect() {
+  const { selected, handleContinue, handleGoBack, handleRoleSelect } = useRoleSelect();
+
+  return (
+    <div className="hidden min-h-dvh gap-5 bg-white p-5 md:flex lg:gap-6 lg:p-6">
+      <div className="relative w-[45%] shrink-0 overflow-hidden rounded-3xl">
         <img
-          src={heroContent.image}
+          src={LEFT_HERO.image}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
-          style={heroContent.imagePosition ? { objectPosition: heroContent.imagePosition } : undefined}
+          style={{ objectPosition: LEFT_HERO.position }}
         />
-        {/* dark gradient from bottom */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-        {/* brand block */}
         <div className="absolute bottom-8 left-8 right-8 lg:bottom-10 lg:left-10 lg:right-10">
-          {/*
-            block + max-w-[200px]: prevents the inline-baseline white-line
-            artefact under the logo PNG.
-          */}
           <img
             src="/brand/HFEI_Primary_Logo_White.png"
             alt="HFEI by Hashmar Cropex Ltd"
-            className="block h-10 w-auto max-w-[200px] object-contain object-left mb-4"
+            className="mb-4 block h-10 w-auto max-w-[200px] object-contain object-left"
             draggable="false"
           />
-          <h2 className="font-display font-bold text-[1.85rem] lg:text-[2.1rem] text-white leading-tight mb-2">
-            {heroContent.title}
+          <h2 className="mb-2 font-display text-[1.85rem] font-bold leading-tight text-white lg:text-[2.1rem]">
+            {GET_STARTED_COPY.title}
           </h2>
-          <p className="font-sans text-base lg:text-[1.05rem] text-white/85 leading-snug">
-            {heroContent.description}
+          <p className="font-sans text-base leading-snug text-white/85 lg:text-[1.05rem]">
+            {GET_STARTED_COPY.description}
           </p>
         </div>
       </div>
 
-      {/* ── RIGHT: role selection ──────────────────────────────── */}
-      {/*
-        justify-between: heading+cards sit at the top,
-        Continue button pins to the bottom.
-      */}
-      <div className="flex-1 flex flex-col justify-between py-14 lg:py-16 px-6 lg:px-14 xl:px-20">
-
-        {/* top: title + subtitle + role cards */}
-        <div className="flex flex-col items-center w-full">
-          <h1 className="font-display font-bold text-[2rem] lg:text-[2.3rem] text-brand-text-primary text-center mb-3">
-            Get Started
+      <div className="flex flex-1 flex-col justify-between px-6 py-14 lg:px-14 lg:py-16 xl:px-20">
+        <div className="flex w-full flex-col items-center">
+          <h1 className="mb-3 text-center font-display text-[2rem] font-bold text-brand-text-primary lg:text-[2.3rem]">
+            {GET_STARTED_COPY.title}
           </h1>
-          <p className="font-sans text-sm text-brand-text-secondary text-center leading-relaxed mb-10 max-w-xs">
-            Tell us how you'll be using Hashmar, Tap the card that best
-            describes your role
+          <p className="mb-10 max-w-xs text-center font-sans text-sm leading-relaxed text-brand-text-secondary">
+            {GET_STARTED_COPY.description}
           </p>
 
-          {/* ── Role cards ── */}
-          <div className="grid grid-cols-2 gap-5 w-full max-w-[520px]">
-
-            {/* Farmer card */}
-            <button
-              type="button"
-              onClick={() => setSelected("farmer")}
-              className={`flex-1 rounded-xl overflow-hidden text-left transition-all duration-200
-                ${selected === "farmer"
-                  ? "border-2 border-brand-green shadow-md"
-                  : "border border-gray-200 shadow-sm"
-                }`}
-            >
-              {/* photo — upper ~75% of card */}
-              <div className="w-full aspect-square overflow-hidden">
-                <img
-                  src="/onboarding/farmer-2.png"
-                  alt="Farmer"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              {/* label — lower ~25% */}
-              <div
-                className={`py-4 text-center font-sans font-medium text-sm transition-colors
-                  ${selected === "farmer"
-                    ? "bg-brand-green text-white"
-                    : "bg-white text-brand-text-primary"
-                  }`}
-              >
-                Farmer
-              </div>
-            </button>
-
-            {/* Agent card */}
-            <button
-              type="button"
-              onClick={() => setSelected("agent")}
-              className={`flex-1 rounded-xl overflow-hidden text-left transition-all duration-200
-                ${selected === "agent"
-                  ? "border-2 border-brand-green shadow-md"
-                  : "border border-gray-200 shadow-sm"
-                }`}
-            >
-              <div className="w-full aspect-square overflow-hidden">
-                <img
-                  src={AGENT_CARD_IMAGE}
-                  alt="Agent"
-                  className="h-full w-full object-cover"
-                  style={{ objectPosition: AGENT_CARD_IMAGE_POSITION }}
-                />
-              </div>
-              <div
-                className={`py-4 text-center font-sans font-medium text-sm transition-colors
-                  ${selected === "agent"
-                    ? "bg-brand-green text-white"
-                    : "bg-white text-brand-text-primary"
-                  }`}
-              >
-                Agent
-              </div>
-            </button>
-
-          </div>
+          <RoleCards selected={selected} onSelect={handleRoleSelect} />
         </div>
 
-        {/* bottom: Continue button — full-width green pill */}
+        <DesktopRoleActions onContinue={handleContinue} onGoBack={handleGoBack} />
+      </div>
+    </div>
+  );
+}
+
+function MobileRoleSelect() {
+  const { selected, handleContinue, handleGoBack, handleRoleSelect } = useRoleSelect();
+
+  return (
+    <div className="flex min-h-dvh flex-col bg-brand-bg-page px-5 pb-8 pt-14 md:hidden">
+      <div>
+        <h1 className="text-left font-display text-[1.75rem] font-bold leading-tight text-brand-text-primary">
+          {GET_STARTED_COPY.title}
+        </h1>
+        <p className="mt-3 max-w-[340px] text-left font-sans text-sm font-normal leading-relaxed text-brand-text-secondary">
+          {GET_STARTED_COPY.description}
+        </p>
+
+        <div className="mt-10">
+          <RoleCards
+            selected={selected}
+            onSelect={handleRoleSelect}
+            className="max-w-none gap-5"
+          />
+        </div>
+      </div>
+
+      <div className="mt-auto flex w-full flex-col gap-3 pt-8">
         <button
           type="button"
           onClick={handleContinue}
-          className="btn-primary w-full max-w-[520px] self-center"
+          className="w-full rounded-[14px] bg-brand-green px-6 py-4 font-display text-base font-semibold text-white shadow-[0_18px_12.5px_rgba(0,0,0,0.1)] transition-all duration-200 active:scale-95"
         >
           Continue
         </button>
-
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="w-full rounded-[14px] bg-[#F6F6F6] px-6 py-4 font-display text-base font-semibold text-brand-green transition-all duration-200 active:scale-95"
+        >
+          Go back
+        </button>
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOBILE — existing card layout, unchanged  (hidden on md+ via `md:hidden`)
-// ─────────────────────────────────────────────────────────────────────────────
-function MobileRoleSelect() {
-  const navigate = useNavigate();
-
-  return (
-    <div className="md:hidden min-h-dvh w-full flex items-center justify-center bg-brand-bg-page px-4 py-8">
-      <div className="w-full max-w-role bg-white rounded-3xl shadow-card-lg px-6 py-10 sm:px-10 sm:py-14 flex flex-col items-center gap-8">
-
-        {/* Logo */}
-        <img
-          src="/brand/HFEI_Primary_Logo_.png"
-          alt="HFEI by Hashmar Cropex Ltd"
-          className="block h-14 w-auto object-contain"
-          draggable="false"
-        />
-
-        {/* Tagline */}
-        <p className="font-sans text-base text-brand-text-secondary text-center leading-relaxed max-w-sm">
-          Empowering Farmers, Enabling Growth
-        </p>
-
-        {/* Divider */}
-        <div className="w-full flex items-center gap-3">
-          <div className="flex-1 h-px bg-brand-border" />
-          <span className="font-sans text-xs text-brand-text-muted uppercase tracking-widest">
-            Select your role
-          </span>
-          <div className="flex-1 h-px bg-brand-border" />
-        </div>
-
-        {/* Role buttons */}
-        <div className="w-full flex flex-col sm:flex-row gap-4">
-          <button
-            onClick={() => navigate("/farmer/splash")}
-            className="flex-1 flex flex-col items-center gap-3 bg-brand-green text-white rounded-2xl px-6 py-6 hover:bg-brand-green-dark active:scale-[0.97] transition-all duration-200 shadow-card"
-          >
-            <span className="text-4xl select-none">🌾</span>
-            <div className="text-center">
-              <p className="font-display font-bold text-lg leading-tight">I am a Farmer</p>
-              <p className="font-sans text-white/75 text-xs mt-1 leading-snug">
-                View your digital ID, farms and profile
-              </p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate("/agent/splash")}
-            className="flex-1 flex flex-col items-center gap-3 bg-brand-amber text-white rounded-2xl px-6 py-6 hover:brightness-95 active:scale-[0.97] transition-all duration-200 shadow-card"
-          >
-            <span className="text-4xl select-none">🪪</span>
-            <div className="text-center">
-              <p className="font-display font-bold text-lg leading-tight">I am an Agent</p>
-              <p className="font-sans text-white/75 text-xs mt-1 leading-snug">
-                Register farmers and manage records
-              </p>
-            </div>
-          </button>
-        </div>
-
-        {/* Footer */}
-        <p className="font-sans text-xs text-brand-text-muted text-center mt-2">
-          Hashmar CropEx Limited · Verified Farmer Identity Platform
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EXPORT
-// Both render in DOM — CSS controls which is visible at each breakpoint.
-// ─────────────────────────────────────────────────────────────────────────────
 export default function RoleSelect() {
   return (
     <>

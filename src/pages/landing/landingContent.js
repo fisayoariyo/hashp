@@ -94,12 +94,23 @@ export const LANDING_TABS = {
       },
     ],
     cta: {
-      title: "Register as a Farmer",
-      href: "/farmer/splash",
+      title: "Log in as a farmer",
+      buttonLabel: "Log in",
+      href: "/farmer/verify",
       image: "/landing/images/farmer-card-cta.png",
-      alt: "Farmer registration call to action",
+      alt: "Farmer login call to action",
       position: "62% 48%",
     },
+  },
+};
+
+export const LANDING_CONTACT = {
+  title: "Get in touch with us",
+  description:
+    "Have questions, inquiries, or need Hashmar services in your community? Reach out to us and let us know how we can support farmers and agricultural activities in your area. Our team is ready to help bring digital farming solutions closer to you.",
+  image: {
+    src: "/landing/images/contact-field.png",
+    alt: "Farmer working in a green field",
   },
 };
 

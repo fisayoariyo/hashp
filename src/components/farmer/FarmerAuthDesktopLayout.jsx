@@ -15,17 +15,21 @@ export default function FarmerAuthDesktopLayout({
   subtitleClassName = "",
   actionsClassName = "",
   fixedImage = "",
+  heroTitle = "",
+  heroSubtitle = "",
+  heroImagePosition = "",
 }) {
   const slides = useMemo(() => farmerOnboardingSlides || [], []);
   const [slideIndex, setSlideIndex] = useState(0);
+  const useFixedHero = Boolean(fixedImage || heroTitle);
 
   useEffect(() => {
-    if (fixedImage || slides.length <= 1) return undefined;
+    if (useFixedHero || slides.length <= 1) return undefined;
     const timer = window.setInterval(() => {
       setSlideIndex((current) => (current + 1) % slides.length);
     }, SLIDE_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [fixedImage, slides]);
+  }, [useFixedHero, slides.length]);
 
   const activeSlide = slides[slideIndex] || {
     image: fixedImage,
@@ -34,6 +38,8 @@ export default function FarmerAuthDesktopLayout({
   };
 
   const heroImage = fixedImage || activeSlide.image;
+  const panelTitle = heroTitle || activeSlide.title;
+  const panelSubtitle = heroSubtitle || activeSlide.sub;
 
   return (
     <div className="hidden md:grid md:grid-cols-2 md:min-h-dvh md:bg-white md:px-6 md:py-6 lg:px-8 lg:py-8 md:gap-6 lg:gap-8 md:items-stretch">
@@ -44,6 +50,7 @@ export default function FarmerAuthDesktopLayout({
             src={heroImage}
             alt=""
             className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+            style={heroImagePosition ? { objectPosition: heroImagePosition } : undefined}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/18 to-transparent" />
 
@@ -55,13 +62,13 @@ export default function FarmerAuthDesktopLayout({
               draggable="false"
             />
             <h2 className="font-display font-bold text-4xl xl:text-[2.6rem] leading-tight mb-2 max-w-[30rem]">
-              {activeSlide.title}
+              {panelTitle}
             </h2>
             <p className="font-sans text-[0.95rem] lg:text-[1.05rem] text-white/90 leading-[1.35] max-w-[31rem]">
-              {activeSlide.sub}
+              {panelSubtitle}
             </p>
 
-            {!fixedImage && slides.length > 1 ? (
+            {!useFixedHero && slides.length > 1 ? (
               <div className="mt-5 flex items-center gap-2">
                 {slides.map((slide, index) => (
                   <span

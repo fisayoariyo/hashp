@@ -6,6 +6,7 @@ import RoleSelect from "./pages/shared/RoleSelect";
 
 // ── Farmer pages ─────────────────────────────────
 import FarmerSplash        from "./pages/farmer/FarmerSplash";
+import FarmerGetStarted      from "./pages/farmer/FarmerGetStarted";
 import FarmerVerify        from "./pages/farmer/FarmerVerify";
 import FarmerHome          from "./pages/farmer/FarmerHome";
 import FarmerID            from "./pages/farmer/FarmerID";
@@ -41,6 +42,7 @@ export default function App() {
 
         {/* Farmer */}
         <Route path="/farmer/splash"           element={<FarmerSplash />} />
+        <Route path="/farmer/get-started"      element={<FarmerGetStarted />} />
         <Route path="/farmer/verify"           element={<FarmerVerify />} />
         <Route path="/farmer/home"             element={<FarmerHome />} />
         <Route path="/farmer/id"               element={<FarmerID />} />

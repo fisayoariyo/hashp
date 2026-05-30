@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
 import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
 import FarmerOnboarding from "../../components/farmer/FarmerOnboarding";
+import { farmerLoginHero } from "../../mockData/farmer";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import {
   sendOtp,
@@ -12,6 +13,13 @@ import {
 import { formatPhoneForDisplay } from "../../utils/helpers";
 
 const OTP_LENGTH = 6;
+
+const FARMER_LOGIN_LAYOUT_PROPS = {
+  fixedImage: farmerLoginHero.image,
+  heroImagePosition: farmerLoginHero.position,
+  heroTitle: farmerLoginHero.title,
+  heroSubtitle: farmerLoginHero.sub,
+};
 
 function PhoneStep({ onSubmit }) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -68,7 +76,8 @@ function PhoneStep({ onSubmit }) {
   if (isDesktop) {
     return (
       <FarmerAuthDesktopLayout
-        title="Login to your farmer profile"
+        {...FARMER_LOGIN_LAYOUT_PROPS}
+        title="Log in to your profile"
         centerTitle
         contentClassName="max-w-[620px]"
         titleClassName="text-[2.7rem] leading-[1.08]"
@@ -89,7 +98,7 @@ function PhoneStep({ onSubmit }) {
     <div className="page-white flex flex-col">
       <div className="flex-1 px-5 pt-10">
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-8 leading-tight">
-          Login to your farmer profile
+          Log in to your profile
         </h1>
         {phoneField}
       </div>
@@ -237,6 +246,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
   if (isDesktop) {
     return (
       <FarmerAuthDesktopLayout
+        {...FARMER_LOGIN_LAYOUT_PROPS}
         title={`Enter ${OTP_LENGTH}-Digit code`}
         subtitle={`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
         centerTitle

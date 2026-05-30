@@ -1,5 +1,6 @@
 import { useState } from "react";
 import LandingAbout from "../../components/landing/LandingAbout";
+import LandingContact from "../../components/landing/LandingContact";
 import LandingCtaBanner from "../../components/landing/LandingCtaBanner";
 import LandingFaqs from "../../components/landing/LandingFaqs";
 import LandingFooter from "../../components/landing/LandingFooter";
@@ -26,6 +27,7 @@ export default function LandingPage() {
         <LandingAbout />
         <LandingHowItWorks activeTab={activeTab} onTabChange={setActiveTab} />
         <LandingCtaBanner />
+        <LandingContact />
         <LandingFaqs faqs={LANDING_FAQS} openIndex={openFaqIndex} onToggle={handleToggleFaq} />
       </main>
       <LandingFooter />

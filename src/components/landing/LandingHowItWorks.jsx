@@ -41,7 +41,7 @@ function LandingHowCtaCard({ cta }) {
           to={cta.href}
           className="mt-[18px] flex h-[50px] items-center justify-center rounded-[15px] border border-white bg-black/20 text-[15px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-[3px]"
         >
-          Get started
+          {cta.buttonLabel ?? "Get started"}
         </Link>
       </div>
     </article>

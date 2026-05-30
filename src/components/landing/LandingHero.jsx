@@ -19,27 +19,25 @@ export default function LandingHero() {
         <div className="mx-auto flex max-w-[959px] flex-col items-center text-center">
           <span className="landing-section-label text-[var(--landing-green)]">Welcome to HFEI</span>
           <h1 className="mt-[16px] w-full max-w-[959px] text-[21px] font-extrabold leading-[1.35] text-landing-green min-[420px]:text-[26px] tablet:text-[40px] tablet:leading-[1.4] desktop:text-[45px] desktop:leading-[1.45]">
-            <span className="block min-[420px]:whitespace-nowrap">
-              Empowering Farmers Through Digital&nbsp;Identity
-            </span>
-            <span className="block">and Smart Farm Data</span>
+            <span className="block min-[420px]:whitespace-nowrap">Better Farmers, Better Future.</span>
+            <span className="block">Through the use of Technology</span>
           </h1>
           <p className="mt-[14px] max-w-[346px] text-[13px] font-normal leading-[1.28] text-landing-green tablet:mt-[22px] tablet:max-w-[751px] tablet:text-[22px] desktop:text-[25px]">
             Hashmar helps field agents register farmers, map farms, and unlock access to financing,
             training, and market opportunities.
           </p>
-          <div className="mt-[30px] flex w-full max-w-[520px] flex-col items-stretch gap-3 tablet:mt-10 tablet:max-w-none tablet:flex-row tablet:items-center tablet:justify-center tablet:gap-4 desktop:mt-[51px]">
+          <div className="mx-auto mt-[30px] flex w-[85%] max-w-[340px] flex-col items-stretch gap-3 tablet:mt-10 tablet:w-auto tablet:max-w-none tablet:flex-row tablet:items-center tablet:justify-center tablet:gap-4 desktop:mt-[51px]">
             <Link
               to="/agent/create-account"
-              className="inline-flex h-[52px] items-center justify-center rounded-[14px] bg-landing-green px-6 text-[17px] font-medium text-white shadow-landing-cta transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-landing-green/30 tablet:h-auto tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px]"
+              className="inline-flex h-[52px] w-full items-center justify-center rounded-[14px] bg-landing-green px-6 text-[17px] font-medium text-white shadow-landing-cta transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-landing-green/30 tablet:h-auto tablet:w-[252px] tablet:shrink-0 tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px]"
             >
               Sign up as agent
             </Link>
             <Link
-              to="/farmer/verify"
-              className="inline-flex h-[52px] items-center justify-center rounded-[14px] bg-landing-green px-6 text-[17px] font-medium text-white shadow-landing-cta transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-landing-green/30 tablet:h-auto tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px]"
+              to="/get-started"
+              className="inline-flex h-[52px] w-full items-center justify-center rounded-[14px] border border-landing-green bg-white px-6 text-[17px] font-medium text-landing-green transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-landing-green/30 tablet:h-auto tablet:w-[252px] tablet:shrink-0 tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px]"
             >
-              Login as farmer
+              Log in
             </Link>
           </div>
         </div>
