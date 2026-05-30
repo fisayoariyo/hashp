@@ -74,25 +74,33 @@ function PhoneStep({ onSubmit }) {
     </div>
   );
 
+  const goBackButton = (
+    <button
+      type="button"
+      onClick={() => navigate("/log-in")}
+      className="mb-6 flex items-center gap-2 self-start text-brand-text-secondary"
+    >
+      <ArrowLeft size={18} />
+      <span className="font-sans text-sm">Go back</span>
+    </button>
+  );
+
+  const noAccountLink = (
+    <button
+      type="button"
+      onClick={() => navigate("/farmer/get-started")}
+      className="w-full py-2 text-center font-sans text-sm font-medium text-brand-green"
+    >
+      I do not have an account
+    </button>
+  );
+
   const phoneActions = (
     <div className="w-full max-w-[560px] space-y-3">
       <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary w-full">
         {loading ? "Sending code..." : "Continue"}
       </button>
-      <button
-        type="button"
-        onClick={() => navigate("/log-in")}
-        className="w-full rounded-3xl bg-[#F6F6F6] px-6 py-4 font-display text-base font-semibold text-brand-green transition-all duration-200 active:scale-95"
-      >
-        Go back
-      </button>
-      <button
-        type="button"
-        onClick={() => navigate("/farmer/get-started")}
-        className="w-full rounded-3xl bg-gray-100 px-6 py-4 font-sans text-sm font-semibold text-brand-green transition-all duration-200 active:scale-95"
-      >
-        I do not have an account
-      </button>
+      {noAccountLink}
     </div>
   );
 
@@ -102,6 +110,7 @@ function PhoneStep({ onSubmit }) {
         {...FARMER_LOGIN_LAYOUT_PROPS}
         title="Log in to your profile"
         centerTitle
+        leading={goBackButton}
         contentClassName="max-w-[620px]"
         titleClassName="text-[2.7rem] leading-[1.08]"
         actions={phoneActions}
@@ -113,7 +122,8 @@ function PhoneStep({ onSubmit }) {
 
   return (
     <div className="page-white flex flex-col">
-      <div className="flex-1 px-5 pt-10">
+      <div className="flex-1 px-5 pt-5">
+        {goBackButton}
         <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-8 leading-tight">
           Log in to your profile
         </h1>
@@ -123,20 +133,7 @@ function PhoneStep({ onSubmit }) {
         <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary">
           {loading ? "Sending code..." : "Continue"}
         </button>
-        <button
-          type="button"
-          onClick={() => navigate("/log-in")}
-          className="w-full rounded-[14px] bg-[#F6F6F6] px-6 py-4 font-display text-base font-semibold text-brand-green transition-all duration-200 active:scale-95"
-        >
-          Go back
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate("/farmer/get-started")}
-          className="w-full py-4 font-sans text-sm font-semibold text-brand-green"
-        >
-          I do not have an account
-        </button>
+        {noAccountLink}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Smartphone, Mail, Lock, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { User, Smartphone, Mail, Lock, Eye, EyeOff, ChevronDown, ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
@@ -214,6 +214,17 @@ export default function AgentCreateAccount() {
     }
   };
 
+  const goBackButton = (
+    <button
+      type="button"
+      onClick={() => navigate("/get-started")}
+      className="mb-6 flex items-center gap-2 self-start text-brand-text-secondary"
+    >
+      <ArrowLeft size={18} />
+      <span className="font-sans text-sm">Go back</span>
+    </button>
+  );
+
   const errorNotifier = error ? (
     <AgentFormFeedback variant="error">{error}</AgentFormFeedback>
   ) : null;
@@ -370,7 +381,7 @@ export default function AgentCreateAccount() {
 
   if (isDesktop) {
     return (
-      <AgentAuthDesktopLayout title="Create Agent Account" actions={actions}>
+      <AgentAuthDesktopLayout title="Create Agent Account" leading={goBackButton} actions={actions}>
         {formFields}
       </AgentAuthDesktopLayout>
     );
@@ -378,7 +389,8 @@ export default function AgentCreateAccount() {
 
   return (
     <div className="w-full flex flex-col bg-white" style={{ minHeight: "100dvh" }}>
-      <div className="flex-1 overflow-y-auto px-5 pt-10 pb-6 w-full max-w-[480px] mx-auto">
+      <div className="flex-1 overflow-y-auto px-5 pt-5 pb-6 w-full max-w-[480px] mx-auto">
+        {goBackButton}
         <h1 className="font-display font-bold text-[2rem] leading-tight text-brand-text-primary mb-8">Create Agent Account</h1>
         {formFields}
         <div className="space-y-3 pb-[max(2rem,env(safe-area-inset-bottom))] mt-5">
