@@ -62,6 +62,52 @@ function parse409ConflictFields(body) {
   return fields;
 }
 
+function extractFieldErrorText(error, field) {
+  const body = error?.body;
+  const message = String(error?.message || "").trim();
+
+  const fieldMatchers = {
+    password: /registrationrequest\.password|\bpassword\b/i,
+    email: /registrationrequest\.email|\bemail\b/i,
+    phone: /registrationrequest\.phone|phone_number|\bphone\b/i,
+    fullName: /registrationrequest\.full[_ ]?name|full[_ ]?name/i,
+    gender: /registrationrequest\.gender|\bgender\b/i,
+  };
+  const matcher = fieldMatchers[field];
+  if (!matcher) return "";
+
+  const pickText = (item) => {
+    if (typeof item === "string") return item.trim();
+    if (!item || typeof item !== "object") return "";
+    return String(item.message || item.error || item.detail || "").trim();
+  };
+
+  if (body && typeof body === "object") {
+    if (typeof body.errors === "string" && body.errors.trim() && matcher.test(body.errors)) {
+      return body.errors.trim();
+    }
+    if (Array.isArray(body.errors)) {
+      for (const item of body.errors) {
+        const hint = typeof item === "object"
+          ? [item.field, item.property, item.path, item.param].filter(Boolean).join(" ")
+          : "";
+        const text = pickText(item) || hint;
+        if (text && (matcher.test(text) || matcher.test(hint))) {
+          return pickText(item) || text.trim();
+        }
+      }
+    }
+  }
+
+  if (message && matcher.test(message)) return message;
+  return "";
+}
+
+function setFieldErrorFromBackend(next, error, field, nextKey = field) {
+  const text = extractFieldErrorText(error, field);
+  if (text) next[nextKey] = text;
+}
+
 function getSignupFieldErrors(error) {
   const body = error?.body;
   const status = Number(error?.status || 0);
@@ -92,21 +138,11 @@ function getSignupFieldErrors(error) {
     return next;
   }
 
-  if (/registrationrequest\.email/i.test(message) || /email tag/i.test(message)) {
-    next.email = "Enter a valid email address.";
-  }
-  if (/registrationrequest\.phone/i.test(message) || /phone_number/i.test(message)) {
-    next.phone = "Enter a valid phone number.";
-  }
-  if (/registrationrequest\.password/i.test(message) || /password/i.test(message)) {
-    next.password = "Use a password with at least 8 characters.";
-  }
-  if (/registrationrequest\.full[_ ]?name/i.test(message) || /full[_ ]?name/i.test(message)) {
-    next.fullName = "Enter your full name.";
-  }
-  if (/registrationrequest\.gender/i.test(message) || /gender/i.test(message)) {
-    next.gender = "Select a valid gender.";
-  }
+  setFieldErrorFromBackend(next, error, "email");
+  setFieldErrorFromBackend(next, error, "phone");
+  setFieldErrorFromBackend(next, error, "password");
+  setFieldErrorFromBackend(next, error, "fullName");
+  setFieldErrorFromBackend(next, error, "gender");
 
   return next;
 }
