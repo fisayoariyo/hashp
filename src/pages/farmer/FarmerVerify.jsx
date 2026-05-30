@@ -2,7 +2,6 @@ import { createRef, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
 import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
-import FarmerOnboarding from "../../components/farmer/FarmerOnboarding";
 import { farmerLoginHero } from "../../mockData/farmer";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import {
@@ -345,19 +344,8 @@ function OTPStep({ phone, onSuccess, onBack }) {
 
 export default function FarmerVerify() {
   const navigate = useNavigate();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [step, setStep] = useState(() => (window.matchMedia("(min-width: 768px)").matches ? "phone" : "onboarding"));
+  const [step, setStep] = useState("phone");
   const [phone, setPhone] = useState("");
-
-  useEffect(() => {
-    if (isDesktop && step === "onboarding") {
-      setStep("phone");
-    }
-  }, [isDesktop, step]);
-
-  if (step === "onboarding") {
-    return <FarmerOnboarding onDone={() => setStep("phone")} />;
-  }
 
   if (step === "phone") {
     return (

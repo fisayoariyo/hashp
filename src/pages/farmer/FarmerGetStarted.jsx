@@ -11,7 +11,7 @@ const COPY = {
   phoneHref: "tel:+2348133905285",
   email: "support@hashmar.com",
   emailHref: "mailto:support@hashmar.com",
-  loginPrompt: "Do you have an account?",
+  loginPrompt: "If you have an account?",
   loginLink: "Log in to your farmer account",
 };
 
@@ -135,7 +135,7 @@ function DesktopFarmerGetStarted() {
 
           <GoBackButton
             pill
-            onClick={() => navigate("/get-started")}
+            onClick={() => navigate("/")}
             className="mt-12 shrink-0 lg:mt-0"
           />
         </div>
@@ -163,7 +163,7 @@ function MobileFarmerGetStarted() {
       </div>
 
       <div className="mt-auto pt-10">
-        <GoBackButton onClick={() => navigate("/get-started")} />
+        <GoBackButton onClick={() => navigate("/")} />
       </div>
     </div>
   );
