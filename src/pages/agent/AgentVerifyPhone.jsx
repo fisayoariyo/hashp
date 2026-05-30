@@ -3,58 +3,55 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
+import OtpCooldownFeedback from "../../components/agent/OtpCooldownFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useOtpCountdown } from "../../hooks/useOtpCountdown";
 import {
   agentVerifyOtp,
-  resendOtp,
+  resendAuthOtp,
   setAgentSessionFromAuthResponse,
-  verifyOtp,
+  verifyAuthOtp,
 } from "../../services/cropexApi";
-import { formatPhoneForDisplay } from "../../utils/helpers";
+import { getUserFacingError } from "../../utils/apiErrors";
 
 const REG_KEY = "hcx_agent_registration";
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
-const RESET_PHONE_KEY = "hcx_agent_reset_phone";
+const RESET_EMAIL_KEY = "hcx_agent_reset_email";
 const RESET_OTP_KEY = "hcx_agent_reset_otp";
 const OTP_LENGTH = 6;
-
-function formatPhoneForLocalStore(digits) {
-  const normalized = String(digits || "").replace(/\D/g, "");
-  if (!normalized) return "";
-  if (normalized.startsWith("234")) return `+${normalized}`;
-  if (normalized.startsWith("0")) return `+234${normalized.slice(1)}`;
-  return `+234${normalized}`;
-}
 
 export default function AgentVerifyPhone() {
   const navigate = useNavigate();
   const location = useLocation();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const mode = location.state?.mode === "reset-password" ? "reset-password" : "register";
-  const resetPhone = location.state?.phone || "";
+  const resetEmail = String(location.state?.email || "").trim();
 
   const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown, clear: clearCooldown } =
+    useOtpCountdown();
 
   useEffect(() => {
     if (mode !== "register") return;
     let cancelled = false;
-    (async () => {
-      try {
-        const raw = sessionStorage.getItem(REG_KEY);
-        const reg = raw ? JSON.parse(raw) : {};
-        const phone = formatPhoneForLocalStore(reg.phone);
-        if (!phone) {
-          if (!cancelled) setError("Missing phone number. Go back to create account.");
-          return;
-        }
-        setRegisterPhone(phone);
-      } catch {
-        if (!cancelled) setError("Could not prepare verification code.");
+    try {
+      const raw = sessionStorage.getItem(REG_KEY);
+      const reg = raw ? JSON.parse(raw) : {};
+      const phone = String(reg.phoneNumber || reg.phone || "").trim();
+      const email = String(reg.email || "").trim();
+      if (!phone || !email) {
+        if (!cancelled) setError("Missing account details. Go back to create account.");
+        return;
       }
-    })();
+      setRegisterPhone(phone);
+      setRegisterEmail(email);
+    } catch {
+      if (!cancelled) setError("Could not prepare verification code.");
+    }
     return () => {
       cancelled = true;
     };
@@ -64,7 +61,7 @@ export default function AgentVerifyPhone() {
 
   useEffect(() => {
     refs[0].current?.focus();
-  }, []);
+  }, [refs]);
 
   useEffect(() => {
     if (mode === "register") {
@@ -75,10 +72,10 @@ export default function AgentVerifyPhone() {
       } catch {
         navigate("/agent/create-account", { replace: true });
       }
-    } else if (!resetPhone) {
+    } else if (!resetEmail) {
       navigate("/agent/forgot-password", { replace: true });
     }
-  }, [mode, resetPhone, navigate]);
+  }, [mode, resetEmail, navigate]);
 
   const handleChange = (index, event) => {
     const raw = event.target.value.replace(/\D/g, "");
@@ -129,25 +126,27 @@ export default function AgentVerifyPhone() {
 
     setLoading(true);
     setError("");
+    clearCooldown();
     try {
       if (mode === "reset-password") {
-        await verifyOtp(resetPhone, otp);
+        await verifyAuthOtp({ email: resetEmail, otp });
         sessionStorage.setItem(RESET_FLAG, "1");
-        sessionStorage.setItem(RESET_PHONE_KEY, formatPhoneForLocalStore(resetPhone));
+        sessionStorage.setItem(RESET_EMAIL_KEY, resetEmail);
         sessionStorage.setItem(RESET_OTP_KEY, otp);
         navigate("/agent/reset-password-new", { replace: true });
         return;
       }
 
-      if (!registerPhone) {
-        setError("Missing phone number.");
+      if (!registerPhone || !registerEmail) {
+        setError("Missing account details.");
         return;
       }
       const response = await agentVerifyOtp(registerPhone, otp);
       setAgentSessionFromAuthResponse(response);
       navigate("/agent/select-location");
     } catch (verifyError) {
-      setError(verifyError instanceof Error ? verifyError.message : "Verification failed.");
+      const facing = getUserFacingError(verifyError, "Verification failed.");
+      setError(facing.message);
       resetOtpInputs();
     } finally {
       setLoading(false);
@@ -155,40 +154,45 @@ export default function AgentVerifyPhone() {
   };
 
   const handleResend = async () => {
+    if (isCooldownActive) return;
+
     setError("");
+    clearCooldown();
     setLoading(true);
     try {
       if (mode === "reset-password") {
-        if (!resetPhone) return;
-        await resendOtp(resetPhone);
+        if (!resetEmail) return;
+        await resendAuthOtp({ email: resetEmail });
       } else {
-        if (!registerPhone) return;
-        await resendOtp(registerPhone);
+        if (!registerEmail) return;
+        await resendAuthOtp({ email: registerEmail, phone: registerPhone });
       }
     } catch (resendError) {
-      const message = resendError instanceof Error ? resendError.message : "Could not resend code.";
-      if (mode === "register" && /already exists|already in use|conflict/i.test(message)) {
-        setError("This signup already exists. Use the latest OTP sent to this phone number, or restart with a fresh number.");
+      const facing = getUserFacingError(resendError, "Could not resend code.");
+      if (facing.isCooldown && facing.retrySeconds) {
+        startCooldown(facing.retrySeconds);
+        setError("");
+      } else if (mode === "register" && /already exists|already in use|conflict/i.test(facing.message)) {
+        setError(
+          "This signup already exists. Use the latest code sent to your email, or restart with a fresh account.",
+        );
       } else {
-        setError(message);
+        setError(facing.message);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const otpDestinationPhone =
-    mode === "register" ? registerPhone : formatPhoneForLocalStore(resetPhone);
-  const otpDestinationLabel = formatPhoneForDisplay(otpDestinationPhone);
-
-  const otpPhoneHint = otpDestinationLabel ? (
+  const otpDestinationEmail = mode === "register" ? registerEmail : resetEmail;
+  const otpDestinationHint = otpDestinationEmail ? (
     <p
       className={`font-sans text-xs text-brand-text-muted ${
         isDesktop ? "mx-auto mb-4 max-w-[360px] text-center" : "mb-4"
       }`}
     >
       Code sent to{" "}
-      <span className="font-medium text-brand-text-secondary">{otpDestinationLabel}</span>
+      <span className="font-medium text-brand-text-secondary">{otpDestinationEmail}</span>
     </p>
   ) : null;
 
@@ -206,9 +210,9 @@ export default function AgentVerifyPhone() {
           onChange={(event) => handleChange(index, event)}
           onKeyDown={(event) => handleKeyDown(index, event)}
           onPaste={index === 0 ? handlePaste : undefined}
-          className={`w-full ${isDesktop ? "h-[44px] text-[18px] rounded-[10px]" : "h-16 text-2xl rounded-2xl"} text-center font-bold font-display bg-white border-2 focus:outline-none transition-colors ${
+          className={`w-full ${isDesktop ? "h-[44px] rounded-[10px] text-[18px]" : "h-16 rounded-2xl text-2xl"} border-2 text-center font-display font-bold transition-colors focus:border-brand-green focus:outline-none ${
             digit ? "border-brand-green text-brand-green" : "border-brand-border"
-          } focus:border-brand-green`}
+          } bg-white`}
         />
       ))}
     </div>
@@ -216,58 +220,64 @@ export default function AgentVerifyPhone() {
 
   const otpMeta = (
     <>
-      {error && (
+      {error ? (
         <div className={`mb-4 ${isDesktop ? "flex justify-center" : ""}`}>
           <AgentFormFeedback variant="error" className={isDesktop ? "text-[13px]" : ""}>
             {error}
           </AgentFormFeedback>
         </div>
-      )}
-      <p className={`font-sans text-brand-text-secondary ${isDesktop ? "text-[14px] text-center" : "text-sm"}`}>
+      ) : null}
+      <OtpCooldownFeedback seconds={cooldownSeconds} className={isDesktop ? "mx-auto mb-4" : "mb-4"} />
+      <p className={`font-sans text-brand-text-secondary ${isDesktop ? "text-center text-[14px]" : "text-sm"}`}>
         I did not receive a code,{" "}
         <button
           type="button"
           onClick={() => void handleResend()}
-          disabled={loading}
-          className="text-brand-green font-semibold disabled:opacity-50"
+          disabled={loading || isCooldownActive}
+          className="font-semibold text-brand-green disabled:opacity-50"
         >
-          Resend Code
+          {isCooldownActive ? `Resend in ${cooldownSeconds}s` : "Resend Code"}
         </button>
       </p>
     </>
   );
 
+  const pageTitle = "Verify email address";
+  const pageSubtitle = `Enter the ${OTP_LENGTH}-digit code we sent to your registered email address`;
+
   if (isDesktop) {
     return (
       <AgentAuthDesktopLayout
-        title="Verify Phone number"
-        subtitle={`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
+        title={pageTitle}
+        subtitle={pageSubtitle}
         centerTitle
         titleClassName="text-[46px] leading-[1.05] mb-2"
         subtitleClassName="text-[19px] leading-[1.3] mb-8"
         actionsClassName="mt-auto pt-7"
         actions={
-          <div className="space-y-3 w-full">
+          <div className="w-full space-y-3">
             <button
               type="button"
               onClick={() => void handleContinue()}
               disabled={loading || digits.join("").length < OTP_LENGTH}
-              className="w-full h-[44px] rounded-2xl bg-brand-green text-white font-sans text-[20px] leading-none font-medium inline-flex items-center justify-center transition-all duration-200 active:scale-95 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex h-[44px] w-full items-center justify-center rounded-2xl bg-brand-green font-sans text-[20px] font-medium leading-none text-white transition-all duration-200 active:scale-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Verifying..." : "Continue"}
             </button>
             <button
               type="button"
-              onClick={() => navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")}
-              className="w-full h-[44px] rounded-2xl bg-gray-100 text-brand-green font-sans text-[20px] leading-none font-medium inline-flex items-center justify-center"
+              onClick={() =>
+                navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")
+              }
+              className="inline-flex h-[44px] w-full items-center justify-center rounded-2xl bg-gray-100 font-sans text-[20px] font-medium leading-none text-brand-green"
             >
-              {mode === "reset-password" ? "Back" : "Edit phone number"}
+              {mode === "reset-password" ? "Back" : "Edit account details"}
             </button>
           </div>
         }
       >
         {otpGrid}
-        {otpPhoneHint}
+        {otpDestinationHint}
         {otpMeta}
       </AgentAuthDesktopLayout>
     );
@@ -279,20 +289,18 @@ export default function AgentVerifyPhone() {
         <button
           type="button"
           onClick={() => navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")}
-          className="flex items-center gap-2 text-brand-text-secondary mb-6"
+          className="mb-6 flex items-center gap-2 text-brand-text-secondary"
         >
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Verify Phone number</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">
-          {`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
-        </p>
+        <h1 className="mb-2 font-display text-3xl font-bold text-brand-text-primary">{pageTitle}</h1>
+        <p className="mb-8 font-sans text-sm text-brand-text-secondary">{pageSubtitle}</p>
         {otpGrid}
-        {otpPhoneHint}
+        {otpDestinationHint}
         {otpMeta}
       </div>
-      <div className="px-5 pb-8 space-y-3">
+      <div className="space-y-3 px-5 pb-8">
         <button
           type="button"
           onClick={() => void handleContinue()}
@@ -304,9 +312,9 @@ export default function AgentVerifyPhone() {
         <button
           type="button"
           onClick={() => navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")}
-          className="w-full text-center text-brand-green font-sans text-sm font-medium py-2"
+          className="w-full py-2 text-center font-sans text-sm font-medium text-brand-green"
         >
-          {mode === "reset-password" ? "Back" : "Edit phone number"}
+          {mode === "reset-password" ? "Back" : "Edit account details"}
         </button>
       </div>
     </div>

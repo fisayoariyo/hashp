@@ -5,6 +5,7 @@ import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayou
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { agentRegister, formatPhoneForApi } from "../../services/cropexApi";
+import { getUserFacingError } from "../../utils/apiErrors";
 
 const REG_KEY = "hcx_agent_registration";
 
@@ -191,7 +192,7 @@ export default function AgentCreateAccount() {
       );
 
       navigate("/agent/verify-phone", {
-        state: { phone: form.phone, mode: "register" },
+        state: { phone: form.phone, email: form.email.trim(), mode: "register" },
       });
     } catch (submitError) {
       try {
@@ -206,7 +207,7 @@ export default function AgentCreateAccount() {
       } else if (submitError?.status === 409) {
         setError("This account could not be created. Check your phone number and email, then try again.");
       } else {
-        setError(submitError instanceof Error ? submitError.message : "Could not create the account.");
+        setError(getUserFacingError(submitError, "Could not create the account.").message);
       }
     } finally {
       setLoading(false);

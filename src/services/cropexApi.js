@@ -292,32 +292,59 @@ export function clearFarmerSession() {
 }
 
 export function sendOtp(phone) {
+  return requestAuthOtp({ phone });
+}
+
+/** Request OTP via email or phone using unified auth login route. */
+export function requestAuthOtp({ email, phone } = {}) {
+  const body = {};
+  if (email?.trim()) body.email = email.trim();
+  if (phone) body.phone_number = formatPhoneForApi(phone);
   return cropexFetch("/auth/login", {
     method: "POST",
-    body: { phone_number: formatPhoneForApi(phone) },
+    body,
   });
 }
 
-/** Resend OTP using auth resend route. */
-export function resendOtp(phone) {
+/** Resend OTP via email or phone. */
+export function resendOtp(identifier) {
+  if (typeof identifier === "object" && identifier !== null) {
+    return resendAuthOtp(identifier);
+  }
+  return resendAuthOtp({ phone: identifier });
+}
+
+export function resendAuthOtp({ email, phone } = {}) {
+  const body = {};
+  if (email?.trim()) body.email = email.trim();
+  if (phone) body.phone_number = formatPhoneForApi(phone);
   return cropexFetch("/auth/resend-otp", {
     method: "POST",
-    body: { phone_number: formatPhoneForApi(phone) },
+    body,
   });
 }
 
 /** Backward-compatible alias for signup resend usage. */
-export function resendRegistrationOtp(phone) {
-  return resendOtp(phone);
+export function resendRegistrationOtp({ email, phone } = {}) {
+  return resendAuthOtp({ email, phone });
 }
 
-export function verifyOtp(phone, code) {
+export function verifyOtp(identifier, code) {
+  if (typeof identifier === "object" && identifier !== null) {
+    return verifyAuthOtp({ ...identifier, otp: code });
+  }
+  return verifyAuthOtp({ phone: identifier, otp: code });
+}
+
+export function verifyAuthOtp({ email, phone, otp }) {
+  const body = {
+    otp: String(otp || "").trim(),
+  };
+  if (email?.trim()) body.email = email.trim();
+  if (phone) body.phone_number = formatPhoneForApi(phone);
   return cropexFetch("/auth/verify", {
     method: "POST",
-    body: {
-      phone_number: formatPhoneForApi(phone),
-      otp: String(code || "").trim(),
-    },
+    body,
   });
 }
 
@@ -331,14 +358,16 @@ export function agentVerifyOtp(phone, code) {
   });
 }
 
-export function resetPassword({ phone, otp, newPassword }) {
+export function resetPassword({ email, phone, otp, newPassword }) {
+  const body = {
+    otp: String(otp || "").trim(),
+    new_password: newPassword,
+  };
+  if (email?.trim()) body.email = email.trim();
+  if (phone) body.phone_number = formatPhoneForApi(phone);
   return cropexFetch("/auth/reset-password", {
     method: "POST",
-    body: {
-      phone_number: formatPhoneForApi(phone),
-      otp: String(otp || "").trim(),
-      new_password: newPassword,
-    },
+    body,
   });
 }
 

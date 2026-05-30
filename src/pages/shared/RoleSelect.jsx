@@ -60,23 +60,21 @@ function RoleCards({ selected, onSelect, className = "max-w-[520px]" }) {
         onClick={() => onSelect("farmer")}
         className={`overflow-hidden rounded-[15px] text-left transition-all duration-200 ${
           selected === "farmer"
-            ? "border-2 border-gray-300 shadow-sm"
+            ? "border-2 border-brand-green shadow-md"
             : "border border-gray-200 shadow-sm"
         }`}
       >
-        <div className="aspect-square w-full overflow-hidden bg-gray-100">
+        <div className="aspect-square w-full overflow-hidden">
           <img
             src={FARMER_CARD_IMAGE}
             alt="Farmer"
-            className="h-full w-full object-cover opacity-75 grayscale"
+            className="h-full w-full object-cover"
             style={{ objectPosition: FARMER_CARD_IMAGE_POSITION }}
           />
         </div>
         <div
           className={`py-4 text-center font-sans text-sm font-medium transition-colors ${
-            selected === "farmer"
-              ? "bg-gray-200 text-gray-600"
-              : "bg-gray-50 text-brand-text-secondary"
+            selected === "farmer" ? "bg-brand-green text-white" : "bg-white text-brand-text-primary"
           }`}
         >
           Farmer

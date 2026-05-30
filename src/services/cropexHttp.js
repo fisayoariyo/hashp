@@ -13,13 +13,29 @@ function buildCropexUrl(path) {
   return `${getCropexBaseUrl()}${normalizedPath}`;
 }
 
+function isTechnicalErrorText(text) {
+  const value = String(text || "");
+  return (
+    /[{[\]}]|statusCode|validation_error|notification\.|SendEmail|resend\.|\.go:\d+/i.test(value) ||
+    value.length > 180
+  );
+}
+
 function getErrorMessage(status, body) {
-  if (typeof body === "string" && body.trim()) return body.trim();
+  if (typeof body === "string" && body.trim()) {
+    return isTechnicalErrorText(body) ? `Request failed with status ${status}.` : body.trim();
+  }
   if (body && typeof body === "object") {
     if (typeof body.errors === "string" && body.errors.trim()) {
       const baseMessage =
         typeof body.message === "string" && body.message.trim() ? body.message.trim() : "";
-      return baseMessage ? `${baseMessage}: ${body.errors.trim()}` : body.errors.trim();
+      const details = body.errors.trim();
+      if (isTechnicalErrorText(details)) {
+        return baseMessage && !isTechnicalErrorText(baseMessage)
+          ? baseMessage
+          : `Request failed with status ${status}.`;
+      }
+      return baseMessage ? `${baseMessage}: ${details}` : details;
     }
     if (Array.isArray(body.errors) && body.errors.length > 0) {
       const details = body.errors
@@ -43,9 +59,21 @@ function getErrorMessage(status, body) {
         return baseMessage ? `${baseMessage}: ${details}` : details;
       }
     }
-    if (typeof body.message === "string" && body.message.trim()) return body.message.trim();
-    if (typeof body.error === "string" && body.error.trim()) return body.error.trim();
-    if (typeof body.details === "string" && body.details.trim()) return body.details.trim();
+    if (typeof body.message === "string" && body.message.trim()) {
+      return isTechnicalErrorText(body.message)
+        ? `Request failed with status ${status}.`
+        : body.message.trim();
+    }
+    if (typeof body.error === "string" && body.error.trim()) {
+      return isTechnicalErrorText(body.error)
+        ? `Request failed with status ${status}.`
+        : body.error.trim();
+    }
+    if (typeof body.details === "string" && body.details.trim()) {
+      return isTechnicalErrorText(body.details)
+        ? `Request failed with status ${status}.`
+        : body.details.trim();
+    }
   }
   return `Request failed with status ${status}.`;
 }

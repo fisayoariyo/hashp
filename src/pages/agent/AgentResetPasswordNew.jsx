@@ -4,9 +4,10 @@ import { ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { resetPassword } from "../../services/cropexApi";
+import { getUserFacingError } from "../../utils/apiErrors";
 
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
-const RESET_PHONE_KEY = "hcx_agent_reset_phone";
+const RESET_EMAIL_KEY = "hcx_agent_reset_email";
 const RESET_OTP_KEY = "hcx_agent_reset_otp";
 
 export default function AgentResetPasswordNew() {
@@ -23,7 +24,7 @@ export default function AgentResetPasswordNew() {
     try {
       if (
         sessionStorage.getItem(RESET_FLAG) !== "1" ||
-        !sessionStorage.getItem(RESET_PHONE_KEY) ||
+        !sessionStorage.getItem(RESET_EMAIL_KEY) ||
         !sessionStorage.getItem(RESET_OTP_KEY)
       ) {
         navigate("/agent/forgot-password", { replace: true });
@@ -46,11 +47,11 @@ export default function AgentResetPasswordNew() {
     setError("");
     setLoading(true);
     try {
-      const phone = sessionStorage.getItem(RESET_PHONE_KEY) || "";
+      const email = sessionStorage.getItem(RESET_EMAIL_KEY) || "";
       const otp = sessionStorage.getItem(RESET_OTP_KEY) || "";
-      await resetPassword({ phone, otp, newPassword: password });
+      await resetPassword({ email, otp, newPassword: password });
       sessionStorage.removeItem(RESET_FLAG);
-      sessionStorage.removeItem(RESET_PHONE_KEY);
+      sessionStorage.removeItem(RESET_EMAIL_KEY);
       sessionStorage.removeItem(RESET_OTP_KEY);
       sessionStorage.setItem(
         "hcx_agent_login_message",
@@ -58,7 +59,7 @@ export default function AgentResetPasswordNew() {
       );
       navigate("/agent/login");
     } catch (resetError) {
-      setError(resetError instanceof Error ? resetError.message : "Could not reset password.");
+      setError(getUserFacingError(resetError, "Could not reset password.").message);
     } finally {
       setLoading(false);
     }
