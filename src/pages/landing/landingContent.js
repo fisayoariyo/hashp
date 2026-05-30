@@ -97,6 +97,7 @@ export const LANDING_TABS = {
       title: "Get started as a farmer",
       buttonLabel: "Get started",
       href: "/farmer/get-started",
+      returnState: { returnTo: "/" },
       image: "/landing/images/farmer-card-cta.png",
       alt: "Farmer get started call to action",
       position: "62% 48%",

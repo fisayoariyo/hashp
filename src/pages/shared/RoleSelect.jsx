@@ -39,7 +39,7 @@ function useRoleSelect(mode) {
       return;
     }
 
-    if (role === "farmer") navigate("/farmer/get-started");
+    if (role === "farmer") navigate("/farmer/get-started", { state: { returnTo: "/get-started" } });
     else navigate("/agent/create-account");
   };
 

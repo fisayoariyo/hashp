@@ -39,6 +39,7 @@ function LandingHowCtaCard({ cta }) {
         <h3 className="text-[19px] font-bold tablet:text-[20px]">{cta.title}</h3>
         <Link
           to={cta.href}
+          state={cta.returnState}
           className="mt-[18px] flex h-[50px] items-center justify-center rounded-[15px] border border-white bg-black/20 text-[15px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-[3px]"
         >
           {cta.buttonLabel ?? "Get started"}
