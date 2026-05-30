@@ -22,6 +22,8 @@ import {
   sendOtp,
   verifyOtp,
 } from "../../services/cropexApi";
+import { getUserFacingError, getDisplayError } from "../../utils/apiErrors";
+import { PASSWORD_ERROR, PASSWORD_HINT, validateStrongPassword, mapSignupFieldError } from "../../utils/password";
 
 const OTP_LENGTH = 6;
 
@@ -56,11 +58,7 @@ function ChangePasswordScreen({ onBack }) {
       })
       .catch((requestError) => {
         if (active) {
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Could not send a verification code."
-          );
+          setError(getDisplayError(requestError, "Could not send a verification code."));
         }
       })
       .finally(() => {
@@ -100,15 +98,16 @@ function ChangePasswordScreen({ onBack }) {
       await verifyOtp(phone, otp);
       setStep("new");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not verify the code.");
+      setError(getDisplayError(requestError, "Could not verify the code."));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleSave = async () => {
-    if (password.length < 8) {
-      setError("Minimum 8 characters.");
+    const passwordCheck = validateStrongPassword(password);
+    if (!passwordCheck.valid) {
+      setError(passwordCheck.message);
       return;
     }
     if (password !== confirm) {
@@ -123,8 +122,10 @@ function ChangePasswordScreen({ onBack }) {
       setSuccess(true);
       window.setTimeout(() => onBack(), 2000);
     } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
       setError(
-        requestError instanceof Error ? requestError.message : "Could not update the password."
+        mapSignupFieldError("password", raw) ||
+          getUserFacingError(requestError, "Could not update the password.").message,
       );
     } finally {
       setSubmitting(false);
@@ -139,7 +140,7 @@ function ChangePasswordScreen({ onBack }) {
       await sendOtp(phone);
       setOtpSent(true);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not resend the code.");
+      setError(getDisplayError(requestError, "Could not resend the code."));
     } finally {
       setSubmitting(false);
     }
@@ -223,12 +224,13 @@ function ChangePasswordScreen({ onBack }) {
                     <label className="font-sans text-sm font-medium text-brand-text-primary">
                       New Password
                     </label>
+                    <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
                     <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all">
                       <input
                         type={showPass ? "text" : "password"}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        placeholder="Enter new password"
+                        placeholder="e.g. Farm2026!"
                         className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
                       />
                       <button

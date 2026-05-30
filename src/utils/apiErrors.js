@@ -32,9 +32,10 @@ export function parseOtpRetrySeconds(error) {
   return null;
 }
 
-function isTechnicalMessage(message) {
+export function isTechnicalApiMessage(message) {
   const text = String(message || "");
   return (
+    /registrationrequest\.|failed on the '|error:field validation|key:\s*'/i.test(text) ||
     /[{[\]}]|statusCode|validation_error|notification\.|SendEmail|resend\.|\.go:\d+|Unauthorized|Forbidden/i.test(
       text,
     ) || text.length > 180
@@ -56,11 +57,14 @@ export function getUserFacingError(error, fallback = "Something went wrong. Plea
     };
   }
 
-  if (isTechnicalMessage(rawMessage) || isTechnicalMessage(collectErrorText(error))) {
+  if (isTechnicalApiMessage(rawMessage) || isTechnicalApiMessage(collectErrorText(error))) {
     if (status === 404) {
       return { message: "We could not find an account with that email.", retrySeconds: null, isCooldown: false };
     }
     if (status === 400) {
+      return { message: "Please check your details and try again.", retrySeconds: null, isCooldown: false };
+    }
+    if (status === 422) {
       return { message: "Please check your details and try again.", retrySeconds: null, isCooldown: false };
     }
     if (status === 403 || status >= 500) {
@@ -86,4 +90,8 @@ export function getUserFacingError(error, fallback = "Something went wrong. Plea
     retrySeconds: null,
     isCooldown: false,
   };
+}
+
+export function getDisplayError(error, fallback = "Something went wrong. Please try again.") {
+  return getUserFacingError(error, fallback).message;
 }

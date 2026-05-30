@@ -11,6 +11,7 @@ import {
   getAgentSession,
   setAgentSessionFromAuthResponse,
 } from "../../services/cropexApi";
+import { getDisplayError } from "../../utils/apiErrors";
 import {
   clearAgentStatusPreview,
   getAgentStatusNavigateOptions,
@@ -95,11 +96,7 @@ export default function AgentLogin() {
           return;
         }
       }
-      if (loginError instanceof Error) {
-        setError(loginError.message || "Invalid email or password.");
-      } else {
-        setError("Invalid email or password.");
-      }
+      setError(getDisplayError(loginError, "Invalid email or password."));
     } finally {
       setLoading(false);
     }

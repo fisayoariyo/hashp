@@ -17,6 +17,7 @@ import {
   listOfflineFarmers,
   setOfflineFarmersSyncing,
 } from "../services/offlineFarmersDb";
+import { getDisplayError } from "../utils/apiErrors";
 
 function mergeFarmers(offlineFarmers, remoteFarmers = []) {
   const takenIds = new Set(
@@ -110,7 +111,7 @@ async function syncPendingOfflineFarmers(references = []) {
         phone: record.payload?.phone_number,
         nin: record.payload?.nin,
         name: record.payload?.full_name,
-        errorMessage: error instanceof Error ? error.message : "Sync failed.",
+        errorMessage: getDisplayError(error, "Sync failed."),
       })),
     }).then((result) => {
       throw Object.assign(error instanceof Error ? error : new Error("Sync failed."), {
@@ -170,7 +171,7 @@ export function useAgentFarmersSync() {
         const remoteFarmers = await fetchRemoteFarmers();
         setFarmers(mergeFarmers(offlineFarmers, remoteFarmers));
       } catch (error) {
-        setListError(error instanceof Error ? error.message : "Could not load farmers from the server.");
+        setListError(getDisplayError(error, "Could not load farmers from the server."));
         setFarmers(mergeFarmers(offlineFarmers, []));
       }
     } catch {
@@ -213,7 +214,7 @@ export function useAgentFarmersSync() {
         return result.syncedRecords[0] || null;
       } catch (error) {
         await refreshFromApi();
-        showMessage(error instanceof Error ? error.message : "Farmer sync failed.");
+        showMessage(getDisplayError(error, "Farmer sync failed."));
         return null;
       } finally {
         setSyncing(false);
@@ -244,7 +245,7 @@ export function useAgentFarmersSync() {
       return result;
     } catch (error) {
       await refreshFromApi();
-      showMessage(error instanceof Error ? error.message : "Sync failed.");
+      showMessage(getDisplayError(error, "Sync failed."));
       return error?.syncResult || { syncedRecords: [], failedRecords: [] };
     } finally {
       setSyncing(false);

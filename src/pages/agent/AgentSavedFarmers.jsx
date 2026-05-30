@@ -7,6 +7,7 @@ import AgentStatusPanel from "../../components/agent/AgentStatusPanel";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import FarmerDigitalIdCard from "../../components/agent/FarmerDigitalIdCard";
 import { getAgentSession } from "../../services/cropexApi";
+import { getDisplayError } from "../../utils/apiErrors";
 
 function FilterPill({ value, onChange, options }) {
   return (
@@ -544,7 +545,7 @@ export default function AgentSavedFarmers() {
       setSearchResults(results);
     } catch (error) {
       setSearchResults([]);
-      setSearchError(error instanceof Error ? error.message : "Search failed.");
+      setSearchError(getDisplayError(error, "Search failed."));
     } finally {
       setSearching(false);
     }

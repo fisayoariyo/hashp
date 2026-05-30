@@ -5,6 +5,7 @@ import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayou
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { resetPassword } from "../../services/cropexApi";
 import { getUserFacingError } from "../../utils/apiErrors";
+import { PASSWORD_ERROR, PASSWORD_HINT, validateStrongPassword, mapSignupFieldError } from "../../utils/password";
 
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
 const RESET_EMAIL_KEY = "hcx_agent_reset_email";
@@ -35,8 +36,9 @@ export default function AgentResetPasswordNew() {
   }, [navigate]);
 
   const handleContinue = async () => {
-    if (password.length < 8) {
-      setError("Use at least 8 characters.");
+    const passwordCheck = validateStrongPassword(password);
+    if (!passwordCheck.valid) {
+      setError(passwordCheck.message);
       return;
     }
     if (password !== confirm) {
@@ -59,7 +61,8 @@ export default function AgentResetPasswordNew() {
       );
       navigate("/agent/login");
     } catch (resetError) {
-      setError(getUserFacingError(resetError, "Could not reset password.").message);
+      const raw = resetError instanceof Error ? resetError.message : "";
+      setError(mapSignupFieldError("password", raw) || getUserFacingError(resetError, "Could not reset password.").message);
     } finally {
       setLoading(false);
     }
@@ -69,6 +72,7 @@ export default function AgentResetPasswordNew() {
     <div className="space-y-4 w-full">
       <div className="flex flex-col gap-1.5">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Create your password</label>
+        <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
         <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all">
           <Lock size={18} className="text-brand-text-muted shrink-0" />
           <input
@@ -76,7 +80,7 @@ export default function AgentResetPasswordNew() {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your new password"
+            placeholder="e.g. Farm2026!"
             className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
           />
           <button type="button" onClick={() => setShowPass((value) => !value)} className="text-brand-text-muted shrink-0">

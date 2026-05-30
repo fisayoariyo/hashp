@@ -8,6 +8,7 @@ import {
 } from "../../hooks/useAgentFarmersSync";
 import { getAgentDashboard, getAgentSession, mapApiFarmerToUi } from "../../services/cropexApi";
 import { getAgentStatusRoute } from "../../utils/agentStatus";
+import { getDisplayError } from "../../utils/apiErrors";
 
 // ── Asset imports ─────────────────────────────────────────
 import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.svg";
@@ -197,7 +198,7 @@ export default function AgentHome() {
       setSyncDone(true);
       setTimeout(() => setSyncDone(false), 3000);
     } catch (error) {
-      setSyncError(error instanceof Error ? error.message : "Sync failed.");
+      setSyncError(getDisplayError(error, "Sync failed."));
     } finally {
       setSyncing(false);
     }

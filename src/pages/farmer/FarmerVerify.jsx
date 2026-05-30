@@ -10,6 +10,7 @@ import {
   verifyOtp,
 } from "../../services/cropexApi";
 import { formatPhoneForDisplay } from "../../utils/helpers";
+import { getDisplayError } from "../../utils/apiErrors";
 
 const OTP_LENGTH = 6;
 
@@ -39,9 +40,7 @@ function PhoneStep({ onSubmit }) {
       await sendOtp(phone.trim());
       onSubmit(phone.trim());
     } catch (submitError) {
-      setError(
-        submitError instanceof Error ? submitError.message : "Could not send the verification code."
-      );
+      setError(getDisplayError(submitError, "Could not send the verification code."));
     } finally {
       setLoading(false);
     }
@@ -200,9 +199,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
       setFarmerSessionFromAuthResponse(response);
       onSuccess();
     } catch (verifyError) {
-      setError(
-        verifyError instanceof Error ? verifyError.message : "Verification failed. Try again."
-      );
+      setError(getDisplayError(verifyError, "Verification failed. Try again."));
       setDigits(Array.from({ length: OTP_LENGTH }, () => ""));
       setTimeout(() => refs[0].current?.focus(), 0);
     } finally {
@@ -216,9 +213,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
     try {
       await sendOtp(phone);
     } catch (resendError) {
-      setError(
-        resendError instanceof Error ? resendError.message : "Could not resend the verification code."
-      );
+      setError(getDisplayError(resendError, "Could not resend the verification code."));
     } finally {
       setLoading(false);
     }

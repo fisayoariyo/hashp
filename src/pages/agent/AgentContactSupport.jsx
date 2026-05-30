@@ -7,6 +7,7 @@ import { AgentBottomNav } from "./AgentHome";
 import { agentSupportContact } from "../../mockData/agent";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { createSupportTicket, getAgentDashboard, getAgentSession } from "../../services/cropexApi";
+import { getDisplayError } from "../../utils/apiErrors";
 
 export default function AgentContactSupport() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export default function AgentContactSupport() {
     } catch (submitError) {
       setFeedback({
         type: "error",
-        message: submitError instanceof Error ? submitError.message : "Could not submit support ticket.",
+        message: getDisplayError(submitError, "Could not submit support ticket."),
       });
     } finally {
       setSubmitting(false);

@@ -27,6 +27,7 @@ function buildCropexUrl(path) {
 function isTechnicalErrorText(text) {
   const value = String(text || "");
   return (
+    /registrationrequest\.|failed on the '|error:field validation|key:\s*'/i.test(value) ||
     /[{[\]}]|statusCode|validation_error|notification\.|SendEmail|resend\.|\.go:\d+/i.test(value) ||
     value.length > 180
   );

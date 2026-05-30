@@ -6,6 +6,7 @@ import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { agentRegister, formatPhoneForApi } from "../../services/cropexApi";
 import { getUserFacingError } from "../../utils/apiErrors";
+import { PASSWORD_ERROR, PASSWORD_HINT, validateStrongPassword, mapSignupFieldError } from "../../utils/password";
 
 const REG_KEY = "hcx_agent_registration";
 
@@ -105,7 +106,7 @@ function extractFieldErrorText(error, field) {
 
 function setFieldErrorFromBackend(next, error, field, nextKey = field) {
   const text = extractFieldErrorText(error, field);
-  if (text) next[nextKey] = text;
+  if (text) next[nextKey] = mapSignupFieldError(field, text);
 }
 
 function getSignupFieldErrors(error) {
@@ -192,9 +193,10 @@ export default function AgentCreateAccount() {
       return;
     }
 
-    if (form.password.length < 8) {
-      setFieldErrors({ password: "Use at least 8 characters." });
-      setError("Password must be at least 8 characters.");
+    const passwordCheck = validateStrongPassword(form.password);
+    if (!passwordCheck.valid) {
+      setFieldErrors({ password: passwordCheck.message });
+      setError(PASSWORD_ERROR);
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -353,6 +355,7 @@ export default function AgentCreateAccount() {
 
       <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Create your password</label>
+        <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
         <div className={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
           fieldErrors.password ? "border-red-400" : "border-brand-border"
         }`}>
@@ -361,7 +364,7 @@ export default function AgentCreateAccount() {
             type={showPass ? "text" : "password"}
             value={form.password}
             onChange={set("password")}
-            placeholder="Create a strong password"
+            placeholder="e.g. Farm2026!"
             className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
           />
           <button type="button" onClick={() => setShowPass((value) => !value)} className="text-brand-text-muted shrink-0">

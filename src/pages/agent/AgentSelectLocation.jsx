@@ -12,6 +12,8 @@ import {
   mapGeoLgaOption,
   mapGeoStateOption,
 } from "../../services/cropexApi";
+import { PASSWORD_ERROR, validateStrongPassword } from "../../utils/password";
+import { getDisplayError } from "../../utils/apiErrors";
 
 const REG_KEY = "hcx_agent_registration";
 
@@ -55,7 +57,7 @@ export default function AgentSelectLocation() {
       })
       .catch((error) => {
         if (!active) return;
-        setRegError(error instanceof Error ? error.message : "Could not load states.");
+        setRegError(getDisplayError(error, "Could not load states."));
       })
       .finally(() => {
         if (active) setGeoLoading(false);
@@ -83,7 +85,7 @@ export default function AgentSelectLocation() {
       })
       .catch((error) => {
         if (!active) return;
-        setRegError(error instanceof Error ? error.message : "Could not load local governments.");
+        setRegError(getDisplayError(error, "Could not load local governments."));
       })
       .finally(() => {
         if (active) setGeoLoading(false);
@@ -103,8 +105,8 @@ export default function AgentSelectLocation() {
       const raw = sessionStorage.getItem(REG_KEY);
       const reg = raw ? JSON.parse(raw) : {};
       const password = reg.password || "";
-      if (password.length < 8) {
-        setRegError("Password must be at least 8 characters. Go back to create account and set your password.");
+      if (!validateStrongPassword(password).valid) {
+        setRegError(`${PASSWORD_ERROR} Go back to create account and update your password.`);
         return;
       }
 
@@ -127,9 +129,7 @@ export default function AgentSelectLocation() {
       navigate("/agent/account-under-review");
     } catch (submitError) {
       setRegError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Could not save your selected location. Please try again."
+        getDisplayError(submitError, "Could not save your selected location. Please try again."),
       );
     } finally {
       setLoading(false);

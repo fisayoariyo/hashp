@@ -8,6 +8,7 @@ import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
 import { CropexHttpError } from "../../services/cropexHttp";
+import { getDisplayError } from "../../utils/apiErrors";
 import { OFFLINE_FARMER_STATUS, createOfflineFarmerRecord } from "../../services/offlineFarmersDb";
 import {
   draftToEnrollmentCooperativeInfo,
@@ -153,33 +154,11 @@ function validateEnrollmentPayloadAgainstContract(payload) {
 }
 
 function formatEnrollmentError(error, payload) {
-  if (error instanceof CropexHttpError && error.body && typeof error.body === "object") {
-    const body = error.body;
-    if (Array.isArray(body.errors) && body.errors.length > 0) {
-      const details = body.errors
-        .map((item) => {
-          if (typeof item === "string") return item;
-          if (!item || typeof item !== "object") return "";
-          const field = readString(item.field, item.path);
-          const message = readString(item.message, item.error, item.details);
-          return field && message ? `${field}: ${message}` : message || field;
-        })
-        .filter(Boolean)
-        .join("; ");
-      if (details) return details;
-    }
-    if (body.errors && typeof body.errors === "object") {
-      const details = Object.entries(body.errors)
-        .map(([key, value]) => `${key}: ${readString(value) || "invalid"}`)
-        .join("; ");
-      if (details) return details;
-    }
-  }
   if (readString(error?.message).toLowerCase().includes("invalid request body")) {
     const payloadCheck = validateEnrollmentPayloadAgainstContract(payload);
-    if (payloadCheck) return `${error.message} ${payloadCheck}`;
+    if (payloadCheck) return payloadCheck;
   }
-  return error instanceof Error ? error.message : "Enrollment failed. Check required fields.";
+  return getDisplayError(error, "Enrollment failed. Check required fields and try again.");
 }
 
 function getPayloadRoot(payload) {
@@ -624,7 +603,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
       .catch((error) => {
         if (!active) return;
         setLgaOptions([]);
-        setLgasError(error instanceof Error ? error.message : "Could not load LGAs right now.");
+        setLgasError(getDisplayError(error, "Could not load LGAs right now."));
       })
       .finally(() => {
         if (active) setLgasLoading(false);
@@ -1007,7 +986,7 @@ function CoopStep({ onNext, onBack, embedded, stateOptions }) {
       .catch((error) => {
         if (!active) return;
         setLgaOptions([]);
-        setLgasError(error instanceof Error ? error.message : "Could not load cooperative LGAs.");
+        setLgasError(getDisplayError(error, "Could not load cooperative LGAs."));
       })
       .finally(() => {
         if (active) setLgasLoading(false);
@@ -1354,7 +1333,7 @@ export default function AgentRegisterFarmer() {
       .catch((error) => {
         if (!active) return;
         setStateOptions([]);
-        setStatesError(error instanceof Error ? error.message : "Could not load states right now.");
+        setStatesError(getDisplayError(error, "Could not load states right now."));
       })
       .finally(() => {
         if (active) setStatesLoading(false);
@@ -1515,9 +1494,7 @@ export default function AgentRegisterFarmer() {
       setDraft({ enrollment: { sessionId } });
       setStep("biometric");
     } catch (error) {
-      setEnrollmentStartError(
-        error instanceof Error ? error.message : "Could not start enrollment. Try again."
-      );
+      setEnrollmentStartError(getDisplayError(error, "Could not start enrollment. Try again."));
     } finally {
       setStartingEnrollment(false);
     }
