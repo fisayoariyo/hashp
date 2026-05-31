@@ -126,7 +126,7 @@ export default function FarmerID() {
             <ArrowLeft size={18} />
             <span className="font-sans text-sm">Go back</span>
           </button>
-          <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-5">Your Digital ID</h1>
+          <h1 className="auth-title mb-5">Your Digital ID</h1>
           <IDCard idCard={idCard} />
           <ShareButtons farmerId={idCard.farmerId} />
         </div>
@@ -145,7 +145,7 @@ export default function FarmerID() {
           <ArrowLeft size={16} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-6">Your Digital ID</h1>
+        <h1 className="auth-title mb-6">Your Digital ID</h1>
         <div className="max-w-xs">
           <IDCard idCard={idCard} />
           <ShareButtons farmerId={idCard.farmerId} vertical />

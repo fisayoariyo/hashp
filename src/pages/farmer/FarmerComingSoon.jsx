@@ -40,7 +40,7 @@ export default function FarmerComingSoon() {
     <div className="max-w-sm">
       {/* Title + badge */}
       <div className="flex items-center gap-3 mb-2">
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary">{page.title}</h1>
+        <h1 className="auth-title">{page.title}</h1>
         <ComingSoonBadge />
       </div>
       <p className="font-sans text-sm text-brand-text-secondary mb-5">{page.subtitle}</p>

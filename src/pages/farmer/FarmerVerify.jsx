@@ -121,9 +121,7 @@ function PhoneStep({ onSubmit }) {
     <div className="page-white flex flex-col">
       <div className="flex-1 px-5 pt-5">
         {goBackButton}
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-8 leading-tight">
-          Log in to your profile
-        </h1>
+        <h1 className="auth-title mb-8">Log in to your profile</h1>
         {phoneField}
       </div>
       <div className="px-5 pb-8 space-y-3">
@@ -306,7 +304,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">{`Enter ${OTP_LENGTH}-Digit code`}</h1>
+        <h1 className="auth-title mb-2">{`Enter ${OTP_LENGTH}-Digit code`}</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-8">
           {`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
         </p>

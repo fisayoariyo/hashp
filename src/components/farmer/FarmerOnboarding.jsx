@@ -66,7 +66,7 @@ export default function FarmerOnboarding({ onDone }) {
         </div>
 
         <div className="md:hidden relative z-10 flex h-full min-h-dvh flex-col justify-end px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-24">
-          <h2 className="font-display font-bold text-3xl text-white leading-tight mb-2">{slide.title}</h2>
+          <h2 className="mb-2 font-display text-[1.75rem] font-bold leading-tight text-white">{slide.title}</h2>
           <p className="font-sans text-sm text-white/80 leading-relaxed mb-6">{slide.sub}</p>
           {dots}
           <button type="button" onClick={next} className="btn-primary">
@@ -76,9 +76,7 @@ export default function FarmerOnboarding({ onDone }) {
       </div>
 
       <div className="hidden md:flex min-w-0 flex-col justify-center px-4 lg:px-8 py-8 lg:py-10 w-full max-w-[34rem] mx-auto lg:max-w-[36rem] lg:mx-0 lg:pr-10">
-        <h2 className="font-display font-bold text-3xl lg:text-4xl text-brand-text-primary leading-[1.15] mb-4">
-          {slide.title}
-        </h2>
+        <h2 className="auth-desktop-title mb-4">{slide.title}</h2>
         <p className="font-sans text-base lg:text-lg text-brand-text-secondary leading-[1.45] mb-9 max-w-[32rem]">
           {slide.sub}
         </p>

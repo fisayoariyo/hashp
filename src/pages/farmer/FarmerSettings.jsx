@@ -163,7 +163,7 @@ export default function FarmerSettings() {
 
           {tab === "faq" && (
             <>
-              <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">
+              <h1 className="auth-title mb-1">
                 Frequently asked questions
               </h1>
               <p className="font-sans text-xs text-brand-text-secondary mb-5">
@@ -175,7 +175,7 @@ export default function FarmerSettings() {
           )}
           {tab === "contact" && (
             <>
-              <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">
+              <h1 className="auth-title mb-1">
                 General Support
               </h1>
               <p className="font-sans text-xs text-brand-text-secondary mb-5">

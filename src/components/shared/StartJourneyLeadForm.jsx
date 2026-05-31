@@ -134,11 +134,11 @@ export default function StartJourneyLeadForm({
           onSubmit={handleSubmit}
           className={
             submitVariant === "footer-full"
-              ? `${className}${className ? " " : ""}flex flex-col`
+              ? `${className}${className ? " " : ""}space-y-[18px]`
               : className
           }
         >
-          <div className={submitVariant === "footer-full" ? "min-h-0 flex-1 space-y-[18px] overflow-y-auto" : "contents"}>
+          <div className={submitVariant === "footer-full" ? "space-y-[18px]" : "contents"}>
         <div>
           <label htmlFor={`${idPrefix}-full-name`} className="landing-contact-label">
             Full Name

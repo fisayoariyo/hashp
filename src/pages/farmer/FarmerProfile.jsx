@@ -145,7 +145,7 @@ export default function FarmerProfile() {
               {error}
             </div>
           )}
-          <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">Your profile</h1>
+          <h1 className="auth-title mb-1">Your profile</h1>
           <p className="font-sans text-xs text-brand-text-secondary mb-5">
             If you notice any mistake in your details, please contact your agent to make corrections.
           </p>
@@ -167,7 +167,7 @@ export default function FarmerProfile() {
           <ArrowLeft size={16} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-1">Your profile</h1>
+        <h1 className="auth-title mb-1">Your profile</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-6">
           If you notice any mistake in your details, please contact your agent to make corrections.
         </p>

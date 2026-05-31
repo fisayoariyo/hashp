@@ -181,7 +181,7 @@ export default function FarmerHome() {
           )}
           <div className="flex items-start justify-between mb-5">
             <div>
-              <h1 className="font-display font-bold text-2xl text-brand-text-primary">
+              <h1 className="auth-title">
                 Welcome {farmerFirstName}
               </h1>
               <div className="flex items-center gap-2 mt-1">
