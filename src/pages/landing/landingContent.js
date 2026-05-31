@@ -51,6 +51,7 @@ export const LANDING_TABS = {
     ],
     cta: {
       title: "Register as an Agent",
+      buttonLabel: "Get started",
       href: "/agent/create-account",
       returnState: { returnTo: "/" },
       image: "/landing/images/agent-card-cta.png",
@@ -97,8 +98,7 @@ export const LANDING_TABS = {
     cta: {
       title: "Get started as a farmer",
       buttonLabel: "Get started",
-      href: "/farmer/get-started",
-      returnState: { returnTo: "/" },
+      href: "#start-your-journey",
       image: "/landing/images/farmer-card-cta.png",
       alt: "Farmer get started call to action",
       position: "62% 48%",
@@ -107,12 +107,20 @@ export const LANDING_TABS = {
 };
 
 export const LANDING_CONTACT = {
-  title: "Get in touch with us",
+  sectionId: "start-your-journey",
+  sectionLabel: "Start your journey",
+  title: "Start Your Journey with Hashmar",
   description:
     "Have questions, inquiries, or need Hashmar services in your community? Reach out to us and let us know how we can support farmers and agricultural activities in your area. Our team is ready to help bring digital farming solutions closer to you.",
   image: {
     src: "/landing/images/contact-field.png",
     alt: "Farmer working in a green field",
+  },
+  successModal: {
+    title: "Thank you!",
+    message:
+      "Thank you for reaching out. Our support team will contact you shortly.",
+    buttonLabel: "Done",
   },
 };
 

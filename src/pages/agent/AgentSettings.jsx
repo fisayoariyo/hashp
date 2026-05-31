@@ -11,25 +11,28 @@ import {
 } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
+import OtpCooldownFeedback from "../../components/agent/OtpCooldownFeedback";
 import { agentFAQs } from "../../mockData/agent";
+import { useOtpCountdown } from "../../hooks/useOtpCountdown";
 import {
   clearAgentSession,
   getAgentDashboard,
   getAgentSession,
-  requestPasswordResetOtp,
-  resendAuthOtp,
-  resetPassword,
-  verifyOtp,
+  requestChangePasswordOtp,
+  resendChangePasswordOtp,
+  setAgentSessionFromAuthResponse,
+  submitChangePassword,
+  verifyChangePasswordOtp,
 } from "../../services/cropexApi";
-import { getPasswordResetFacingError, getUserFacingError, getDisplayError } from "../../utils/apiErrors";
-import { PASSWORD_ERROR, PASSWORD_HINT, validateStrongPassword, mapSignupFieldError } from "../../utils/password";
+import { getPasswordResetFacingError, getDisplayError } from "../../utils/apiErrors";
+import { PASSWORD_HINT, validateStrongPassword } from "../../utils/password";
 import PasswordField from "../../components/PasswordField";
 
 const OTP_LENGTH = 6;
 
 function ChangePasswordScreen({ onBack }) {
   const session = getAgentSession();
-  const phone = session?.phone || "";
+  const [accountEmail, setAccountEmail] = useState(() => String(session?.email || "").trim());
   const [step, setStep] = useState("otp");
   const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [password, setPassword] = useState("");
@@ -40,26 +43,50 @@ function ChangePasswordScreen({ onBack }) {
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown, clear: clearCooldown } =
+    useOtpCountdown();
 
   const otpRefs = useMemo(() => Array.from({ length: OTP_LENGTH }, () => createRef()), []);
 
   useEffect(() => {
-    if (!phone) {
-      setError("No phone number is available for this account.");
+    let active = true;
+    getAgentDashboard()
+      .then((payload) => {
+        if (!active) return;
+        const resolved = String(payload?.agent?.email || session?.email || "").trim();
+        if (resolved) setAccountEmail(resolved);
+      })
+      .catch(() => {
+        /* keep session email if dashboard fails */
+      });
+    return () => {
+      active = false;
+    };
+  }, [session?.email]);
+
+  useEffect(() => {
+    if (!accountEmail) {
+      setError("No email is available for this account.");
       return;
     }
 
     let active = true;
     setSubmitting(true);
     setError("");
+    clearCooldown();
 
-    requestPasswordResetOtp({ phone })
+    requestChangePasswordOtp({ email: accountEmail })
       .then(() => {
         if (active) setOtpSent(true);
       })
       .catch((requestError) => {
-        if (active) {
-          setError(getPasswordResetFacingError(requestError, "Could not send a verification code.").message);
+        if (!active) return;
+        const facing = getPasswordResetFacingError(requestError, "Could not send a verification code.");
+        if (facing.isCooldown && facing.retrySeconds) {
+          startCooldown(facing.retrySeconds);
+          setError("");
+        } else {
+          setError(facing.message);
         }
       })
       .finally(() => {
@@ -69,7 +96,7 @@ function ChangePasswordScreen({ onBack }) {
     return () => {
       active = false;
     };
-  }, [phone]);
+  }, [accountEmail, clearCooldown, startCooldown]);
 
   const handleDigit = (index, value) => {
     if (!/^\d?$/.test(value)) return;
@@ -96,7 +123,8 @@ function ChangePasswordScreen({ onBack }) {
     setSubmitting(true);
     setError("");
     try {
-      await verifyOtp(phone, otp);
+      const response = await verifyChangePasswordOtp({ email: accountEmail, otp });
+      setAgentSessionFromAuthResponse(response);
       setStep("new");
     } catch (requestError) {
       setError(getDisplayError(requestError, "Could not verify the code."));
@@ -119,29 +147,32 @@ function ChangePasswordScreen({ onBack }) {
     setSubmitting(true);
     setError("");
     try {
-      await resetPassword({ phone, otp: digits.join(""), newPassword: password });
+      await submitChangePassword({ newPassword: password });
       setSuccess(true);
       window.setTimeout(() => onBack(), 2000);
     } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setError(
-        mapSignupFieldError("password", raw) ||
-          getUserFacingError(requestError, "Could not update the password.").message,
-      );
+      setError(getDisplayError(requestError, "Could not update the password."));
     } finally {
       setSubmitting(false);
     }
   };
 
   const resendCode = async () => {
-    if (!phone) return;
+    if (!accountEmail || isCooldownActive) return;
     setSubmitting(true);
     setError("");
+    clearCooldown();
     try {
-      await resendAuthOtp({ phone });
+      await resendChangePasswordOtp({ email: accountEmail });
       setOtpSent(true);
     } catch (requestError) {
-      setError(getPasswordResetFacingError(requestError, "Could not resend the code.").message);
+      const facing = getPasswordResetFacingError(requestError, "Could not resend the code.");
+      if (facing.isCooldown && facing.retrySeconds) {
+        startCooldown(facing.retrySeconds);
+        setError("");
+      } else {
+        setError(facing.message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -176,7 +207,7 @@ function ChangePasswordScreen({ onBack }) {
                   Enter OTP
                 </h1>
                 <p className="font-sans text-sm text-brand-text-secondary mb-8">
-                  Enter the code sent to {phone || "your registered phone number"} to confirm.
+                  Enter the code sent to {accountEmail || "your registered email"} to confirm.
                 </p>
                 <div className="grid grid-cols-6 gap-3 mb-4 md:w-fit md:gap-4">
                   {digits.map((digit, index) => (
@@ -195,18 +226,19 @@ function ChangePasswordScreen({ onBack }) {
                     />
                   ))}
                 </div>
-                {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+                {error ? <p className="text-xs text-red-500 mb-2">{error}</p> : null}
+                <OtpCooldownFeedback seconds={cooldownSeconds} className="mb-2" />
                 <div className="flex items-center gap-3">
                   <p className="font-sans text-xs text-brand-text-muted">
-                    {otpSent ? "Verification code sent." : "Sending verification code..."}
+                    {otpSent ? "Verification code sent to your email." : "Sending verification code..."}
                   </p>
                   <button
                     type="button"
                     onClick={() => void resendCode()}
-                    disabled={submitting || !phone}
+                    disabled={submitting || !accountEmail || isCooldownActive}
                     className="font-sans text-xs font-semibold text-brand-green disabled:opacity-40"
                   >
-                    Resend code
+                    {isCooldownActive ? `Resend in ${cooldownSeconds}s` : "Resend code"}
                   </button>
                 </div>
               </>

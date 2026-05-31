@@ -306,19 +306,45 @@ export function requestAuthOtp({ email, phone } = {}) {
   });
 }
 
-/** Request a password-reset OTP (uses /auth/reset-password, not login). */
-export function requestPasswordResetOtp({ email, phone } = {}) {
-  const body = {};
-  if (email?.trim()) body.email = email.trim();
-  if (phone) body.phone_number = formatPhoneForApi(phone);
+/**
+ * Forgot-password / change-password OTP request (Swagger: POST /auth/reset-password).
+ * Body: { email } — sends 6-digit OTP to the registered email.
+ */
+export function requestPasswordResetOtp({ email } = {}) {
   return cropexFetch("/auth/reset-password", {
+    method: "POST",
+    body: { email: String(email || "").trim() },
+  });
+}
+
+/** Re-request reset OTP (same as initial send). */
+export function resendPasswordResetOtp({ email } = {}) {
+  return requestPasswordResetOtp({ email });
+}
+
+/**
+ * Logged-in change password (Swagger):
+ * 1. POST /auth/reset-password { email }
+ * 2. POST /auth/resend-otp { email }
+ * 3. POST /auth/verify { email, otp } → store returned token
+ * 4. POST /auth/change-password { new_password } (Bearer)
+ */
+export function requestChangePasswordOtp({ email } = {}) {
+  return requestPasswordResetOtp({ email });
+}
+
+export function resendChangePasswordOtp({ email } = {}) {
+  const body = {};
+  const normalizedEmail = String(email || "").trim();
+  if (normalizedEmail) body.email = normalizedEmail;
+  return cropexFetch("/auth/resend-otp", {
     method: "POST",
     body,
   });
 }
 
-export function resendPasswordResetOtp({ email, phone } = {}) {
-  return requestPasswordResetOtp({ email, phone });
+export function verifyChangePasswordOtp({ email, otp }) {
+  return verifyAuthOtp({ email, otp });
 }
 
 /** Resend OTP via email or phone. */
@@ -373,17 +399,17 @@ export function agentVerifyOtp(phone, code) {
   });
 }
 
-export function resetPassword({ email, phone, otp, newPassword }) {
-  const body = {
-    otp: String(otp || "").trim(),
-    new_password: newPassword,
-  };
-  if (email?.trim()) body.email = email.trim();
-  if (phone) body.phone_number = formatPhoneForApi(phone);
-  return cropexFetch("/auth/reset-password", {
+/** Save new password (Swagger: POST /auth/change-password, Bearer required). */
+export function changePassword({ newPassword }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/auth/change-password", {
     method: "POST",
-    body,
+    body: { new_password: newPassword },
   });
+}
+
+/** Alias for change-password final step. */
+export function submitChangePassword({ newPassword }) {
+  return changePassword({ newPassword });
 }
 
 export function agentRegister(body) {

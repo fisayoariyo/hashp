@@ -11,13 +11,13 @@ import {
   resendAuthOtp,
   setAgentSessionFromAuthResponse,
   verifyAuthOtp,
+  verifyChangePasswordOtp,
 } from "../../services/cropexApi";
 import { getPasswordResetFacingError, getUserFacingError } from "../../utils/apiErrors";
 
 const REG_KEY = "hcx_agent_registration";
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
 const RESET_EMAIL_KEY = "hcx_agent_reset_email";
-const RESET_OTP_KEY = "hcx_agent_reset_otp";
 const OTP_LENGTH = 6;
 
 export default function AgentVerifyPhone() {
@@ -129,10 +129,10 @@ export default function AgentVerifyPhone() {
     clearCooldown();
     try {
       if (mode === "reset-password") {
-        await verifyAuthOtp({ email: resetEmail, otp });
+        const response = await verifyChangePasswordOtp({ email: resetEmail, otp });
+        setAgentSessionFromAuthResponse(response);
         sessionStorage.setItem(RESET_FLAG, "1");
         sessionStorage.setItem(RESET_EMAIL_KEY, resetEmail);
-        sessionStorage.setItem(RESET_OTP_KEY, otp);
         navigate("/agent/reset-password-new", { replace: true });
         return;
       }

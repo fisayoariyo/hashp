@@ -28,15 +28,14 @@ export default function LandingHero() {
           </p>
           <div className="mx-auto mt-[30px] flex w-[85%] max-w-[340px] flex-col items-stretch gap-3 tablet:mt-10 tablet:w-auto tablet:max-w-none tablet:flex-row tablet:items-center tablet:justify-center tablet:gap-4 desktop:mt-[51px]">
             <Link
-              to="/agent/create-account"
-              state={{ returnTo: "/" }}
+              to="/get-started"
               className="inline-flex h-[52px] w-full items-center justify-center rounded-[14px] bg-landing-green px-6 text-[17px] font-medium text-white shadow-landing-cta transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-landing-green/30 tablet:h-auto tablet:w-[252px] tablet:shrink-0 tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px]"
             >
-              Sign up as agent
+              Sign up
             </Link>
             <Link
               to="/log-in"
-              className="inline-flex h-[52px] w-full items-center justify-center rounded-[14px] border border-landing-green bg-white px-6 text-[17px] font-medium text-landing-green transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-landing-green/30 tablet:h-auto tablet:w-[252px] tablet:shrink-0 tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px]"
+              className="inline-flex h-[52px] w-full items-center justify-center rounded-[14px] border border-landing-green bg-white px-6 text-[17px] font-medium text-landing-green transition-[transform,color,background-color] duration-200 hover:-translate-y-0.5 hover:bg-landing-green hover:text-white focus:outline-none focus:ring-2 focus:ring-landing-green/30 tablet:h-auto tablet:w-[252px] tablet:shrink-0 tablet:rounded-[20px] tablet:px-[32px] tablet:py-[15px] tablet:text-[18px]"
             >
               Log in
             </Link>

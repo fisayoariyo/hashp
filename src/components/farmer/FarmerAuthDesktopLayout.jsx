@@ -61,10 +61,10 @@ export default function FarmerAuthDesktopLayout({
               className="block h-11 w-auto object-contain mb-4"
               draggable="false"
             />
-            <h2 className="font-display font-bold text-4xl xl:text-[2.6rem] leading-tight mb-2 max-w-[30rem]">
+            <h2 className="mb-2 font-display text-4xl font-bold leading-tight xl:text-[2.6rem]">
               {panelTitle}
             </h2>
-            <p className="font-sans text-[0.95rem] lg:text-[1.05rem] text-white/90 leading-[1.35] max-w-[31rem]">
+            <p className="font-sans text-[0.95rem] leading-[1.35] text-white/90 lg:text-[1.05rem]">
               {panelSubtitle}
             </p>
 
@@ -92,7 +92,7 @@ export default function FarmerAuthDesktopLayout({
       >
         {leading}
         {title ? (
-          <h1 className={`font-display font-bold text-[3rem] leading-[1.05] text-brand-text-primary mb-3 ${titleClassName}`}>
+          <h1 className={`auth-desktop-title mb-3 ${titleClassName}`}>
             {title}
           </h1>
         ) : null}

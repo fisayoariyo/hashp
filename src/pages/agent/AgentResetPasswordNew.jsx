@@ -4,13 +4,12 @@ import { ArrowLeft, Lock } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import PasswordField from "../../components/PasswordField";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { resetPassword } from "../../services/cropexApi";
+import { clearAgentSession, submitChangePassword } from "../../services/cropexApi";
 import { getDisplayError } from "../../utils/apiErrors";
 import { PASSWORD_HINT, validateStrongPassword } from "../../utils/password";
 
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
 const RESET_EMAIL_KEY = "hcx_agent_reset_email";
-const RESET_OTP_KEY = "hcx_agent_reset_otp";
 
 export default function AgentResetPasswordNew() {
   const navigate = useNavigate();
@@ -28,7 +27,7 @@ export default function AgentResetPasswordNew() {
       if (
         sessionStorage.getItem(RESET_FLAG) !== "1" ||
         !sessionStorage.getItem(RESET_EMAIL_KEY) ||
-        !sessionStorage.getItem(RESET_OTP_KEY)
+        !sessionStorage.getItem(RESET_EMAIL_KEY)
       ) {
         navigate("/agent/forgot-password", { replace: true });
       }
@@ -51,12 +50,10 @@ export default function AgentResetPasswordNew() {
     setError("");
     setLoading(true);
     try {
-      const email = sessionStorage.getItem(RESET_EMAIL_KEY) || "";
-      const otp = sessionStorage.getItem(RESET_OTP_KEY) || "";
-      await resetPassword({ email, otp, newPassword: password });
+      await submitChangePassword({ newPassword: password });
+      clearAgentSession();
       sessionStorage.removeItem(RESET_FLAG);
       sessionStorage.removeItem(RESET_EMAIL_KEY);
-      sessionStorage.removeItem(RESET_OTP_KEY);
       sessionStorage.setItem(
         "hcx_agent_login_message",
         "Password reset successfully. Sign in with your new password."

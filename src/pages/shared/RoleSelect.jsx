@@ -174,9 +174,7 @@ function DesktopRoleSelect({ copy, mode }) {
 
       <div className="flex flex-1 flex-col justify-between px-6 py-14 lg:px-14 lg:py-16 xl:px-20">
         <div className="flex w-full flex-col items-center">
-          <h1 className="mb-3 text-center font-display text-[2rem] font-bold text-brand-text-primary lg:text-[2.3rem]">
-            {copy.title}
-          </h1>
+          <h1 className="mb-3 text-center auth-desktop-title">{copy.title}</h1>
           <p className="mb-10 max-w-xs text-center font-sans text-sm leading-relaxed text-brand-text-secondary">
             {copy.description}
           </p>

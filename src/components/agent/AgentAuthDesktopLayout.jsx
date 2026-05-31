@@ -48,7 +48,7 @@ export default function AgentAuthDesktopLayout({
       >
         {leading}
         {title ? (
-          <h1 className={`font-display font-bold text-5xl text-brand-text-primary mb-3 ${titleClassName}`}>{title}</h1>
+          <h1 className={`auth-desktop-title mb-3 ${titleClassName}`}>{title}</h1>
         ) : null}
         {subtitle && (
           <p

@@ -14,10 +14,10 @@ export const farmerBrandSplash = {
 
 /** Desktop left panel — farmer phone login (FWM). */
 export const farmerLoginHero = {
-  image: "/landing/images/farmer-card-cta.png",
-  position: "62% 48%",
-  title: "Log in to your profile",
-  sub: "Tell us how you'll be using Hashmar, Tap the card that best describes your role",
+  image: farmerOnboard1Image,
+  position: "center center",
+  title: "Welcome to your Farmer Profile",
+  sub: "You now have a digital identity that helps you access support, loans, and better opportunities.",
 };
 
 /** FWM-CA-02–04 — three onboarding slides before phone login. */

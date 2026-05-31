@@ -87,7 +87,7 @@ function PhoneStep({ onSubmit }) {
     <button
       type="button"
       onClick={() => navigate("/farmer/get-started")}
-      className="w-full py-2 text-center font-sans text-sm font-medium text-brand-green"
+      className="auth-btn-secondary"
     >
       I do not have an account
     </button>
@@ -110,7 +110,6 @@ function PhoneStep({ onSubmit }) {
         centerTitle
         leading={goBackButton}
         contentClassName="max-w-[620px]"
-        titleClassName="text-[2.7rem] leading-[1.08]"
         actions={phoneActions}
       >
         {phoneField}
@@ -273,7 +272,6 @@ function OTPStep({ phone, onSuccess, onBack }) {
         subtitle={`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
         centerTitle
         contentClassName="max-w-[620px]"
-        titleClassName="text-[2.7rem] leading-[1.08]"
         actions={
           <div className="w-full max-w-[560px] space-y-3">
             <button
