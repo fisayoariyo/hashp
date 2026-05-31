@@ -12,7 +12,7 @@ import {
   setAgentSessionFromAuthResponse,
   verifyAuthOtp,
 } from "../../services/cropexApi";
-import { getUserFacingError } from "../../utils/apiErrors";
+import { getPasswordResetFacingError, getUserFacingError } from "../../utils/apiErrors";
 
 const REG_KEY = "hcx_agent_registration";
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
@@ -145,7 +145,10 @@ export default function AgentVerifyPhone() {
       setAgentSessionFromAuthResponse(response);
       navigate("/agent/select-location");
     } catch (verifyError) {
-      const facing = getUserFacingError(verifyError, "Verification failed.");
+      const facing =
+        mode === "reset-password"
+          ? getPasswordResetFacingError(verifyError, "Verification failed.")
+          : getUserFacingError(verifyError, "Verification failed.");
       setError(facing.message);
       resetOtpInputs();
     } finally {
@@ -168,7 +171,10 @@ export default function AgentVerifyPhone() {
         await resendAuthOtp({ email: registerEmail, phone: registerPhone });
       }
     } catch (resendError) {
-      const facing = getUserFacingError(resendError, "Could not resend code.");
+      const facing =
+        mode === "reset-password"
+          ? getPasswordResetFacingError(resendError, "Could not resend code.")
+          : getUserFacingError(resendError, "Could not resend code.");
       if (facing.isCooldown && facing.retrySeconds) {
         startCooldown(facing.retrySeconds);
         setError("");

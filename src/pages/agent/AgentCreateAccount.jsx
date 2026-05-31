@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { User, Smartphone, Mail, Lock, Eye, EyeOff, ChevronDown, ArrowLeft } from "lucide-react";
+import { User, Smartphone, Mail, Lock, ChevronDown, ArrowLeft } from "lucide-react";
+import PasswordField from "../../components/PasswordField";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
@@ -356,41 +357,35 @@ export default function AgentCreateAccount() {
       <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Create your password</label>
         <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
-        <div className={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
-          fieldErrors.password ? "border-red-400" : "border-brand-border"
-        }`}>
-          <Lock size={18} className="text-brand-text-muted shrink-0" />
-          <input
-            type={showPass ? "text" : "password"}
-            value={form.password}
-            onChange={set("password")}
-            placeholder="e.g. Farm2026!"
-            className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
-          />
-          <button type="button" onClick={() => setShowPass((value) => !value)} className="text-brand-text-muted shrink-0">
-            {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
+        <PasswordField
+          prefix={Lock}
+          value={form.password}
+          onChange={set("password")}
+          visible={showPass}
+          onToggleVisible={() => setShowPass((value) => !value)}
+          autoComplete="new-password"
+          placeholder="e.g. Farm2026!"
+          wrapperClassName={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
+            fieldErrors.password ? "border-red-400" : "border-brand-border"
+          }`}
+        />
         {fieldErrors.password ? <p className="font-sans text-xs text-red-500">{fieldErrors.password}</p> : null}
       </div>
 
       <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Confirm password</label>
-        <div className={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
-          fieldErrors.confirmPassword ? "border-red-400" : "border-brand-border"
-        }`}>
-          <Lock size={18} className="text-brand-text-muted shrink-0" />
-          <input
-            type={showConfirmPass ? "text" : "password"}
-            value={form.confirmPassword}
-            onChange={set("confirmPassword")}
-            placeholder="Re-enter your password"
-            className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
-          />
-          <button type="button" onClick={() => setShowConfirmPass((value) => !value)} className="text-brand-text-muted shrink-0">
-            {showConfirmPass ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
+        <PasswordField
+          prefix={Lock}
+          value={form.confirmPassword}
+          onChange={set("confirmPassword")}
+          visible={showConfirmPass}
+          onToggleVisible={() => setShowConfirmPass((value) => !value)}
+          autoComplete="new-password"
+          placeholder="Re-enter your password"
+          wrapperClassName={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
+            fieldErrors.confirmPassword ? "border-red-400" : "border-brand-border"
+          }`}
+        />
         {fieldErrors.confirmPassword ? <p className="font-sans text-xs text-red-500">{fieldErrors.confirmPassword}</p> : null}
         {!fieldErrors.confirmPassword && passwordMismatch ? (
           <p className="font-sans text-xs text-red-500">Passwords do not match.</p>

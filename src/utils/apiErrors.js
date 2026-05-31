@@ -95,3 +95,16 @@ export function getUserFacingError(error, fallback = "Something went wrong. Plea
 export function getDisplayError(error, fallback = "Something went wrong. Please try again.") {
   return getUserFacingError(error, fallback).message;
 }
+
+export function getPasswordResetFacingError(
+  error,
+  fallback = "Could not send the reset code.",
+) {
+  const facing = getUserFacingError(error, fallback);
+  return {
+    ...facing,
+    message: facing.message
+      .replace(/login request failed/gi, "Password reset request failed")
+      .replace(/invalid email or password/gi, "We could not start a password reset for this account."),
+  };
+}

@@ -306,6 +306,21 @@ export function requestAuthOtp({ email, phone } = {}) {
   });
 }
 
+/** Request a password-reset OTP (uses /auth/reset-password, not login). */
+export function requestPasswordResetOtp({ email, phone } = {}) {
+  const body = {};
+  if (email?.trim()) body.email = email.trim();
+  if (phone) body.phone_number = formatPhoneForApi(phone);
+  return cropexFetch("/auth/reset-password", {
+    method: "POST",
+    body,
+  });
+}
+
+export function resendPasswordResetOtp({ email, phone } = {}) {
+  return requestPasswordResetOtp({ email, phone });
+}
+
 /** Resend OTP via email or phone. */
 export function resendOtp(identifier) {
   if (typeof identifier === "object" && identifier !== null) {

@@ -1,0 +1,14 @@
+---
+description: Keep chat replies short and proportional to the question
+alwaysApply: true
+---
+
+# Concise answers
+
+Match reply length to the question:
+
+- **One line** when the user asks for yes/no, a single fact, or "in one line/sentence."
+- **One sentence** when they want a brief explanation of one idea.
+- **One short paragraph** when they need a bit of context but did not ask for a full breakdown.
+
+Default to the shortest form that fully answers the question. Do not add extra sections, bullet lists, or follow-up offers unless the user asks for more.

@@ -180,26 +180,26 @@ export default function AgentContactSupport() {
   );
 
   const preAuthContent = (
-    <div className="w-full max-w-[430px]">
-      <h1 className="font-display text-[44px] font-bold leading-[1.05] text-[#030F0F]">Need Help?</h1>
-      <p className="mt-3 text-[18px] leading-[1.35] text-[#030F0F]/70">
+    <div className="w-full max-w-[36rem] text-left">
+      <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2">Need Help?</h1>
+      <p className="font-sans text-sm text-brand-text-secondary mb-6">
         We&apos;re here to support you. Reach out to us if you&apos;re having any issues with registration,
         verification, or syncing data.
       </p>
 
-      <div className="mt-8 rounded-[14px] border border-[#E6E6E6] bg-white p-4">
-        <p className="font-display text-[24px] font-bold leading-7 text-[#030F0F]">Customer Support</p>
-        <p className="mt-1 text-[14px] leading-5 text-[#030F0F]/75">Get help from our support team</p>
+      <div className="rounded-2xl border border-brand-border bg-white p-4">
+        <p className="font-sans text-sm font-semibold text-brand-text-primary">Customer Support</p>
+        <p className="mt-1 font-sans text-xs text-brand-text-secondary">Get help from our support team</p>
 
         <div className="mt-4 space-y-3">
-          <p className="flex items-center gap-2.5 text-[18px] text-[#030F0F]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-brand-green text-white">
+          <p className="flex items-center gap-2.5 font-sans text-sm text-brand-text-primary">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-green text-white">
               <Phone size={14} />
             </span>
             <span>{agentSupportContact.phoneDisplay}</span>
           </p>
-          <p className="flex items-center gap-2.5 text-[18px] text-[#030F0F]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-brand-green text-white">
+          <p className="flex items-center gap-2.5 font-sans text-sm text-brand-text-primary">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-green text-white">
               <Mail size={14} />
             </span>
             <span>{agentSupportContact.email}</span>
@@ -211,18 +211,21 @@ export default function AgentContactSupport() {
 
   return (
     <>
-      <div className={`md:hidden min-h-dvh ${isPreAuthSupport ? "bg-white" : "bg-brand-bg-page"}`}>
-        <div className="px-4 pt-5 pb-28">
-          <button
-            type="button"
-            onClick={() => navigate(isPreAuthSupport ? goBackPath : -1)}
-            className="mb-4 text-sm text-[#030F0F]/70"
-          >
-            Back
-          </button>
-          {isPreAuthSupport ? preAuthContent : content}
+      <div className={`md:hidden min-h-dvh ${isPreAuthSupport ? "page-white" : "bg-brand-bg-page"}`}>
+        <div className={`flex flex-col ${isPreAuthSupport ? "min-h-dvh" : ""}`}>
+          <div className={`flex-1 px-5 pt-6 ${isPreAuthSupport ? "" : "pb-28"}`}>
+            <button
+              type="button"
+              onClick={() => navigate(isPreAuthSupport ? goBackPath : -1)}
+              className={`mb-6 flex items-center gap-2 text-brand-text-secondary ${isPreAuthSupport ? "self-start" : ""}`}
+            >
+              {isPreAuthSupport ? <ArrowLeft size={18} /> : null}
+              <span className="font-sans text-sm">Back</span>
+            </button>
+            {isPreAuthSupport ? preAuthContent : content}
+          </div>
+          {!isPreAuthSupport && <AgentBottomNav />}
         </div>
-        {!isPreAuthSupport && <AgentBottomNav />}
       </div>
 
       {isDesktop &&

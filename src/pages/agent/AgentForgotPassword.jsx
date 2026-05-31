@@ -6,8 +6,8 @@ import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import OtpCooldownFeedback from "../../components/agent/OtpCooldownFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useOtpCountdown } from "../../hooks/useOtpCountdown";
-import { requestAuthOtp } from "../../services/cropexApi";
-import { getUserFacingError } from "../../utils/apiErrors";
+import { requestPasswordResetOtp } from "../../services/cropexApi";
+import { getPasswordResetFacingError } from "../../utils/apiErrors";
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
@@ -36,12 +36,12 @@ export default function AgentForgotPassword() {
     clearCooldown();
     setLoading(true);
     try {
-      await requestAuthOtp({ email: normalizedEmail });
+      await requestPasswordResetOtp({ email: normalizedEmail });
       navigate("/agent/verify-phone", {
         state: { mode: "reset-password", email: normalizedEmail },
       });
     } catch (requestError) {
-      const facing = getUserFacingError(requestError, "Could not send the reset code.");
+      const facing = getPasswordResetFacingError(requestError, "Could not send the reset code.");
       if (facing.isCooldown && facing.retrySeconds) {
         startCooldown(facing.retrySeconds);
         setError("");

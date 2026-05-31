@@ -5,8 +5,6 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  Eye,
-  EyeOff,
   HelpCircle,
   Lock,
   LogOut,
@@ -18,12 +16,14 @@ import {
   clearAgentSession,
   getAgentDashboard,
   getAgentSession,
+  requestPasswordResetOtp,
+  resendAuthOtp,
   resetPassword,
-  sendOtp,
   verifyOtp,
 } from "../../services/cropexApi";
-import { getUserFacingError, getDisplayError } from "../../utils/apiErrors";
+import { getPasswordResetFacingError, getUserFacingError, getDisplayError } from "../../utils/apiErrors";
 import { PASSWORD_ERROR, PASSWORD_HINT, validateStrongPassword, mapSignupFieldError } from "../../utils/password";
+import PasswordField from "../../components/PasswordField";
 
 const OTP_LENGTH = 6;
 
@@ -35,6 +35,7 @@ function ChangePasswordScreen({ onBack }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -52,13 +53,13 @@ function ChangePasswordScreen({ onBack }) {
     setSubmitting(true);
     setError("");
 
-    sendOtp(phone)
+    requestPasswordResetOtp({ phone })
       .then(() => {
         if (active) setOtpSent(true);
       })
       .catch((requestError) => {
         if (active) {
-          setError(getDisplayError(requestError, "Could not send a verification code."));
+          setError(getPasswordResetFacingError(requestError, "Could not send a verification code.").message);
         }
       })
       .finally(() => {
@@ -137,10 +138,10 @@ function ChangePasswordScreen({ onBack }) {
     setSubmitting(true);
     setError("");
     try {
-      await sendOtp(phone);
+      await resendAuthOtp({ phone });
       setOtpSent(true);
     } catch (requestError) {
-      setError(getDisplayError(requestError, "Could not resend the code."));
+      setError(getPasswordResetFacingError(requestError, "Could not resend the code.").message);
     } finally {
       setSubmitting(false);
     }
@@ -225,36 +226,31 @@ function ChangePasswordScreen({ onBack }) {
                       New Password
                     </label>
                     <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
-                    <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all">
-                      <input
-                        type={showPass ? "text" : "password"}
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        placeholder="e.g. Farm2026!"
-                        className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPass((value) => !value)}
-                        className="text-brand-text-muted shrink-0"
-                      >
-                        {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
+                    <PasswordField
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      visible={showPass}
+                      onToggleVisible={() => setShowPass((value) => !value)}
+                      autoComplete="new-password"
+                      placeholder="e.g. Farm2026!"
+                      wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all"
+                      inputClassName="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="font-sans text-sm font-medium text-brand-text-primary">
                       Confirm Password
                     </label>
-                    <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all">
-                      <input
-                        type={showPass ? "text" : "password"}
-                        value={confirm}
-                        onChange={(event) => setConfirm(event.target.value)}
-                        placeholder="Re-enter password"
-                        className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
-                      />
-                    </div>
+                    <PasswordField
+                      value={confirm}
+                      onChange={(event) => setConfirm(event.target.value)}
+                      visible={showConfirmPass}
+                      onToggleVisible={() => setShowConfirmPass((value) => !value)}
+                      autoComplete="new-password"
+                      placeholder="Re-enter password"
+                      wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all"
+                      inputClassName="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
+                    />
                   </div>
                   {error && <p className="text-xs text-red-500">{error}</p>}
                 </div>

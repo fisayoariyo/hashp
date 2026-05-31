@@ -37,9 +37,9 @@ export const agentOnboardingSlides = [
 ];
 
 export const agentSupportContact = {
-  phoneDisplay: "+234 XXX XXX XXXX",
-  phoneHref: "tel:+2348000000000",
-  email: "support@hashmar.com",
+  phoneDisplay: "08153953002",
+  phoneHref: "tel:+2348153953002",
+  email: "hashmarfarms@gmail.com",
 };
 
 export const agentData = {

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Mail, Lock, ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
+import PasswordField from "../../components/PasswordField";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { CropexHttpError } from "../../services/cropexHttp";
 import {
@@ -131,11 +132,17 @@ export default function AgentLogin() {
 
       <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Password</label>
-        <div className={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${error ? "border-red-400" : "border-brand-border"}`}>
-          <Lock size={18} className="text-brand-text-muted shrink-0" />
-          <input type={showPass ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} placeholder="Enter your password" className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none" />
-          <button type="button" onClick={() => setShowPass((v) => !v)} className="text-brand-text-muted shrink-0">{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-        </div>
+        <PasswordField
+          prefix={Lock}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+          visible={showPass}
+          onToggleVisible={() => setShowPass((v) => !v)}
+          autoComplete="current-password"
+          placeholder="Enter your password"
+          wrapperClassName={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${error ? "border-red-400" : "border-brand-border"}`}
+        />
         {error && <p className="text-xs text-red-500">{error}</p>}
       </div>
 

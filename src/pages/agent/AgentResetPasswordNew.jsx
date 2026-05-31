@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
+import PasswordField from "../../components/PasswordField";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { resetPassword } from "../../services/cropexApi";
 import { getUserFacingError } from "../../utils/apiErrors";
@@ -18,6 +19,7 @@ export default function AgentResetPasswordNew() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -73,37 +75,29 @@ export default function AgentResetPasswordNew() {
       <div className="flex flex-col gap-1.5">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Create your password</label>
         <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
-        <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all">
-          <Lock size={18} className="text-brand-text-muted shrink-0" />
-          <input
-            type={showPass ? "text" : "password"}
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="e.g. Farm2026!"
-            className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
-          />
-          <button type="button" onClick={() => setShowPass((value) => !value)} className="text-brand-text-muted shrink-0">
-            {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
+        <PasswordField
+          prefix={Lock}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          visible={showPass}
+          onToggleVisible={() => setShowPass((value) => !value)}
+          autoComplete="new-password"
+          placeholder="e.g. Farm2026!"
+          wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all"
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Confirm password</label>
-        <div className="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all">
-          <Lock size={18} className="text-brand-text-muted shrink-0" />
-          <input
-            type={showPass ? "text" : "password"}
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Confirm your new password"
-            className="flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
-          />
-          <button type="button" onClick={() => setShowPass((value) => !value)} className="text-brand-text-muted shrink-0">
-            {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
+        <PasswordField
+          prefix={Lock}
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          visible={showConfirmPass}
+          onToggleVisible={() => setShowConfirmPass((value) => !value)}
+          autoComplete="new-password"
+          placeholder="Confirm your new password"
+          wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all"
+        />
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
