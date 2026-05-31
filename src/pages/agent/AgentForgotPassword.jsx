@@ -91,7 +91,7 @@ export default function AgentForgotPassword() {
       <button
         type="button"
         onClick={() => navigate("/agent/login")}
-        className="w-full rounded-3xl bg-gray-100 py-4 font-sans text-sm font-semibold text-brand-green"
+        className="auth-btn-secondary"
       >
         Back to log in
       </button>
@@ -121,8 +121,8 @@ export default function AgentForgotPassword() {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="mb-2 font-display text-3xl font-bold text-brand-text-primary">Reset password</h1>
-        <p className="mb-8 font-sans text-sm text-brand-text-secondary">
+        <h1 className="auth-title">Reset password</h1>
+        <p className="auth-subtitle">
           We&apos;ll email a code to your registered address.
         </p>
         {formBody}

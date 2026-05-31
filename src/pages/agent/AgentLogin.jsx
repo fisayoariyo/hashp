@@ -159,7 +159,7 @@ export default function AgentLogin() {
       <button type="button" onClick={handleLogin} disabled={loading} className="btn-primary">
         {loading ? "Logging in..." : "Continue"}
       </button>
-      <button type="button" onClick={() => navigate("/agent/create-account", { state: { returnTo: "/agent/login" } })} className="w-full py-4 rounded-3xl bg-gray-100 text-brand-green font-sans font-semibold text-sm">
+      <button type="button" onClick={() => navigate("/agent/create-account", { state: { returnTo: "/agent/login" } })} className="auth-btn-secondary">
         I don't have an account
       </button>
     </div>
@@ -177,13 +177,13 @@ export default function AgentLogin() {
     <div className="w-full flex flex-col bg-white" style={{ minHeight: "100dvh" }}>
       <div className="flex-1 overflow-y-auto px-5 pt-5 pb-6 w-full max-w-[480px] mx-auto">
         {goBackButton}
-        <h1 className="font-display font-bold text-[2rem] leading-tight text-brand-text-primary mb-8">Log in to your account</h1>
+        <h1 className="auth-title mb-8">Log in to your account</h1>
         {formFields}
         <div className="space-y-3 pb-[max(2rem,env(safe-area-inset-bottom))] mt-5">
           <button type="button" onClick={handleLogin} disabled={loading} className="btn-primary">
             {loading ? "Logging in..." : "Continue"}
           </button>
-          <button type="button" onClick={() => navigate("/agent/create-account", { state: { returnTo: "/agent/login" } })} className="w-full text-center text-brand-green font-sans text-sm font-medium py-2">
+          <button type="button" onClick={() => navigate("/agent/create-account", { state: { returnTo: "/agent/login" } })} className="auth-btn-secondary">
             I don&apos;t have an account
           </button>
         </div>

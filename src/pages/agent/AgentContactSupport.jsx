@@ -181,8 +181,8 @@ export default function AgentContactSupport() {
 
   const preAuthContent = (
     <div className="w-full max-w-[36rem] text-left">
-      <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2">Need Help?</h1>
-      <p className="font-sans text-sm text-brand-text-secondary mb-6">
+      <h1 className="auth-title">Need Help?</h1>
+      <p className="auth-subtitle mb-6">
         We&apos;re here to support you. Reach out to us if you&apos;re having any issues with registration,
         verification, or syncing data.
       </p>

@@ -63,8 +63,8 @@ export default function AgentVerificationFailed() {
         <button type="button" onClick={() => navigate("/agent/login")} className="self-start flex items-center gap-2 text-brand-text-secondary mb-6">
           <ArrowLeft size={18} /><span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2">Verification Failed</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-6">We could not verify your account.</p>
+        <h1 className="auth-title">Verification Failed</h1>
+        <p className="auth-subtitle mb-6">We could not verify your account.</p>
         {body}
       </div>
       <div className="px-5 pb-8">{actions}</div>

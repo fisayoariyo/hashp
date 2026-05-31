@@ -257,8 +257,6 @@ export default function AgentVerifyPhone() {
         title={pageTitle}
         subtitle={pageSubtitle}
         centerTitle
-        titleClassName="text-[46px] leading-[1.05] mb-2"
-        subtitleClassName="text-[19px] leading-[1.3] mb-8"
         actionsClassName="mt-auto pt-7"
         actions={
           <div className="w-full space-y-3">
@@ -266,7 +264,7 @@ export default function AgentVerifyPhone() {
               type="button"
               onClick={() => void handleContinue()}
               disabled={loading || digits.join("").length < OTP_LENGTH}
-              className="inline-flex h-[44px] w-full items-center justify-center rounded-2xl bg-brand-green font-sans text-[20px] font-medium leading-none text-white transition-all duration-200 active:scale-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-primary w-full"
             >
               {loading ? "Verifying..." : "Continue"}
             </button>
@@ -275,7 +273,7 @@ export default function AgentVerifyPhone() {
               onClick={() =>
                 navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")
               }
-              className="inline-flex h-[44px] w-full items-center justify-center rounded-2xl bg-gray-100 font-sans text-[20px] font-medium leading-none text-brand-green"
+              className="auth-btn-secondary"
             >
               {mode === "reset-password" ? "Back" : "Edit account details"}
             </button>
@@ -300,8 +298,8 @@ export default function AgentVerifyPhone() {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="mb-2 font-display text-3xl font-bold text-brand-text-primary">{pageTitle}</h1>
-        <p className="mb-8 font-sans text-sm text-brand-text-secondary">{pageSubtitle}</p>
+        <h1 className="auth-title">{pageTitle}</h1>
+        <p className="auth-subtitle">{pageSubtitle}</p>
         {otpGrid}
         {otpDestinationHint}
         {otpMeta}
@@ -318,7 +316,7 @@ export default function AgentVerifyPhone() {
         <button
           type="button"
           onClick={() => navigate(mode === "reset-password" ? "/agent/forgot-password" : "/agent/create-account")}
-          className="w-full py-2 text-center font-sans text-sm font-medium text-brand-green"
+          className="auth-btn-secondary"
         >
           {mode === "reset-password" ? "Back" : "Edit account details"}
         </button>

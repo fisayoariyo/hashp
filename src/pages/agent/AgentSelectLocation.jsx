@@ -205,7 +205,7 @@ export default function AgentSelectLocation() {
       <button
         type="button"
         onClick={() => navigate(-1)}
-        className="w-full py-4 rounded-3xl bg-gray-100 text-brand-green font-sans font-semibold text-sm"
+        className="auth-btn-secondary"
       >
         Back
       </button>
@@ -233,8 +233,8 @@ export default function AgentSelectLocation() {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Select your assigned location</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">
+        <h1 className="auth-title">Select your assigned location</h1>
+        <p className="auth-subtitle">
           Select the location you were assigned to
         </p>
         {formBody}

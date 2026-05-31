@@ -117,7 +117,7 @@ export default function AgentAccountUnderReview() {
       <button
         type="button"
         onClick={() => navigate("/agent/contact-support", { state: { preAuth: true, from: "under-review" } })}
-        className="w-full py-4 rounded-3xl border-2 border-brand-border text-brand-green font-sans font-semibold text-sm"
+        className="auth-btn-secondary"
       >
         Contact support
       </button>
@@ -150,8 +150,8 @@ export default function AgentAccountUnderReview() {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2 text-left">Account Under Review</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-6 text-left max-w-[36rem]">
+        <h1 className="auth-title text-left">Account Under Review</h1>
+        <p className="auth-subtitle mb-6 text-left max-w-[36rem]">
           Your details have been submitted successfully and are currently being reviewed.
         </p>
         <div className="flex w-full justify-center">{iconBlock}</div>

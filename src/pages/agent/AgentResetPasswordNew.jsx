@@ -111,7 +111,7 @@ export default function AgentResetPasswordNew() {
       <button
         type="button"
         onClick={() => navigate("/agent/forgot-password")}
-        className="w-full py-4 rounded-3xl bg-gray-100 text-brand-green font-sans font-semibold text-sm"
+        className="auth-btn-secondary"
       >
         Back
       </button>
@@ -137,8 +137,8 @@ export default function AgentResetPasswordNew() {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-3xl text-brand-text-primary mb-2">Reset password</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">
+        <h1 className="auth-title">Reset password</h1>
+        <p className="auth-subtitle">
           Choose a new password for your account.
         </p>
         {fields}

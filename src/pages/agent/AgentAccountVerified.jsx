@@ -68,8 +68,8 @@ export default function AgentAccountVerified() {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2">You&apos;re Verified</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-6">Your account has been successfully verified.</p>
+        <h1 className="auth-title">You&apos;re Verified</h1>
+        <p className="auth-subtitle mb-6">Your account has been successfully verified.</p>
         {body}
       </div>
       <div className="px-5 pb-8 flex justify-center">{actions}</div>
