@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Mail, Phone } from "lucide-react";
+import { farmerSupportContact } from "../../mockData/farmer";
 
 const COPY = {
   heroTitle: "Get Started as a Farmer",
@@ -7,10 +8,10 @@ const COPY = {
   title: "Get started as a farmer",
   subtitle: "Contact an agent near you to create an account as a farmer",
   contactHeading: "Contact an Agent",
-  phone: "+234 813 390 5285",
-  phoneHref: "tel:+2348133905285",
-  email: "support@hashmar.com",
-  emailHref: "mailto:support@hashmar.com",
+  phone: farmerSupportContact.phoneDisplay,
+  phoneHref: farmerSupportContact.phoneHref,
+  email: farmerSupportContact.email,
+  emailHref: `mailto:${farmerSupportContact.email}`,
   loginPrompt: "If you have an account?",
   loginLink: "Log in to your farmer account",
 };

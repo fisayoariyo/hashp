@@ -5,8 +5,8 @@ import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayou
 import PasswordField from "../../components/PasswordField";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { resetPassword } from "../../services/cropexApi";
-import { getUserFacingError } from "../../utils/apiErrors";
-import { PASSWORD_ERROR, PASSWORD_HINT, validateStrongPassword, mapSignupFieldError } from "../../utils/password";
+import { getDisplayError } from "../../utils/apiErrors";
+import { PASSWORD_HINT, validateStrongPassword } from "../../utils/password";
 
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
 const RESET_EMAIL_KEY = "hcx_agent_reset_email";
@@ -63,8 +63,7 @@ export default function AgentResetPasswordNew() {
       );
       navigate("/agent/login");
     } catch (resetError) {
-      const raw = resetError instanceof Error ? resetError.message : "";
-      setError(mapSignupFieldError("password", raw) || getUserFacingError(resetError, "Could not reset password.").message);
+      setError(getDisplayError(resetError, "Could not reset password."));
     } finally {
       setLoading(false);
     }

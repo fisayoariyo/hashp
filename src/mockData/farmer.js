@@ -134,9 +134,11 @@ export const farmerFAQs = [
 ];
 
 export const farmerSupportContact = {
-  phone: "0800-HASHMAR",
-  whatsapp: "https://wa.me/2348000000000",
-  email: "support@hashmarcropex.com",
+  phoneDisplay: "08153953002",
+  phone: "08153953002",
+  phoneHref: "tel:+2348153953002",
+  email: "hashmarfarms@gmail.com",
+  whatsapp: "https://wa.me/2348153953002",
   fieldAgent: "Tomide Adelopo — 08012345678",
 };
 
