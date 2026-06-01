@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function useOtpCountdown(initialSeconds = 0) {
   const [seconds, setSeconds] = useState(() =>
@@ -11,14 +11,14 @@ export function useOtpCountdown(initialSeconds = 0) {
       setSeconds((current) => (current > 0 ? current - 1 : 0));
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [seconds <= 0]);
+  }, [seconds]);
 
-  const start = (value) => {
+  const start = useCallback((value) => {
     const next = Number.parseInt(String(value || ""), 10);
     if (Number.isFinite(next) && next > 0) setSeconds(next);
-  };
+  }, []);
 
-  const clear = () => setSeconds(0);
+  const clear = useCallback(() => setSeconds(0), []);
 
   return {
     seconds,

@@ -1,4 +1,4 @@
-import { createRef, useEffect, useMemo, useState } from "react";
+import { createRef, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -43,10 +43,10 @@ function ChangePasswordScreen({ onBack }) {
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
-  const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown, clear: clearCooldown } =
-    useOtpCountdown();
+  const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown } = useOtpCountdown();
 
   const otpRefs = useMemo(() => Array.from({ length: OTP_LENGTH }, () => createRef()), []);
+  const otpRequestedForEmailRef = useRef("");
 
   useEffect(() => {
     let active = true;
@@ -65,17 +65,20 @@ function ChangePasswordScreen({ onBack }) {
   }, [session?.email]);
 
   useEffect(() => {
-    if (!accountEmail) {
+    const normalizedEmail = accountEmail.trim();
+    if (!normalizedEmail) {
       setError("No email is available for this account.");
       return;
     }
 
+    if (otpRequestedForEmailRef.current === normalizedEmail) return;
+    otpRequestedForEmailRef.current = normalizedEmail;
+
     let active = true;
     setSubmitting(true);
     setError("");
-    clearCooldown();
 
-    requestChangePasswordOtp({ email: accountEmail })
+    requestChangePasswordOtp({ email: normalizedEmail })
       .then(() => {
         if (active) setOtpSent(true);
       })
@@ -87,6 +90,7 @@ function ChangePasswordScreen({ onBack }) {
           setError("");
         } else {
           setError(facing.message);
+          otpRequestedForEmailRef.current = "";
         }
       })
       .finally(() => {
@@ -96,7 +100,7 @@ function ChangePasswordScreen({ onBack }) {
     return () => {
       active = false;
     };
-  }, [accountEmail, clearCooldown, startCooldown]);
+  }, [accountEmail, startCooldown]);
 
   const handleDigit = (index, value) => {
     if (!/^\d?$/.test(value)) return;
@@ -158,13 +162,14 @@ function ChangePasswordScreen({ onBack }) {
   };
 
   const resendCode = async () => {
-    if (!accountEmail || isCooldownActive) return;
+    const normalizedEmail = accountEmail.trim();
+    if (!normalizedEmail || isCooldownActive || submitting) return;
     setSubmitting(true);
     setError("");
-    clearCooldown();
     try {
-      await resendChangePasswordOtp({ email: accountEmail });
+      await resendChangePasswordOtp({ email: normalizedEmail });
       setOtpSent(true);
+      otpRequestedForEmailRef.current = normalizedEmail;
     } catch (requestError) {
       const facing = getPasswordResetFacingError(requestError, "Could not resend the code.");
       if (facing.isCooldown && facing.retrySeconds) {
