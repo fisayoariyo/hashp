@@ -1,0 +1,30 @@
+---
+description: When unsure, ask the user one short question—never guess flows, APIs, or design.
+alwaysApply: true
+---
+
+# Ask, don't guess
+
+The user decides product, design, and API behavior. You do not.
+
+## When this applies
+
+Every time you are not **certain** from explicit user text, Figma/MCP output, or code in this repo.
+
+## Required behavior
+
+1. **Do not guess** — no assumed screens, endpoints, field names, copy, or “probably meant X.”
+2. **Ask before acting** — if anything is unclear, stop and ask **one sentence** (yes/no or A/B is fine).
+3. **Label the ask** — start with: **Quick check:**
+4. **Wait** — do not implement, refactor, or “fill in” until they answer (unless they said “proceed anyway”).
+5. **Figma / drafts win** — if design and code disagree, say so and ask which source to follow; do not pick one silently.
+
+## Examples
+
+- **Quick check:** Should Settings “Change password” match the desktop Figma (current + new only) or the OTP screen you showed earlier?
+- **Quick check:** Is the reset endpoint `current_password` + `new_password` or only `new_password` after OTP?
+
+## Still OK without asking
+
+- Reading files, running tests, fixing typos the user already specified.
+- Following instructions they gave in the same message.

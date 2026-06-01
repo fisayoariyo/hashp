@@ -2,321 +2,35 @@ import { createRef, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
+  Check,
   ChevronDown,
   ChevronRight,
   ChevronUp,
   HelpCircle,
   Lock,
   LogOut,
+  Mail,
+  Smartphone,
 } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import OtpCooldownFeedback from "../../components/agent/OtpCooldownFeedback";
+import PasswordField from "../../components/PasswordField";
 import { agentFAQs } from "../../mockData/agent";
 import { useOtpCountdown } from "../../hooks/useOtpCountdown";
 import {
+  changeAgentPassword,
   clearAgentSession,
   getAgentDashboard,
   getAgentSession,
-  requestChangePasswordOtp,
-  resendChangePasswordOtp,
-  setAgentSessionFromAuthResponse,
-  submitChangePassword,
-  verifyChangePasswordOtp,
+  requestAgentChangePasswordOtp,
+  verifyAgentChangePasswordOtp,
 } from "../../services/cropexApi";
-import { getPasswordResetFacingError, getDisplayError } from "../../utils/apiErrors";
+import { getDisplayError, getPasswordResetFacingError } from "../../utils/apiErrors";
 import { validateStrongPassword } from "../../utils/password";
-import PasswordField from "../../components/PasswordField";
 
 const OTP_LENGTH = 6;
-
-function ChangePasswordScreen({ onBack }) {
-  const session = getAgentSession();
-  const [accountEmail, setAccountEmail] = useState(() => String(session?.email || "").trim());
-  const [step, setStep] = useState("otp");
-  const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown } = useOtpCountdown();
-
-  const otpRefs = useMemo(() => Array.from({ length: OTP_LENGTH }, () => createRef()), []);
-  const otpRequestedForEmailRef = useRef("");
-
-  useEffect(() => {
-    let active = true;
-    getAgentDashboard()
-      .then((payload) => {
-        if (!active) return;
-        const resolved = String(payload?.agent?.email || session?.email || "").trim();
-        if (resolved) setAccountEmail(resolved);
-      })
-      .catch(() => {
-        /* keep session email if dashboard fails */
-      });
-    return () => {
-      active = false;
-    };
-  }, [session?.email]);
-
-  useEffect(() => {
-    const normalizedEmail = accountEmail.trim();
-    if (!normalizedEmail) {
-      setError("No email is available for this account.");
-      return;
-    }
-
-    if (otpRequestedForEmailRef.current === normalizedEmail) return;
-    otpRequestedForEmailRef.current = normalizedEmail;
-
-    let active = true;
-    setSubmitting(true);
-    setError("");
-
-    requestChangePasswordOtp({ email: normalizedEmail })
-      .then(() => {
-        if (active) setOtpSent(true);
-      })
-      .catch((requestError) => {
-        if (!active) return;
-        const facing = getPasswordResetFacingError(requestError, "Could not send a verification code.");
-        if (facing.isCooldown && facing.retrySeconds) {
-          startCooldown(facing.retrySeconds);
-          setError("");
-        } else {
-          setError(facing.message);
-          otpRequestedForEmailRef.current = "";
-        }
-      })
-      .finally(() => {
-        if (active) setSubmitting(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [accountEmail, startCooldown]);
-
-  const handleDigit = (index, value) => {
-    if (!/^\d?$/.test(value)) return;
-    const next = [...digits];
-    next[index] = value;
-    setDigits(next);
-    setError("");
-    if (value && index < OTP_LENGTH - 1) otpRefs[index + 1].current?.focus();
-  };
-
-  const handleOTPKeyDown = (index, event) => {
-    if (event.key === "Backspace" && !digits[index] && index > 0) {
-      otpRefs[index - 1].current?.focus();
-    }
-  };
-
-  const handleOTP = async () => {
-    const otp = digits.join("");
-    if (otp.length < OTP_LENGTH) {
-      setError("Enter the full verification code.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError("");
-    try {
-      const response = await verifyChangePasswordOtp({ email: accountEmail, otp });
-      setAgentSessionFromAuthResponse(response);
-      setStep("new");
-    } catch (requestError) {
-      setError(getDisplayError(requestError, "Could not verify the code."));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleSave = async () => {
-    const passwordCheck = validateStrongPassword(password);
-    if (!passwordCheck.valid) {
-      setError(passwordCheck.message);
-      return;
-    }
-    if (password !== confirm) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError("");
-    try {
-      await submitChangePassword({ newPassword: password });
-      setSuccess(true);
-      window.setTimeout(() => onBack(), 2000);
-    } catch (requestError) {
-      setError(getDisplayError(requestError, "Could not update the password."));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const resendCode = async () => {
-    const normalizedEmail = accountEmail.trim();
-    if (!normalizedEmail || isCooldownActive || submitting) return;
-    setSubmitting(true);
-    setError("");
-    try {
-      await resendChangePasswordOtp({ email: normalizedEmail });
-      setOtpSent(true);
-      otpRequestedForEmailRef.current = normalizedEmail;
-    } catch (requestError) {
-      const facing = getPasswordResetFacingError(requestError, "Could not resend the code.");
-      if (facing.isCooldown && facing.retrySeconds) {
-        startCooldown(facing.retrySeconds);
-        setError("");
-      } else {
-        setError(facing.message);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const content = (
-    <div className="flex flex-col md:w-full md:max-w-[862.81px]">
-      <div className="flex-1 px-5 md:px-0 pt-5">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-brand-text-secondary mb-6"
-        >
-          <ArrowLeft size={18} />
-          <span className="font-sans text-sm">Go back</span>
-        </button>
-
-        {success ? (
-          <div className="flex flex-col items-center justify-center gap-4 py-10">
-            <div className="w-16 h-16 rounded-full bg-brand-green flex items-center justify-center">
-              <span className="text-white text-2xl">OK</span>
-            </div>
-            <p className="font-display font-bold text-xl text-brand-text-primary">Password updated</p>
-            <p className="font-sans text-sm text-brand-text-secondary text-center">
-              Redirecting back to settings...
-            </p>
-          </div>
-        ) : (
-          <>
-            {step === "otp" && (
-              <>
-                <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">
-                  Enter OTP
-                </h1>
-                <p className="font-sans text-sm text-brand-text-secondary mb-8">
-                  Enter the code sent to {accountEmail || "your registered email"} to confirm.
-                </p>
-                <div className="grid grid-cols-6 gap-3 mb-4 md:w-fit md:gap-4">
-                  {digits.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={otpRefs[index]}
-                      type="tel"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(event) => handleDigit(index, event.target.value)}
-                      onKeyDown={(event) => handleOTPKeyDown(index, event)}
-                      className={`h-16 w-full text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors md:w-[92px] ${
-                        digit ? "border-brand-green text-brand-green" : "border-brand-border"
-                      } focus:border-brand-green`}
-                    />
-                  ))}
-                </div>
-                {error ? <p className="text-xs text-red-500 mb-2">{error}</p> : null}
-                <OtpCooldownFeedback seconds={cooldownSeconds} className="mb-2" />
-                <div className="flex items-center gap-3">
-                  <p className="font-sans text-xs text-brand-text-muted">
-                    {otpSent ? "Verification code sent to your email." : "Sending verification code..."}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void resendCode()}
-                    disabled={submitting || !accountEmail || isCooldownActive}
-                    className="font-sans text-xs font-semibold text-brand-green disabled:opacity-40"
-                  >
-                    {isCooldownActive ? `Resend in ${cooldownSeconds}s` : "Resend code"}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {step === "new" && (
-              <div className="md:max-w-[560px]">
-                <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">
-                  New Password
-                </h1>
-                <p className="font-sans text-sm text-brand-text-secondary mb-8">
-                  Create a new password for your account.
-                </p>
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-sans text-sm font-medium text-brand-text-primary">
-                      New Password
-                    </label>
-                    <PasswordField
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      visible={showPass}
-                      onToggleVisible={() => setShowPass((value) => !value)}
-                      autoComplete="new-password"
-                      placeholder="Min 8 chars, letters, numbers & symbol"
-                      wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all"
-                      inputClassName="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="font-sans text-sm font-medium text-brand-text-primary">
-                      Confirm Password
-                    </label>
-                    <PasswordField
-                      value={confirm}
-                      onChange={(event) => setConfirm(event.target.value)}
-                      visible={showConfirmPass}
-                      onToggleVisible={() => setShowConfirmPass((value) => !value)}
-                      autoComplete="new-password"
-                      placeholder="Re-enter your password"
-                      wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all"
-                      inputClassName="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
-                    />
-                  </div>
-                  {error && <p className="text-xs text-red-500">{error}</p>}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {!success && (
-        <div className={`px-5 md:px-0 pb-8 md:pb-0 md:pt-6 ${step === "new" ? "pt-4" : ""}`}>
-          <button
-            onClick={() => void (step === "otp" ? handleOTP() : handleSave())}
-            disabled={submitting || (step === "otp" && digits.join("").length < OTP_LENGTH)}
-            className="w-full md:w-[240px] inline-flex h-[47px] items-center justify-center rounded-[15px] bg-[#03624D] text-white font-sans font-semibold disabled:opacity-40"
-          >
-            {submitting ? "Processing..." : step === "otp" ? "Verify" : "Save Password"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <>
-      <div className="md:hidden page-white">{content}</div>
-      <AgentDesktopShell active="settings">{content}</AgentDesktopShell>
-    </>
-  );
-}
+const CHANGE_PASSWORD_OTP_OK = "hcx_agent_change_password_otp_ok";
 
 function FAQScreen({ onBack }) {
   const [open, setOpen] = useState(null);
@@ -408,6 +122,373 @@ function LogoutModal({ onConfirm, onCancel }) {
   );
 }
 
+function PasswordChangedModal({ onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-[130] flex items-center justify-center bg-black/45 p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="password-changed-title"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-[360px] rounded-2xl border border-black/[0.06] bg-white px-10 py-10 text-center shadow-[0_24px_64px_rgba(0,0,0,0.18)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mx-auto mb-6 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#03624D] text-white shadow-[0_6px_14px_rgba(3,98,77,0.22)]">
+          <Check size={36} strokeWidth={2.5} />
+        </div>
+        <h2
+          id="password-changed-title"
+          className="font-display text-xl font-bold leading-snug text-[#03624D] md:text-2xl"
+        >
+          Password changed successfully
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-10 inline-flex h-[47px] w-full items-center justify-center rounded-[15px] bg-[#03624D] font-sans text-base font-semibold text-white"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ChangePasswordScreen({ onBack, accountEmail }) {
+  const normalizedEmail = String(accountEmail || "").trim();
+  const [step, setStep] = useState("otp");
+  const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown } =
+    useOtpCountdown();
+  const otpRefs = useMemo(() => Array.from({ length: OTP_LENGTH }, () => createRef()), []);
+  const otpRequestedRef = useRef(false);
+
+  const fieldWrapper =
+    "flex items-center bg-white border border-brand-border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all";
+
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(CHANGE_PASSWORD_OTP_OK);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (otpRequestedRef.current) return;
+    otpRequestedRef.current = true;
+
+    let active = true;
+    setSubmitting(true);
+    setError("");
+
+    requestAgentChangePasswordOtp()
+      .then(() => {
+        if (active) setOtpSent(true);
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        otpRequestedRef.current = false;
+        const facing = getPasswordResetFacingError(requestError, "Could not send a verification code.");
+        if (facing.isCooldown && facing.retrySeconds) {
+          startCooldown(facing.retrySeconds);
+          setError("");
+        } else {
+          setError(facing.message);
+        }
+      })
+      .finally(() => {
+        if (active) setSubmitting(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [startCooldown]);
+
+  const handleDigit = (index, value) => {
+    if (!/^\d?$/.test(value)) return;
+    const next = [...digits];
+    next[index] = value;
+    setDigits(next);
+    setError("");
+    if (value && index < OTP_LENGTH - 1) otpRefs[index + 1].current?.focus();
+  };
+
+  const handleOtpKeyDown = (index, event) => {
+    if (event.key === "Backspace" && !digits[index] && index > 0) {
+      otpRefs[index - 1].current?.focus();
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const otp = digits.join("");
+    if (otp.length < OTP_LENGTH) {
+      setError("Enter the full verification code.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      await verifyAgentChangePasswordOtp({ otp });
+      sessionStorage.setItem(CHANGE_PASSWORD_OTP_OK, "1");
+      setStep("password");
+    } catch (requestError) {
+      setError(getDisplayError(requestError, "Could not verify the code."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (isCooldownActive || submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await requestAgentChangePasswordOtp();
+      setOtpSent(true);
+    } catch (requestError) {
+      const facing = getPasswordResetFacingError(requestError, "Could not resend the code.");
+      if (facing.isCooldown && facing.retrySeconds) {
+        startCooldown(facing.retrySeconds);
+        setError("");
+      } else {
+        setError(facing.message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSavePassword = async () => {
+    if (sessionStorage.getItem(CHANGE_PASSWORD_OTP_OK) !== "1") {
+      setError("Verify your email code first.");
+      setStep("otp");
+      return;
+    }
+    if (!oldPassword) {
+      setError("Enter your old password.");
+      return;
+    }
+    const passwordCheck = validateStrongPassword(newPassword);
+    if (!passwordCheck.valid) {
+      setError(passwordCheck.message);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    if (oldPassword === newPassword) {
+      setError("Choose a new password that is different from your old one.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+    try {
+      await changeAgentPassword({
+        oldPassword,
+        newPassword,
+      });
+      sessionStorage.removeItem(CHANGE_PASSWORD_OTP_OK);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowSuccessModal(true);
+    } catch (requestError) {
+      setError(getDisplayError(requestError, "Could not update your password."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoBack = () => {
+    try {
+      sessionStorage.removeItem(CHANGE_PASSWORD_OTP_OK);
+    } catch {
+      /* ignore */
+    }
+    onBack();
+  };
+
+  const dismissSuccess = () => {
+    setShowSuccessModal(false);
+    onBack();
+  };
+
+  const primaryAction =
+    step === "otp"
+      ? () => void handleVerifyOtp()
+      : () => void handleSavePassword();
+  const primaryLabel =
+    step === "otp"
+      ? submitting
+        ? "Processing..."
+        : "Verify"
+      : submitting
+        ? "Saving..."
+        : "Continue";
+  const primaryDisabled =
+    submitting || (step === "otp" && digits.join("").length < OTP_LENGTH);
+
+  const body = (
+    <>
+      <button
+        type="button"
+        onClick={handleGoBack}
+        className="flex items-center gap-2 text-brand-text-secondary mb-6"
+      >
+        <ArrowLeft size={18} />
+        <span className="font-sans text-sm">Go back</span>
+      </button>
+
+      {step === "otp" ? (
+        <>
+          <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">
+            Enter OTP
+          </h1>
+          <p className="font-sans text-sm text-brand-text-secondary mb-8 max-w-[560px]">
+            Enter the code sent to{" "}
+            <span className="font-medium text-brand-text-primary">
+              {normalizedEmail || "your registered email"}
+            </span>{" "}
+            to confirm.
+          </p>
+          <div className="grid grid-cols-6 gap-3 mb-4 max-w-[560px] md:gap-4">
+            {digits.map((digit, index) => (
+              <input
+                key={index}
+                ref={otpRefs[index]}
+                type="tel"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(event) => handleDigit(index, event.target.value)}
+                onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                className={`h-16 w-full text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors md:w-[92px] ${
+                  digit ? "border-brand-green text-brand-green" : "border-brand-border"
+                } focus:border-brand-green`}
+              />
+            ))}
+          </div>
+          {error ? <p className="font-sans text-xs text-red-500 mb-2">{error}</p> : null}
+          <OtpCooldownFeedback seconds={cooldownSeconds} className="mb-2" />
+          <div className="flex flex-wrap items-center gap-3 max-w-[560px]">
+            <p className="font-sans text-xs text-brand-text-muted">
+              {otpSent ? "Verification code sent to your email." : "Sending verification code..."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleResendOtp()}
+              disabled={submitting || isCooldownActive}
+              className="font-sans text-xs font-semibold text-brand-green disabled:opacity-40"
+            >
+              {isCooldownActive ? `Resend in ${cooldownSeconds}s` : "Resend code"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2">
+            Reset password
+          </h1>
+          <p className="font-sans text-sm text-brand-text-secondary mb-8 max-w-[560px]">
+            Enter your old password and choose a new one.
+          </p>
+          <div className="space-y-4 max-w-[560px]">
+            <div className="flex flex-col gap-2">
+              <label className="font-sans text-sm font-medium text-brand-text-primary">
+                Old password
+              </label>
+              <PasswordField
+                prefix={Lock}
+                value={oldPassword}
+                onChange={(event) => setOldPassword(event.target.value)}
+                visible={showOld}
+                onToggleVisible={() => setShowOld((value) => !value)}
+                autoComplete="current-password"
+                placeholder="Enter old password"
+                wrapperClassName={fieldWrapper}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="font-sans text-sm font-medium text-brand-text-primary">
+                Create your password
+              </label>
+              <PasswordField
+                prefix={Lock}
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                visible={showNew}
+                onToggleVisible={() => setShowNew((value) => !value)}
+                autoComplete="new-password"
+                placeholder="Min 8 chars, letters, numbers & symbol"
+                wrapperClassName={fieldWrapper}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="font-sans text-sm font-medium text-brand-text-primary">
+                Confirm password
+              </label>
+              <PasswordField
+                prefix={Lock}
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                visible={showConfirm}
+                onToggleVisible={() => setShowConfirm((value) => !value)}
+                autoComplete="new-password"
+                placeholder="Re-enter your password"
+                wrapperClassName={fieldWrapper}
+              />
+            </div>
+            {error ? <p className="font-sans text-xs text-red-500">{error}</p> : null}
+          </div>
+        </>
+      )}
+
+      <div className="mt-8 max-w-[560px] pb-8 md:pb-0">
+        <button
+          type="button"
+          onClick={primaryAction}
+          disabled={primaryDisabled}
+          className="w-full md:w-[240px] inline-flex h-[47px] items-center justify-center rounded-[15px] bg-[#03624D] text-white font-sans font-semibold disabled:opacity-40"
+        >
+          {primaryLabel}
+        </button>
+      </div>
+
+      {showSuccessModal ? <PasswordChangedModal onClose={dismissSuccess} /> : null}
+    </>
+  );
+
+  return (
+    <>
+      <div className="md:hidden page-container flex flex-col">
+        <div className="flex-1 overflow-y-auto px-5 pt-5 pb-6">{body}</div>
+        <AgentBottomNav />
+      </div>
+      <AgentDesktopShell active="settings">
+        <div className="flex-1 px-4 md:px-0 pt-5 pb-10 overflow-y-auto scrollbar-hide">
+          {body}
+        </div>
+      </AgentDesktopShell>
+    </>
+  );
+}
+
 function SettingsMain({ onChangePassword, onFAQ, onLogout, profile }) {
   const content = (
     <div className="flex-1 w-full md:max-w-[862.81px] px-4 md:px-0 pt-5 pb-28 md:pb-0 overflow-y-auto scrollbar-hide">
@@ -441,12 +522,12 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout, profile }) {
           <p className="font-display font-bold text-lg text-brand-text-primary leading-tight">
             {profile.fullName}
           </p>
-          <p className="font-sans text-sm text-brand-text-secondary flex items-center gap-1 mt-0.5">
-            <span className="text-brand-green text-xs">E</span>
+          <p className="font-sans text-sm text-brand-text-secondary flex items-center gap-2 mt-0.5">
+            <Mail size={14} className="text-brand-green shrink-0" aria-hidden />
             {profile.email}
           </p>
-          <p className="font-sans text-sm text-brand-text-secondary flex items-center gap-1 mt-0.5">
-            <span className="text-brand-green text-xs">P</span>
+          <p className="font-sans text-sm text-brand-text-secondary flex items-center gap-2 mt-0.5">
+            <Smartphone size={14} className="text-brand-green shrink-0" aria-hidden />
             {profile.phone}
           </p>
         </div>
@@ -454,6 +535,7 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout, profile }) {
 
       <div className="max-w-[760px] bg-white rounded-[20px] border border-[#E6E6E6] overflow-hidden divide-y divide-brand-border">
         <button
+          type="button"
           onClick={onChangePassword}
           className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
         >
@@ -464,6 +546,7 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout, profile }) {
           <ChevronRight size={16} className="text-brand-text-muted shrink-0" />
         </button>
         <button
+          type="button"
           onClick={onFAQ}
           className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
         >
@@ -474,6 +557,7 @@ function SettingsMain({ onChangePassword, onFAQ, onLogout, profile }) {
           <ChevronRight size={16} className="text-brand-text-muted shrink-0" />
         </button>
         <button
+          type="button"
           onClick={onLogout}
           className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-[#F6F6F6] transition-colors"
         >
@@ -502,7 +586,6 @@ export default function AgentSettings() {
   const [view, setView] = useState("main");
   const [showLogout, setShowLogout] = useState(false);
   const [dashboard, setDashboard] = useState(null);
-
   useEffect(() => {
     let active = true;
     getAgentDashboard()
@@ -525,8 +608,8 @@ export default function AgentSettings() {
         session?.fullName ||
         session?.full_name ||
         "Agent",
-      email: dashboard?.agent?.email || session?.email || "No email available",
-      phone: dashboard?.agent?.phone_number || session?.phone || "No phone available",
+      email: dashboard?.agent?.email || session?.email || "",
+      phone: dashboard?.agent?.phone_number || session?.phone || "",
       photo: "",
     }),
     [dashboard, session]
@@ -538,6 +621,7 @@ export default function AgentSettings() {
       sessionStorage.removeItem("hcx_agent_registration");
       sessionStorage.removeItem("hcx_agent_review_refresh_count");
       sessionStorage.removeItem("hcx_agent_reset_otp_ok");
+      sessionStorage.removeItem(CHANGE_PASSWORD_OTP_OK);
       localStorage.removeItem("hcx_agent_farmers_list");
     } catch {
       /* ignore */
@@ -546,8 +630,14 @@ export default function AgentSettings() {
   };
 
   if (view === "password") {
-    return <ChangePasswordScreen onBack={() => setView("main")} />;
+    return (
+      <ChangePasswordScreen
+        accountEmail={profile.email}
+        onBack={() => setView("main")}
+      />
+    );
   }
+
   if (view === "faq") {
     return <FAQScreen onBack={() => setView("main")} />;
   }

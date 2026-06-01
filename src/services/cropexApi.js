@@ -323,11 +323,11 @@ export function resendPasswordResetOtp({ email } = {}) {
 }
 
 /**
- * Logged-in change password (Swagger):
+ * Forgot-password only (unauthenticated):
  * 1. POST /auth/reset-password { email }
  * 2. POST /auth/resend-otp { email }
  * 3. POST /auth/verify { email, otp } → store returned token
- * 4. POST /auth/change-password { new_password } (Bearer)
+ * 4. POST /auth/change-password { new_password } (Bearer from step 3)
  */
 export function requestChangePasswordOtp({ email } = {}) {
   return requestPasswordResetOtp({ email });
@@ -399,17 +399,43 @@ export function agentVerifyOtp(phone, code) {
   });
 }
 
-/** Save new password (Swagger: POST /auth/change-password, Bearer required). */
-export function changePassword({ newPassword }) {
+/** Forgot-password final step (Bearer from OTP verify; new password only). */
+export function submitPasswordReset({ newPassword }) {
   return cropexSessionFetch(AGENT_AUTH_KEY, "/auth/change-password", {
     method: "POST",
-    body: { new_password: newPassword },
+    body: { new_password: String(newPassword || "") },
   });
 }
 
-/** Alias for change-password final step. */
+/** @deprecated Use submitPasswordReset (forgot-password flow). */
 export function submitChangePassword({ newPassword }) {
-  return changePassword({ newPassword });
+  return submitPasswordReset({ newPassword });
+}
+
+/** Settings: send OTP to the logged-in agent's email (Bearer). */
+export function requestAgentChangePasswordOtp() {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/change-password/request-otp", {
+    method: "POST",
+  });
+}
+
+/** Settings: verify email OTP before password change (Bearer). */
+export function verifyAgentChangePasswordOtp({ otp }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/change-password/verify-otp", {
+    method: "POST",
+    body: { otp: String(otp || "").trim() },
+  });
+}
+
+/** Settings: change password after OTP verified (Bearer). */
+export function changeAgentPassword({ oldPassword, newPassword }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/change-password", {
+    method: "POST",
+    body: {
+      old_password: String(oldPassword || ""),
+      new_password: String(newPassword || ""),
+    },
+  });
 }
 
 export function agentRegister(body) {

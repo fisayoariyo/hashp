@@ -10,7 +10,6 @@ import {
   agentVerifyOtp,
   resendAuthOtp,
   setAgentSessionFromAuthResponse,
-  verifyAuthOtp,
   verifyChangePasswordOtp,
 } from "../../services/cropexApi";
 import { getPasswordResetFacingError, getUserFacingError } from "../../utils/apiErrors";

@@ -4,7 +4,7 @@ import { ArrowLeft, Lock } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import PasswordField from "../../components/PasswordField";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { clearAgentSession, submitChangePassword } from "../../services/cropexApi";
+import { clearAgentSession, submitPasswordReset } from "../../services/cropexApi";
 import { getDisplayError } from "../../utils/apiErrors";
 import { validateStrongPassword } from "../../utils/password";
 
@@ -24,11 +24,7 @@ export default function AgentResetPasswordNew() {
 
   useEffect(() => {
     try {
-      if (
-        sessionStorage.getItem(RESET_FLAG) !== "1" ||
-        !sessionStorage.getItem(RESET_EMAIL_KEY) ||
-        !sessionStorage.getItem(RESET_EMAIL_KEY)
-      ) {
+      if (sessionStorage.getItem(RESET_FLAG) !== "1" || !sessionStorage.getItem(RESET_EMAIL_KEY)) {
         navigate("/agent/forgot-password", { replace: true });
       }
     } catch {
@@ -50,10 +46,10 @@ export default function AgentResetPasswordNew() {
     setError("");
     setLoading(true);
     try {
-      await submitChangePassword({ newPassword: password });
-      clearAgentSession();
+      await submitPasswordReset({ newPassword: password });
       sessionStorage.removeItem(RESET_FLAG);
       sessionStorage.removeItem(RESET_EMAIL_KEY);
+      clearAgentSession();
       sessionStorage.setItem(
         "hcx_agent_login_message",
         "Password reset successfully. Sign in with your new password."
@@ -128,7 +124,11 @@ export default function AgentResetPasswordNew() {
   return (
     <div className="page-white flex flex-col min-h-dvh">
       <div className="flex-1 px-5 pt-6">
-        <button type="button" onClick={() => navigate("/agent/forgot-password")} className="flex items-center gap-2 text-brand-text-secondary mb-6">
+        <button
+          type="button"
+          onClick={() => navigate("/agent/forgot-password")}
+          className="flex items-center gap-2 text-brand-text-secondary mb-6"
+        >
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
