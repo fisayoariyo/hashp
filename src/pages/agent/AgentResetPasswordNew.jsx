@@ -6,7 +6,7 @@ import PasswordField from "../../components/PasswordField";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { clearAgentSession, submitChangePassword } from "../../services/cropexApi";
 import { getDisplayError } from "../../utils/apiErrors";
-import { PASSWORD_HINT, validateStrongPassword } from "../../utils/password";
+import { validateStrongPassword } from "../../utils/password";
 
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
 const RESET_EMAIL_KEY = "hcx_agent_reset_email";
@@ -68,9 +68,8 @@ export default function AgentResetPasswordNew() {
 
   const fields = (
     <div className="space-y-4 w-full">
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Create your password</label>
-        <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
         <PasswordField
           prefix={Lock}
           value={password}
@@ -78,11 +77,11 @@ export default function AgentResetPasswordNew() {
           visible={showPass}
           onToggleVisible={() => setShowPass((value) => !value)}
           autoComplete="new-password"
-          placeholder="e.g. Farm2026!"
-          wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all"
+          placeholder="Min 8 chars, letters, numbers & symbol"
+          wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all"
         />
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Confirm password</label>
         <PasswordField
           prefix={Lock}
@@ -91,8 +90,8 @@ export default function AgentResetPasswordNew() {
           visible={showConfirmPass}
           onToggleVisible={() => setShowConfirmPass((value) => !value)}
           autoComplete="new-password"
-          placeholder="Confirm your new password"
-          wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all"
+          placeholder="Re-enter your password"
+          wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all"
         />
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}

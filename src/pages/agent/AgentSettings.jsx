@@ -25,7 +25,7 @@ import {
   verifyChangePasswordOtp,
 } from "../../services/cropexApi";
 import { getPasswordResetFacingError, getDisplayError } from "../../utils/apiErrors";
-import { PASSWORD_HINT, validateStrongPassword } from "../../utils/password";
+import { validateStrongPassword } from "../../utils/password";
 import PasswordField from "../../components/PasswordField";
 
 const OTP_LENGTH = 6;
@@ -253,23 +253,22 @@ function ChangePasswordScreen({ onBack }) {
                   Create a new password for your account.
                 </p>
                 <div className="space-y-4">
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
                     <label className="font-sans text-sm font-medium text-brand-text-primary">
                       New Password
                     </label>
-                    <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
                     <PasswordField
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       visible={showPass}
                       onToggleVisible={() => setShowPass((value) => !value)}
                       autoComplete="new-password"
-                      placeholder="e.g. Farm2026!"
-                      wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all"
+                      placeholder="Min 8 chars, letters, numbers & symbol"
+                      wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all"
                       inputClassName="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
                     <label className="font-sans text-sm font-medium text-brand-text-primary">
                       Confirm Password
                     </label>
@@ -279,8 +278,8 @@ function ChangePasswordScreen({ onBack }) {
                       visible={showConfirmPass}
                       onToggleVisible={() => setShowConfirmPass((value) => !value)}
                       autoComplete="new-password"
-                      placeholder="Re-enter password"
-                      wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all"
+                      placeholder="Re-enter your password"
+                      wrapperClassName="flex items-center bg-white border border-brand-border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green transition-all"
                       inputClassName="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-brand-text-muted"
                     />
                   </div>

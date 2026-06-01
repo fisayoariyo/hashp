@@ -7,7 +7,7 @@ import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { agentRegister, formatPhoneForApi } from "../../services/cropexApi";
 import { getUserFacingError } from "../../utils/apiErrors";
-import { PASSWORD_ERROR, PASSWORD_HINT, validateStrongPassword, mapSignupFieldError } from "../../utils/password";
+import { PASSWORD_ERROR, validateStrongPassword, mapSignupFieldError } from "../../utils/password";
 
 const REG_KEY = "hcx_agent_registration";
 
@@ -356,7 +356,6 @@ export default function AgentCreateAccount() {
 
       <div className="flex flex-col gap-2">
         <label className="font-sans text-sm font-medium text-brand-text-primary">Create your password</label>
-        <p className="font-sans text-xs leading-relaxed text-brand-text-muted">{PASSWORD_HINT}</p>
         <PasswordField
           prefix={Lock}
           value={form.password}
@@ -364,7 +363,7 @@ export default function AgentCreateAccount() {
           visible={showPass}
           onToggleVisible={() => setShowPass((value) => !value)}
           autoComplete="new-password"
-          placeholder="e.g. Farm2026!"
+          placeholder="Min 8 chars, letters, numbers & symbol"
           wrapperClassName={`flex items-center bg-white border rounded-2xl px-4 py-4 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
             fieldErrors.password ? "border-red-400" : "border-brand-border"
           }`}

@@ -41,7 +41,7 @@ export default function PasswordField({
         <button
           type="button"
           onClick={onToggleVisible}
-          className="text-brand-text-muted shrink-0 inline-flex h-11 w-11 items-center justify-center -mr-2 touch-manipulation"
+          className="shrink-0 text-brand-text-muted hover:text-brand-text-primary touch-manipulation inline-flex items-center justify-center"
           aria-label={visible ? "Hide password" : "Show password"}
         >
           {visible ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
