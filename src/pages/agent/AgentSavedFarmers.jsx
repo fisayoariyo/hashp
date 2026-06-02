@@ -488,6 +488,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
             agentSignature="Hashmar"
             issueDate="20/04/2026"
             expiryDate="20/04/2027"
+            className="mx-0"
           />
           <div className="mt-5 flex flex-wrap gap-3 justify-center md:justify-start">
             <button
