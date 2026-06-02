@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, CreditCard, LayoutGrid, List, MoreVertical, RefreshCw, Search, Share2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, CreditCard, LayoutGrid, List, MoreVertical, RefreshCw, Search } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { useAgentFarmersSync } from "../../hooks/useAgentFarmersSync";
@@ -394,16 +394,11 @@ function tabBtnClass(active) {
 }
 
 function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
-  const [tab, setTab] = useState("details");
+  const [tab, setTab] = useState("id");
   const display = { ...farmer };
   const canViewId = !farmer.offline || farmer.hasOfficialId;
   const session = getAgentSession();
   const agentName = session?.fullName || session?.full_name || "Assigned agent";
-
-  const shareId = () => {
-    const msg = `Farmer ID: *${display.id}*\nName: ${display.name}\nVerify: https://cropex.hashmarcropex.com/verify/${display.id}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-  };
 
   const pending = farmer.status === "pending";
 
@@ -418,26 +413,28 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
           <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary mb-0.5">Farmer details</h1>
           <p className="font-sans text-xs text-brand-text-secondary">{display.id}</p>
         </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="rounded-2xl bg-gray-100 p-1 flex gap-1 w-full sm:w-auto sm:min-w-[188px]">
+          <button type="button" onClick={() => setTab("details")} className={tabBtnClass(tab === "details")}>
+            Details
+          </button>
+          {canViewId && (
+            <button type="button" onClick={() => setTab("id")} className={tabBtnClass(tab === "id")}>
+              ID
+            </button>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => onSyncFarmer(farmer.id)}
           disabled={!pending || syncing}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-green text-white text-xs font-semibold shrink-0 disabled:opacity-45 disabled:cursor-not-allowed self-start"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#f6bc2f] text-black text-xs font-semibold shrink-0 disabled:opacity-45 disabled:cursor-not-allowed"
         >
           <RefreshCw size={12} className={syncing && pending ? "animate-spin" : ""} />
           {pending ? "Sync now" : "Synced"}
         </button>
-      </div>
-
-      <div className="rounded-full bg-gray-100 p-1 mb-4 flex flex-wrap gap-1 md:inline-flex md:max-w-md w-full">
-        <button type="button" onClick={() => setTab("details")} className={tabBtnClass(tab === "details")}>
-          Details
-        </button>
-        {canViewId && (
-          <button type="button" onClick={() => setTab("id")} className={tabBtnClass(tab === "id")}>
-            ID
-          </button>
-        )}
       </div>
 
       {tab === "details" ? (
@@ -488,17 +485,8 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
             agentSignature="Hashmar"
             issueDate="20/04/2026"
             expiryDate="20/04/2027"
-            className="mx-0"
+            className="mx-auto"
           />
-          <div className="mt-5 flex flex-wrap gap-3 justify-center md:justify-start">
-            <button
-              type="button"
-              onClick={shareId}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm hover:bg-brand-green/5 transition-colors"
-            >
-              <Share2 size={15} /> Share ID
-            </button>
-          </div>
         </>
       )}
     </>
