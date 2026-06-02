@@ -13,6 +13,7 @@ const FINGERPRINT_SDK_SOURCES = [
   `${VENDOR_BASE}/fingerprint.sdk.min.js`,
   "/fingerprint.sdk.min.js",
 ];
+const CAPTURE_TIMEOUT_MS = 12000;
 
 let loadPromise = null;
 
@@ -169,6 +170,7 @@ export function acquireDigitalPersonaFmd(webApi) {
   return new Promise((resolve, reject) => {
     let settled = false;
     const startedAt = Date.now();
+    let captureTimeoutId = null;
     const debug = (stage, details = {}) => {
       try {
         console.info("[fingerprint-debug]", {
@@ -184,6 +186,10 @@ export function acquireDigitalPersonaFmd(webApi) {
     const finish = async (error, template) => {
       if (settled) return;
       settled = true;
+      if (captureTimeoutId) {
+        clearTimeout(captureTimeoutId);
+        captureTimeoutId = null;
+      }
       debug("finish:start", {
         ok: !error,
         templateLength: typeof template === "string" ? template.length : 0,
@@ -231,12 +237,23 @@ export function acquireDigitalPersonaFmd(webApi) {
       void finish(new Error(getDigitalPersonaInstallMessage()));
     };
 
-    debug("startAcquisition:calling");
-    Promise.resolve(webApi.startAcquisition(getDigitalPersonaSampleFormat())).catch((error) => {
-      debug("startAcquisition:rejected", {
-        message: error instanceof Error ? error.message : String(error),
+    // Some readers stay in an in-between state after a successful scan; force reset before next start.
+    captureTimeoutId = setTimeout(() => {
+      void finish(new Error("Scanner timed out waiting for a fingerprint sample. Lift finger and try again."));
+    }, CAPTURE_TIMEOUT_MS);
+
+    debug("startAcquisition:resetThenCall");
+    Promise.resolve(stopAcquisition(webApi))
+      .catch(() => {
+        /* ignore best-effort reset failure and still attempt start */
+      })
+      .finally(() => {
+        Promise.resolve(webApi.startAcquisition(getDigitalPersonaSampleFormat())).catch((error) => {
+          debug("startAcquisition:rejected", {
+            message: error instanceof Error ? error.message : String(error),
+          });
+          void finish(error instanceof Error ? error : new Error(String(error)));
+        });
       });
-      void finish(error instanceof Error ? error : new Error(String(error)));
-    });
   });
 }
