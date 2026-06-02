@@ -7,6 +7,7 @@ import {
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
+import { buildWhatsAppShareURL } from "../../utils/helpers";
 import { CropexHttpError } from "../../services/cropexHttp";
 import { getDisplayError } from "../../utils/apiErrors";
 import { OFFLINE_FARMER_STATUS, createOfflineFarmerRecord } from "../../services/offlineFarmersDb";
@@ -51,6 +52,13 @@ const formatToday = () => {
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const yyyy = now.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
+};
+const addOneYear = (dateValue) => {
+  const value = readString(dateValue);
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return "";
+  const [, dd, mm, yyyy] = match;
+  return `${dd}/${mm}/${Number(yyyy) + 1}`;
 };
 const toSelectOptions = (options = []) =>
   options.map((option) =>
@@ -1213,9 +1221,9 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
     ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
     : "page-container";
   const isOnlineSubmission = idCard?.mode === "online";
-  const title = isOnlineSubmission ? "Registration Complete" : "Saved for Sync";
+  const title = isOnlineSubmission ? "Farmer ID" : "Saved for Sync";
   const description = isOnlineSubmission
-    ? "This farmer has been submitted. Any official farmer ID returned is shown below."
+    ? "Farmer has been successfully registered. View and share their ID below."
     : "This farmer has been saved on this device and queued for sync. An official farmer ID will appear after a successful sync.";
   const referenceLabel = isOnlineSubmission
     ? idCard.farmerId
@@ -1225,8 +1233,12 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
   const referenceValue = isOnlineSubmission
     ? idCard.farmerId || "Submitted online"
     : idCard.clientId;
-  const statusText = isOnlineSubmission ? "Registered online" : "Pending sync";
-  const officialIdText = idCard.farmerId || (isOnlineSubmission ? "Assigned by server" : "After sync");
+  const issueDate = readString(idCard.savedAt, formatToday());
+  const expiryDate = addOneYear(issueDate) || "20/04/2027";
+  const shareId = () => {
+    if (!referenceValue) return;
+    window.open(buildWhatsAppShareURL(referenceValue), "_blank");
+  };
 
   return (
     <div className={rootClass}>
@@ -1235,47 +1247,63 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
           <ArrowLeft size={16} /><span className="font-sans text-sm">Go back home</span>
         </button>
 
-        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">{title}</h1>
+        <h1 className="font-heading font-semibold text-[36px] leading-[42px] md:text-[44px] md:leading-[50px] text-brand-text-primary mb-1">
+          {title}
+        </h1>
         <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5">
           {description}
         </p>
 
-        <div className="max-w-sm mx-auto w-full bg-brand-green rounded-2xl p-4 flex flex-col items-center text-white shadow-md">
+        <div className="mx-auto w-full max-w-[350px] bg-brand-green rounded-[26px] px-5 py-5 flex flex-col items-center text-white shadow-md">
           <div className="self-start mb-3">
             <img
               src="/brand/HFEI_Primary_Logo_White.png"
               alt="HFEI by Hashmar Cropex Ltd"
-              className="h-7 w-auto object-contain"
+              className="h-8 w-auto object-contain"
               draggable="false"
             />
           </div>
 
           <img src={idCard.photo || DEMO_FARMER_PHOTO} alt={idCard.name}
-            className="w-28 h-28 rounded-2xl object-cover border-[3px] border-white/35 mb-3" />
+            className="w-32 h-32 rounded-[22px] object-cover border-[3px] border-white/35 mb-3" />
 
           <div className="text-center mb-2">
             <p className="text-white/60 text-[11px]">Full Name</p>
-            <p className="font-display font-bold text-lg mt-0.5 leading-tight">{idCard.name}</p>
+            <p className="font-display font-bold text-[30px] leading-tight mt-1">{idCard.name}</p>
           </div>
           <div className="text-center mb-2">
             <p className="text-white/60 text-[11px]">{referenceLabel}</p>
-            <p className="font-display font-bold text-sm tracking-widest mt-0.5 break-all px-1">{referenceValue}</p>
+            <p className="font-display font-bold text-[32px] leading-tight tracking-[0.03em] mt-1 break-all px-1">
+              {referenceValue}
+            </p>
           </div>
           <div className="text-center mb-3">
             <p className="text-white/60 text-[11px]">Corporative name</p>
-            <p className="font-display font-semibold text-sm mt-0.5">{idCard.cooperative || "-"}</p>
+            <p className="font-display font-semibold text-[25px] leading-tight mt-1">{idCard.cooperative || "-"}</p>
           </div>
 
           <div className="w-full h-px bg-white/20 mb-3" />
 
-          <div className="grid grid-cols-2 gap-3 w-full mb-3 text-left">
-            <div><p className="text-white/60 text-[11px]">Agent name</p><p className="font-sans font-semibold text-xs mt-0.5">{idCard.agentName || "-"}</p></div>
-            <div><p className="text-white/60 text-[11px]">Queue status</p><p className="font-sans font-semibold text-xs mt-0.5 text-white/85">{statusText}</p></div>
+          <div className="grid grid-cols-2 gap-3 w-full mb-3 text-center">
+            <div>
+              <p className="text-white/60 text-[11px]">Agent name</p>
+              <p className="font-sans font-semibold text-sm mt-1">{idCard.agentName || "-"}</p>
+            </div>
+            <div>
+              <p className="text-white/60 text-[11px]">Agent signature</p>
+              <p className="font-sans italic text-sm mt-1 text-white/90">Hashmar</p>
+            </div>
           </div>
           <div className="flex items-center justify-center gap-5 w-full">
-            <div className="text-center"><p className="text-white/60 text-[11px]">{isOnlineSubmission ? "Submitted on" : "Saved on"}</p><p className="font-display font-bold text-xs mt-0.5">{idCard.savedAt}</p></div>
+            <div className="text-center">
+              <p className="text-white/60 text-[11px]">Issue date</p>
+              <p className="font-display font-bold text-sm mt-1">{issueDate}</p>
+            </div>
             <div className="w-px h-7 bg-white/30" />
-            <div className="text-center"><p className="text-white/60 text-[11px]">Official ID</p><p className="font-display font-bold text-xs mt-0.5">{officialIdText}</p></div>
+            <div className="text-center">
+              <p className="text-white/60 text-[11px]">Expiry date</p>
+              <p className="font-display font-bold text-sm mt-1">{expiryDate}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1283,10 +1311,19 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
       <div
         className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-stretch`}
       >
+        {isOnlineSubmission ? (
+          <button
+            type="button"
+            onClick={shareId}
+            className="order-1 inline-flex items-center justify-center min-h-12 py-2.5 box-border px-8 rounded-full border-2 border-brand-border bg-white text-brand-green font-display font-semibold text-sm hover:bg-gray-50 transition-all w-full sm:w-auto sm:min-w-[13rem] text-center leading-snug"
+          >
+            Share ID
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onRegisterAnother}
-          className="order-1 inline-flex items-center justify-center min-h-12 py-2.5 box-border px-8 rounded-full border-2 border-brand-green bg-brand-green text-white font-display font-semibold text-sm hover:brightness-95 active:scale-[0.99] transition-all w-full sm:w-auto sm:min-w-[13rem] text-center leading-snug"
+          className="order-2 inline-flex items-center justify-center min-h-12 py-2.5 box-border px-8 rounded-full border-2 border-brand-green bg-brand-green text-white font-display font-semibold text-sm hover:brightness-95 active:scale-[0.99] transition-all w-full sm:w-auto sm:min-w-[13rem] text-center leading-snug"
         >
           Register Another Farmer
         </button>
