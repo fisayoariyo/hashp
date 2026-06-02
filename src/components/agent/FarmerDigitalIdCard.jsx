@@ -11,23 +11,23 @@ export default function FarmerDigitalIdCard({
 }) {
   return (
     <div
-      className={`mx-auto w-full max-w-[34rem] rounded-[2rem] bg-brand-green px-8 py-8 text-white shadow-[0_20px_40px_rgba(4,65,44,0.18)] sm:px-10 sm:py-10 ${className}`.trim()}
+      className={`mx-auto w-full max-w-[284px] rounded-[22px] bg-brand-green px-4 py-4 text-white shadow-[0_20px_40px_rgba(4,65,44,0.18)] ${className}`.trim()}
     >
-      <div className="mb-8 flex justify-center sm:mb-10">
+      <div className="mb-4 flex justify-center">
         <img
           src="/brand/HFEI_Primary_Logo_White.png"
           alt="HFEI by Hashmar Cropex Ltd"
-          className="h-10 w-auto object-contain sm:h-12"
+          className="h-7 w-auto object-contain"
           draggable="false"
         />
       </div>
 
-      <div className="mb-6 flex justify-center sm:mb-7">
+      <div className="mb-4 flex justify-center">
         {photo ? (
           <img
             src={photo}
             alt={name}
-            className="h-40 w-40 rounded-[1.6rem] border-[4px] border-white/35 object-cover shadow-[0_10px_24px_rgba(0,0,0,0.16)] sm:h-52 sm:w-52"
+            className="h-[116px] w-[116px] rounded-[16px] border-[2.5px] border-white/35 object-cover shadow-[0_10px_24px_rgba(0,0,0,0.16)]"
           />
         ) : (
           <div className="flex h-40 w-40 items-center justify-center rounded-[1.6rem] border-[4px] border-white/25 bg-white/10 text-center text-sm font-semibold text-white/80 sm:h-52 sm:w-52">
@@ -36,57 +36,57 @@ export default function FarmerDigitalIdCard({
         )}
       </div>
 
-      <div className="space-y-5 text-center sm:space-y-6">
+      <div className="space-y-3 text-center">
         <div>
-          <p className="font-sans text-sm text-white/72 sm:text-[1.02rem]">Full Name</p>
-          <p className="mt-2 font-display text-[1.8rem] font-bold leading-tight sm:text-[2.15rem]">
+          <p className="font-sans text-[10px] text-white/72">Full Name</p>
+          <p className="mt-1 font-display text-[18px] font-extrabold leading-[110%]">
             {name}
           </p>
         </div>
 
         <div>
-          <p className="font-sans text-sm text-white/72 sm:text-[1.02rem]">Farmer ID</p>
-          <p className="mt-2 font-display text-[1.32rem] font-bold tracking-[0.055em] leading-tight break-words sm:text-[1.7rem]">
+          <p className="font-sans text-[10px] text-white/72">Farmer ID</p>
+          <p className="mt-1 font-display text-[15px] font-extrabold tracking-[0.01em] leading-[110%] break-words">
             {farmerId}
           </p>
         </div>
 
         <div>
-          <p className="font-sans text-sm text-white/72 sm:text-[1.02rem]">Corporative name</p>
-          <p className="mx-auto mt-2 max-w-[24rem] font-display text-[1.45rem] font-semibold leading-tight sm:text-[1.85rem]">
+          <p className="font-sans text-[10px] text-white/72">Corporative name</p>
+          <p className="mx-auto mt-1 max-w-[24rem] font-display text-[14px] font-semibold leading-[120%]">
             {cooperativeName}
           </p>
         </div>
       </div>
 
-      <div className="my-7 h-px w-full bg-white/16 sm:my-8" />
+      <div className="my-4 h-px w-full bg-white/16 sm:my-5" />
 
-      <div className="grid grid-cols-2 gap-6 text-center">
+      <div className="grid grid-cols-2 gap-3 text-center">
         <div>
-          <p className="font-sans text-sm text-white/72 sm:text-[1.02rem]">Agent name</p>
-          <p className="mt-2 font-display text-[1.2rem] font-semibold leading-tight sm:text-[1.5rem]">
+          <p className="font-sans text-[10px] text-white/72">Agent name</p>
+          <p className="mt-1 font-display text-[12px] font-semibold leading-tight">
             {agentName}
           </p>
         </div>
         <div>
-          <p className="font-sans text-sm text-white/72 sm:text-[1.02rem]">Agent signature</p>
-          <p className="mt-2 font-sans text-[1.35rem] italic text-white/90 sm:text-[1.65rem]">
+          <p className="font-sans text-[10px] text-white/72">Agent signature</p>
+          <p className="mt-1 font-sans text-[12px] italic text-white/90">
             {agentSignature}
           </p>
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4 text-center sm:mt-9">
+      <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
         <div>
-          <p className="font-sans text-sm text-white/72 sm:text-[1.02rem]">Issue date</p>
-          <p className="mt-2 font-display text-[1.35rem] font-bold leading-tight sm:text-[1.65rem]">
+          <p className="font-sans text-[10px] text-white/72">Issue date</p>
+          <p className="mt-1 font-display text-[12px] font-bold leading-tight">
             {issueDate}
           </p>
         </div>
-        <div className="h-12 w-px bg-white/24 sm:h-14" />
+        <div className="h-8 w-px bg-white/24" />
         <div>
-          <p className="font-sans text-sm text-white/72 sm:text-[1.02rem]">Expiry date</p>
-          <p className="mt-2 font-display text-[1.35rem] font-bold leading-tight sm:text-[1.65rem]">
+          <p className="font-sans text-[10px] text-white/72">Expiry date</p>
+          <p className="mt-1 font-display text-[12px] font-bold leading-tight">
             {expiryDate}
           </p>
         </div>

@@ -1247,62 +1247,62 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
           <ArrowLeft size={16} /><span className="font-sans text-sm">Go back home</span>
         </button>
 
-        <h1 className="font-heading font-semibold text-[36px] leading-[42px] md:text-[44px] md:leading-[50px] text-brand-text-primary mb-1">
+        <h1 className="font-heading font-semibold text-[32px] leading-[38px] md:text-[40px] md:leading-[46px] text-brand-text-primary mb-1">
           {title}
         </h1>
         <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5">
           {description}
         </p>
 
-        <div className="mx-auto w-full max-w-[350px] bg-brand-green rounded-[26px] px-5 py-5 flex flex-col items-center text-white shadow-md">
+        <div className="mx-auto w-full max-w-[284px] bg-brand-green rounded-[22px] px-4 py-4 flex flex-col items-center text-white shadow-md">
           <div className="self-start mb-3">
             <img
               src="/brand/HFEI_Primary_Logo_White.png"
               alt="HFEI by Hashmar Cropex Ltd"
-              className="h-8 w-auto object-contain"
+              className="h-7 w-auto object-contain"
               draggable="false"
             />
           </div>
 
           <img src={idCard.photo || DEMO_FARMER_PHOTO} alt={idCard.name}
-            className="w-32 h-32 rounded-[22px] object-cover border-[3px] border-white/35 mb-3" />
+            className="w-[116px] h-[116px] rounded-[16px] object-cover border-[2.5px] border-white/35 mb-3" />
 
           <div className="text-center mb-2">
-            <p className="text-white/60 text-[11px]">Full Name</p>
-            <p className="font-display font-bold text-[30px] leading-tight mt-1">{idCard.name}</p>
+            <p className="text-white/60 text-[10px]">Full Name</p>
+            <p className="font-display font-extrabold text-[18px] leading-[110%] mt-1">{idCard.name}</p>
           </div>
           <div className="text-center mb-2">
-            <p className="text-white/60 text-[11px]">{referenceLabel}</p>
-            <p className="font-display font-bold text-[32px] leading-tight tracking-[0.03em] mt-1 break-all px-1">
+            <p className="text-white/60 text-[10px]">{referenceLabel}</p>
+            <p className="font-display font-extrabold text-[15px] leading-[110%] tracking-[0.01em] mt-1 break-all px-1">
               {referenceValue}
             </p>
           </div>
           <div className="text-center mb-3">
-            <p className="text-white/60 text-[11px]">Corporative name</p>
-            <p className="font-display font-semibold text-[25px] leading-tight mt-1">{idCard.cooperative || "-"}</p>
+            <p className="text-white/60 text-[10px]">Corporative name</p>
+            <p className="font-display font-semibold text-[14px] leading-[120%] mt-1">{idCard.cooperative || "-"}</p>
           </div>
 
           <div className="w-full h-px bg-white/20 mb-3" />
 
           <div className="grid grid-cols-2 gap-3 w-full mb-3 text-center">
             <div>
-              <p className="text-white/60 text-[11px]">Agent name</p>
-              <p className="font-sans font-semibold text-sm mt-1">{idCard.agentName || "-"}</p>
+              <p className="text-white/60 text-[10px]">Agent name</p>
+              <p className="font-sans font-semibold text-[12px] mt-1">{idCard.agentName || "-"}</p>
             </div>
             <div>
-              <p className="text-white/60 text-[11px]">Agent signature</p>
-              <p className="font-sans italic text-sm mt-1 text-white/90">Hashmar</p>
+              <p className="text-white/60 text-[10px]">Agent signature</p>
+              <p className="font-sans italic text-[12px] mt-1 text-white/90">Hashmar</p>
             </div>
           </div>
           <div className="flex items-center justify-center gap-5 w-full">
             <div className="text-center">
-              <p className="text-white/60 text-[11px]">Issue date</p>
-              <p className="font-display font-bold text-sm mt-1">{issueDate}</p>
+              <p className="text-white/60 text-[10px]">Issue date</p>
+              <p className="font-display font-bold text-[12px] mt-1">{issueDate}</p>
             </div>
             <div className="w-px h-7 bg-white/30" />
             <div className="text-center">
-              <p className="text-white/60 text-[11px]">Expiry date</p>
-              <p className="font-display font-bold text-sm mt-1">{expiryDate}</p>
+              <p className="text-white/60 text-[10px]">Expiry date</p>
+              <p className="font-display font-bold text-[12px] mt-1">{expiryDate}</p>
             </div>
           </div>
         </div>
