@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, CreditCard, LayoutGrid, List, MoreVertical, RefreshCw, Search } from "lucide-react";
+import { ArrowLeft, ChevronDown, LayoutGrid, List, MoreVertical, RefreshCw, Search } from "lucide-react";
 import { AgentBottomNav } from "./AgentHome";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { useAgentFarmersSync } from "../../hooks/useAgentFarmersSync";
@@ -439,29 +439,6 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
 
       {tab === "details" ? (
         <>
-          {canViewId ? (
-            <button
-              type="button"
-              onClick={() => setTab("id")}
-              className="w-full md:max-w-md mb-6 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-brand-border bg-white hover:border-brand-green hover:bg-brand-green/5 transition-colors text-left shadow-sm"
-            >
-              <div className="w-11 h-11 rounded-xl bg-brand-green-muted flex items-center justify-center shrink-0">
-                <CreditCard className="text-brand-green" size={22} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-brand-text-primary">View digital ID card</p>
-                <p className="font-sans text-xs text-brand-text-secondary">Tap to see the farmer&apos;s official ID</p>
-              </div>
-              <span className="text-brand-text-muted text-sm font-semibold shrink-0">&gt;</span>
-            </button>
-          ) : (
-            <div className="w-full md:max-w-md mb-6 rounded-2xl border border-brand-border bg-white px-4 py-3.5 text-left shadow-sm">
-              <p className="font-sans font-semibold text-sm text-brand-text-primary">Digital ID pending sync</p>
-              <p className="font-sans text-xs text-brand-text-secondary mt-1">
-                This farmer will receive an official ID after the record is synced to the server.
-              </p>
-            </div>
-          )}
           <div className="md:grid md:grid-cols-2 md:gap-8">
             <div>
               <Section title="Online synchronization" rows={[["Status", farmer.status === "synced" ? "Synced" : "Sync pending"]]} />
@@ -485,7 +462,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
             agentSignature="Hashmar"
             issueDate="20/04/2026"
             expiryDate="20/04/2027"
-            className="mx-auto"
+            className="mx-0"
           />
         </>
       )}
