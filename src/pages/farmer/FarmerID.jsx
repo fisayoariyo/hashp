@@ -16,6 +16,7 @@ function IDCard({ idCard }) {
       agentSignature={idCard.agentSignature}
       issueDate={idCard.issueDate}
       expiryDate={idCard.expiryDate}
+      className="mx-auto"
     />
   );
 }

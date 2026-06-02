@@ -11,7 +11,7 @@ export default function FarmerDigitalIdCard({
 }) {
   return (
     <div
-      className={`mx-auto w-full max-w-[284px] rounded-[22px] bg-brand-green px-4 py-4 text-white shadow-[0_20px_40px_rgba(4,65,44,0.18)] ${className}`.trim()}
+      className={`w-full max-w-[284px] rounded-[22px] bg-brand-green px-4 py-4 text-white shadow-[0_20px_40px_rgba(4,65,44,0.18)] ${className}`.trim()}
     >
       <div className="mb-4 flex justify-center">
         <img
