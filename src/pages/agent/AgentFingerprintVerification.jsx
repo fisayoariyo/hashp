@@ -303,15 +303,36 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
     setScannerError("");
     setStatusMessage(`Place ${currentFinger.label.toLowerCase()} on the scanner.`);
     setFingerStates((prev) => ({ ...prev, [currentFinger.id]: "scanning" }));
+    const captureStartedAt = Date.now();
+    const logCaptureDebug = (stage, details = {}) => {
+      try {
+        console.info("[fingerprint-debug]", {
+          stage,
+          finger: currentFinger.id,
+          sessionId: String(sessionId),
+          elapsedMs: Date.now() - captureStartedAt,
+          ...details,
+        });
+      } catch {
+        /* debug logging must never break scan flow */
+      }
+    };
+    logCaptureDebug("capture:started");
     try {
       const fmdTemplate = await acquireDigitalPersonaFmd(webApi);
       if (activeCaptureIdRef.current !== captureId) return;
+      logCaptureDebug("capture:templateReady", { templateLength: fmdTemplate.length });
+      const apiStartedAt = Date.now();
+      logCaptureDebug("api:submit:start");
       const response = await submitEnrollmentFingerprint({
         session_id: sessionId,
         finger_position: currentFinger.id,
         fmr_template: fmdTemplate,
       });
       if (activeCaptureIdRef.current !== captureId) return;
+      logCaptureDebug("api:submit:success", {
+        apiElapsedMs: Date.now() - apiStartedAt,
+      });
       const responseData = getBiometricData(response);
       const rows = Array.isArray(responseData.fingers) ? responseData.fingers : [];
       const saved = rows.find((item) => item.position === currentFinger.id);
@@ -329,10 +350,14 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
       setStatusMessage(success ? `${currentFinger.label} captured.` : `${currentFinger.label} failed, retry.`);
     } catch (error) {
       if (activeCaptureIdRef.current !== captureId) return;
+      logCaptureDebug("capture:failed", {
+        message: error instanceof Error ? error.message : String(error),
+      });
       setFingerStates((prev) => ({ ...prev, [currentFinger.id]: "failed" }));
       setStatusMessage(error instanceof Error ? error.message : "Capture failed.");
     } finally {
       if (activeCaptureIdRef.current === captureId) {
+        logCaptureDebug("capture:finished");
         setScanning(false);
         scanningFingerRef.current = "";
       }

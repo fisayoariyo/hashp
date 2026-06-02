@@ -168,43 +168,74 @@ async function stopAcquisition(webApi) {
 export function acquireDigitalPersonaFmd(webApi) {
   return new Promise((resolve, reject) => {
     let settled = false;
+    const startedAt = Date.now();
+    const debug = (stage, details = {}) => {
+      try {
+        console.info("[fingerprint-debug]", {
+          stage,
+          elapsedMs: Date.now() - startedAt,
+          ...details,
+        });
+      } catch {
+        /* debug logging must never break capture flow */
+      }
+    };
 
     const finish = async (error, template) => {
       if (settled) return;
       settled = true;
+      debug("finish:start", {
+        ok: !error,
+        templateLength: typeof template === "string" ? template.length : 0,
+        error: error instanceof Error ? error.message : undefined,
+      });
       await stopAcquisition(webApi);
       if (error) {
+        debug("finish:reject", { message: error.message });
         reject(error);
         return;
       }
+      debug("finish:resolve");
       resolve(template);
     };
 
     webApi.onSamplesAcquired = (event) => {
+      debug("event:onSamplesAcquired");
       try {
         const samples = typeof event.samples === "string" ? JSON.parse(event.samples) : event.samples;
         const firstSample = Array.isArray(samples) ? samples[0] : samples;
         const fmdTemplate = extractSampleTemplate(firstSample);
         if (!fmdTemplate) {
+          debug("event:onSamplesAcquired:emptyTemplate");
           void finish(new Error("No fingerprint sample returned."));
           return;
         }
+        debug("event:onSamplesAcquired:templateReady", { templateLength: fmdTemplate.length });
         void finish(null, fmdTemplate);
       } catch (error) {
+        debug("event:onSamplesAcquired:parseError", {
+          message: error instanceof Error ? error.message : String(error),
+        });
         void finish(error instanceof Error ? error : new Error(String(error)));
       }
     };
 
     webApi.onErrorOccurred = (event) => {
       const msg = event && typeof event.error !== "undefined" ? String(event.error) : "Scanner error";
+      debug("event:onErrorOccurred", { message: msg });
       void finish(new Error(msg));
     };
 
     webApi.onCommunicationFailed = () => {
+      debug("event:onCommunicationFailed");
       void finish(new Error(getDigitalPersonaInstallMessage()));
     };
 
+    debug("startAcquisition:calling");
     Promise.resolve(webApi.startAcquisition(getDigitalPersonaSampleFormat())).catch((error) => {
+      debug("startAcquisition:rejected", {
+        message: error instanceof Error ? error.message : String(error),
+      });
       void finish(error instanceof Error ? error : new Error(String(error)));
     });
   });
