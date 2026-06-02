@@ -146,6 +146,9 @@ function nextPendingScanIndex(states) {
 export default function AgentFingerprintVerification({ onSuccess, onBack, embedded, sessionId }) {
   const webApiRef = useRef(null);
   const readerTimerRef = useRef(null);
+  const activeCaptureIdRef = useRef(0);
+  const scanningFingerRef = useRef("");
+  const preScanFingerStateRef = useRef("idle");
 
   const [scannerChecking, setScannerChecking] = useState(true);
   const [scannerReady, setScannerReady] = useState(false);
@@ -291,17 +294,24 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
       setScannerError("Scanner is not initialized.");
       return;
     }
+    const captureId = activeCaptureIdRef.current + 1;
+    activeCaptureIdRef.current = captureId;
+    scanningFingerRef.current = currentFinger.id;
+    preScanFingerStateRef.current = fingerStates[currentFinger.id] || "idle";
+
     setScanning(true);
     setScannerError("");
     setStatusMessage(`Place ${currentFinger.label.toLowerCase()} on the scanner.`);
     setFingerStates((prev) => ({ ...prev, [currentFinger.id]: "scanning" }));
     try {
       const fmdTemplate = await acquireDigitalPersonaFmd(webApi);
+      if (activeCaptureIdRef.current !== captureId) return;
       const response = await submitEnrollmentFingerprint({
         session_id: sessionId,
         finger_position: currentFinger.id,
         fmr_template: fmdTemplate,
       });
+      if (activeCaptureIdRef.current !== captureId) return;
       const responseData = getBiometricData(response);
       const rows = Array.isArray(responseData.fingers) ? responseData.fingers : [];
       const saved = rows.find((item) => item.position === currentFinger.id);
@@ -318,10 +328,37 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
       setScanIndex(nextPendingScanIndex(nextStates));
       setStatusMessage(success ? `${currentFinger.label} captured.` : `${currentFinger.label} failed, retry.`);
     } catch (error) {
+      if (activeCaptureIdRef.current !== captureId) return;
       setFingerStates((prev) => ({ ...prev, [currentFinger.id]: "failed" }));
       setStatusMessage(error instanceof Error ? error.message : "Capture failed.");
     } finally {
-      setScanning(false);
+      if (activeCaptureIdRef.current === captureId) {
+        setScanning(false);
+        scanningFingerRef.current = "";
+      }
+    }
+  };
+
+  const cancelCurrentScan = () => {
+    if (!scanning) return;
+    activeCaptureIdRef.current += 1;
+    const scanningFingerId = scanningFingerRef.current;
+    scanningFingerRef.current = "";
+    setScanning(false);
+    setStatusMessage("Scan cancelled. Retry when ready.");
+    if (scanningFingerId) {
+      setFingerStates((prev) => {
+        if (prev[scanningFingerId] !== "scanning") return prev;
+        return {
+          ...prev,
+          [scanningFingerId]: preScanFingerStateRef.current === "success" ? "success" : "idle",
+        };
+      });
+    }
+    try {
+      webApiRef.current?.stopAcquisition?.();
+    } catch {
+      /* ignore stop failures while canceling */
     }
   };
 
@@ -421,14 +458,25 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
               Continue
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={() => void captureCurrent()}
-              disabled={!scannerReady || scannerChecking || scanning}
-              className="btn-capture-pill w-[240px] justify-center disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {scanning ? "Scanning..." : `Capture ${currentFinger?.label || "finger"}`}
-            </button>
+            <>
+              {scanning ? (
+                <button
+                  type="button"
+                  onClick={cancelCurrentScan}
+                  className="h-[48px] min-w-[140px] rounded-full border border-brand-border bg-white px-5 font-sans text-sm font-semibold text-brand-text-primary hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void captureCurrent()}
+                disabled={!scannerReady || scannerChecking || scanning}
+                className="btn-capture-pill w-[240px] justify-center disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {scanning ? "Scanning..." : `Capture ${currentFinger?.label || "finger"}`}
+              </button>
+            </>
           )}
         </div>
       </div>
