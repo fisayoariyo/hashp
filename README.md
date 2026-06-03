@@ -36,7 +36,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 
 By default the app uses:
 
-`https://HFEIamala-production.up.railway.app`
+`https://hashmaramala-production.up.railway.app`
 
 To override, create a `.env` file in the project root:
 

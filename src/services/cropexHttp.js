@@ -1,4 +1,4 @@
-const DEFAULT_CROPEX_BASE_URL = "https://HFEIamala-production.up.railway.app";
+const DEFAULT_CROPEX_BASE_URL = "https://hashmaramala-production.up.railway.app";
 const API_PROXY_PREFIX = "/api";
 
 function resolveProxyBaseUrl() {

@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const CROPEX_TARGET = "https://HFEIamala-production.up.railway.app";
+const CROPEX_TARGET = "https://hashmaramala-production.up.railway.app";
 
 const apiProxy = {
   "/api": {
