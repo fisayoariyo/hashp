@@ -1,5 +1,5 @@
 // ============================================
-// HASHMAR CROPEX FARMER APP — MOCK DATA
+// HFEI CROPEX FARMER APP — MOCK DATA
 // TODO: Replace with API call from src/services/api.js
 // ============================================
 
@@ -49,7 +49,7 @@ export const farmerNotifications = [
   {
     id: "notif-002",
     title: "Profile Verified ✅",
-    body: "Your farmer profile has been verified by a Hashmar CropEx field agent. You are now eligible for partner services.",
+    body: "Your farmer profile has been verified by a HFEI CropEx field agent. You are now eligible for partner services.",
     date: "2026-04-02",
     read: false,
     type: "verification",
@@ -73,7 +73,7 @@ export const farmerNotifications = [
   {
     id: "notif-005",
     title: "New Services Coming",
-    body: "Market linkage and insurance features are being developed for Hashmar CropEx verified farmers.",
+    body: "Market linkage and insurance features are being developed for HFEI CropEx verified farmers.",
     date: "2026-04-12",
     read: true,
     type: "info",
@@ -85,7 +85,7 @@ export const faqs = [
     id: "faq-001",
     question: "What is my Farmer ID?",
     answer:
-      "Your Farmer ID is a unique code (e.g. HSH-IB-2026-000123) that identifies you as a verified farmer on the Hashmar CropEx platform. You can use it to access loans, insurance, and market services.",
+      "Your Farmer ID is a unique code (e.g. HSH-IB-2026-000123) that identifies you as a verified farmer on the HFEI CropEx platform. You can use it to access loans, insurance, and market services.",
   },
   {
     id: "faq-002",
@@ -97,7 +97,7 @@ export const faqs = [
     id: "faq-003",
     question: "Who can update my profile?",
     answer:
-      "Only a Hashmar CropEx field agent can update your profile. Contact your local agent or call our support line to request changes.",
+      "Only a HFEI CropEx field agent can update your profile. Contact your local agent or call our support line to request changes.",
   },
   {
     id: "faq-004",
@@ -114,9 +114,9 @@ export const faqs = [
 ];
 
 export const supportContact = {
-  phone: "0800-HASHMAR",
+  phone: "0800-HFEI",
   whatsapp: "https://wa.me/2348000000000",
-  email: "support@hashmarcropex.com",
+  email: "support@HFEIcropex.com",
   fieldAgent: "Bello Musa — 07012345678",
 };
 

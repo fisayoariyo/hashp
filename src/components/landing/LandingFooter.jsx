@@ -37,7 +37,7 @@ export default function LandingFooter() {
               className="h-[44px] w-auto desktop:h-[51px]"
             />
             <p className="mt-4 max-w-[272px] text-[12px] leading-[1.25] desktop:mt-5 desktop:max-w-none desktop:text-[15px] desktop:leading-[1.35]">
-              Hashmar empowers farmers with digital identity, data, finance, training, and
+              HFEI empowers farmers with digital identity, data, finance, training, and
               market access.
             </p>
             <p className="mt-[10px] text-[12px] leading-[1.35] desktop:text-[15px]">

@@ -1,5 +1,5 @@
 // ============================================================
-// HASHMAR CROPEX — AGENT MOCK DATA
+// HFEI CROPEX — AGENT MOCK DATA
 // TODO: Replace with API calls from src/services/agentApi.js
 // ============================================================
 const agentSplashImage = "/onboarding/agent-splash.png";
@@ -39,7 +39,7 @@ export const agentOnboardingSlides = [
 export const agentSupportContact = {
   phoneDisplay: "08153953002",
   phoneHref: "tel:+2348153953002",
-  email: "hashmarfarms@gmail.com",
+  email: "HFEIfarms@gmail.com",
 };
 
 export const agentData = {
@@ -47,7 +47,7 @@ export const agentData = {
   name: "Tomide",
   fullName: "Tomide Adelopo",
   phone: "08012345678",
-  email: "tomide@hashmar.com",
+  email: "tomide@HFEI.com",
   state: "Oyo",
   lga: "Ibadan North",
   status: "Online",

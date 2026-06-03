@@ -59,7 +59,7 @@ function ContactContent({ agentName, loading, error }) {
         </div>
         <h3 className="font-sans font-bold text-base text-brand-text-primary mb-1">Support</h3>
         <p className="font-sans text-sm text-brand-text-secondary mb-4">
-          For issues with your profile or information, contact your assigned agent or the Hashmar
+          For issues with your profile or information, contact your assigned agent or the HFEI
           support team.
         </p>
 
@@ -168,7 +168,7 @@ export default function FarmerSettings() {
               </h1>
               <p className="font-sans text-xs text-brand-text-secondary mb-5">
                 If you notice any mistake in your details, please contact your assigned agent or
-                Hashmar support.
+                HFEI support.
               </p>
               <FAQContent />
             </>
@@ -179,7 +179,7 @@ export default function FarmerSettings() {
                 General Support
               </h1>
               <p className="font-sans text-xs text-brand-text-secondary mb-5">
-                Reach your assigned agent when available, or contact Hashmar support directly.
+                Reach your assigned agent when available, or contact HFEI support directly.
               </p>
               <ContactContent agentName={agentName} loading={loadingAgent} error={contactError} />
             </>
@@ -218,7 +218,7 @@ export default function FarmerSettings() {
           <>
             <p className="font-sans text-sm text-brand-text-secondary mb-5">
               If you notice any mistake in your details, please contact your assigned agent or
-              Hashmar support.
+              HFEI support.
             </p>
             <div className="max-w-2xl space-y-3">
               <FAQContent />
@@ -228,7 +228,7 @@ export default function FarmerSettings() {
         {tab === "contact" && (
           <>
             <p className="font-sans text-sm text-brand-text-secondary mb-5">
-              Reach your assigned agent when available, or contact Hashmar support directly.
+              Reach your assigned agent when available, or contact HFEI support directly.
             </p>
             <ContactContent agentName={agentName} loading={loadingAgent} error={contactError} />
           </>

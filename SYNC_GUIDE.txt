@@ -1,5 +1,5 @@
 =======================================================================
-HASHMAR - FARMER ENROLLMENT: FRONTEND OFFLINE SYNC INTEGRATION GUIDE
+HFEI - FARMER ENROLLMENT: FRONTEND OFFLINE SYNC INTEGRATION GUIDE
 =======================================================================
 
 Overview:

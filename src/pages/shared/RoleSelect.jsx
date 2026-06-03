@@ -6,13 +6,13 @@ const ROLE_SELECT_COPY = {
     title: "Get Started",
     leftTitle: "Get Started",
     description:
-      "Tell us how you'll be using Hashmar, Tap the card that best describes your role",
+      "Tell us how you'll be using HFEI, Tap the card that best describes your role",
   },
   login: {
     title: "Log in as",
     leftTitle: "Log in to your profile",
     description:
-      "Tell us how you'll be using Hashmar. Tap the card that best describes your role",
+      "Tell us how you'll be using HFEI. Tap the card that best describes your role",
   },
 };
 
@@ -159,7 +159,7 @@ function DesktopRoleSelect({ copy, mode }) {
         <div className="absolute bottom-8 left-8 right-8 lg:bottom-10 lg:left-10 lg:right-10">
           <img
             src="/brand/HFEI_Primary_Logo_White.png"
-            alt="HFEI by Hashmar Cropex Ltd"
+            alt="HFEI by HFEI Cropex Ltd"
             className="mb-4 block h-10 w-auto max-w-[200px] object-contain object-left"
             draggable="false"
           />

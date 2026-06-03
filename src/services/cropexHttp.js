@@ -1,4 +1,4 @@
-const DEFAULT_CROPEX_BASE_URL = "https://hashmaramala-production.up.railway.app";
+const DEFAULT_CROPEX_BASE_URL = "https://HFEIamala-production.up.railway.app";
 const API_PROXY_PREFIX = "/api";
 
 function resolveProxyBaseUrl() {
@@ -158,7 +158,7 @@ export async function cropexFetch(path, opts = {}) {
   } catch (error) {
     const cause = error instanceof Error ? error.message : String(error || "");
     throw new CropexHttpError(
-      "Could not reach the Hashmar CropEx server. Check your internet connection and try again.",
+      "Could not reach the HFEI CropEx server. Check your internet connection and try again.",
       0,
       { cause, url: buildCropexUrl(path) },
     );

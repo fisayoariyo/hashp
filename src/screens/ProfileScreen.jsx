@@ -169,7 +169,7 @@ export default function ProfileScreen() {
             </Section>
 
             <p className="text-center text-xs text-brand-text-muted font-sans px-4 mb-4">
-              To update your profile, contact your Hashmar CropEx field agent.
+              To update your profile, contact your HFEI CropEx field agent.
             </p>
           </>
         )}

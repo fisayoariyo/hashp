@@ -4,7 +4,7 @@ export default function FarmerDigitalIdCard({
   farmerId,
   cooperativeName,
   agentName,
-  agentSignature = "Hashmar",
+  agentSignature = "HFEI",
   issueDate,
   expiryDate,
   className = "",
@@ -16,7 +16,7 @@ export default function FarmerDigitalIdCard({
       <div className="mb-4 flex justify-center">
         <img
           src="/brand/HFEI_Primary_Logo_White.png"
-          alt="HFEI by Hashmar Cropex Ltd"
+          alt="HFEI by HFEI Cropex Ltd"
           className="h-7 w-auto object-contain"
           draggable="false"
         />

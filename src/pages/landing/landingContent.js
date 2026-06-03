@@ -21,7 +21,7 @@ export const LANDING_TABS = {
     label: "Agents",
     title: "Built for Field Agents Working in Rural Communities",
     description:
-      "The Hashmar Agent WebApp gives field officers the tools they need to register and support farmers directly from the field, even in areas with poor internet connectivity.",
+      "The HFEI Agent WebApp gives field officers the tools they need to register and support farmers directly from the field, even in areas with poor internet connectivity.",
     cards: [
       {
         title: "Biometric Capture",
@@ -64,7 +64,7 @@ export const LANDING_TABS = {
     label: "Farmers",
     title: "Helping Farmers Access More Than Just Farming Tools",
     description:
-      "The Hashmar Farmer WebApp gives farmers visibility, access, and support through a digital platform designed to improve productivity and unlock financial opportunities.",
+      "The HFEI Farmer WebApp gives farmers visibility, access, and support through a digital platform designed to improve productivity and unlock financial opportunities.",
     cards: [
       {
         title: "Digital Farmer Identity",
@@ -109,9 +109,9 @@ export const LANDING_TABS = {
 export const LANDING_CONTACT = {
   sectionId: "start-your-journey",
   sectionLabel: "Start your journey",
-  title: "Start Your Journey with Hashmar",
+  title: "Start Your Journey with HFEI",
   description:
-    "Have questions, inquiries, or need Hashmar services in your community? Reach out to us and let us know how we can support farmers and agricultural activities in your area. Our team is ready to help bring digital farming solutions closer to you.",
+    "Have questions, inquiries, or need HFEI services in your community? Reach out to us and let us know how we can support farmers and agricultural activities in your area. Our team is ready to help bring digital farming solutions closer to you.",
   image: {
     src: "/landing/images/contact-field.png",
     alt: "Farmer working in a green field",
@@ -126,12 +126,12 @@ export const LANDING_CONTACT = {
 
 export const LANDING_FAQS = [
   {
-    question: "What is Hashmar Farmer Empowerment Initiative (HFEI)?",
+    question: "What is HFEI Farmer Empowerment Initiative (HFEI)?",
     answer:
-      "HFEI is Hashmar's digital agriculture initiative focused on helping farmers and field agents work with verified identities, farm data, and better access to support services.",
+      "HFEI is HFEI's digital agriculture initiative focused on helping farmers and field agents work with verified identities, farm data, and better access to support services.",
   },
   {
-    question: "Who can use the Hashmar platform?",
+    question: "Who can use the HFEI platform?",
     answer:
       "The platform is designed for field agents registering and supporting farmers, and for farmers who need a digital identity, visibility into their records, and access to services.",
   },
@@ -156,9 +156,9 @@ export const LANDING_FAQS = [
       "Farm mapping improves visibility into farm activity, supports better planning, and makes it easier to connect verified production data to training, financing, and market access.",
   },
   {
-    question: "How does Hashmar help farmers access financing?",
+    question: "How does HFEI help farmers access financing?",
     answer:
-      "By combining verified digital identity and farm data, Hashmar creates trusted records that can help unlock more relevant financing and loan opportunities.",
+      "By combining verified digital identity and farm data, HFEI creates trusted records that can help unlock more relevant financing and loan opportunities.",
   },
   {
     question: "Is farmer data secure on the platform?",
@@ -194,8 +194,8 @@ export const LANDING_FOOTER_GROUPS = [
   {
     title: "Contact",
     links: [
-      { label: "support@hashmar.com", href: "mailto:support@hashmar.com" },
-      { label: "08133905285", href: "tel:08133905285" },
+      { label: "hashmarfarms@gmail.com", href: "mailto:hashmarfarms@gmail.com" },
+      { label: "08153953002", href: "tel:08153953002" },
     ],
   },
 ];

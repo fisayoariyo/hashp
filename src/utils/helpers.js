@@ -1,5 +1,5 @@
 // ============================================
-// HASHMAR CROPEX — SHARED UTILITIES
+// HFEI CROPEX — SHARED UTILITIES
 // ============================================
 
 /**
@@ -171,8 +171,8 @@ export function getActivityEmoji(type) {
  * Build a WhatsApp share URL for a farmer ID.
  */
 export function buildWhatsAppShareURL(farmerID) {
-  const profileURL = `https://cropex.hashmarcropex.com/verify/${farmerID}`;
-  const message = `My Hashmar CropEx Farmer ID is *${farmerID}*. Verify my profile here: ${profileURL}`;
+  const profileURL = `https://cropex.HFEIcropex.com/verify/${farmerID}`;
+  const message = `My HFEI CropEx Farmer ID is *${farmerID}*. Verify my profile here: ${profileURL}`;
   return `https://wa.me/?text=${encodeURIComponent(message)}`;
 }
 
@@ -180,8 +180,8 @@ export function buildWhatsAppShareURL(farmerID) {
  * Build an SMS share URL for a farmer ID.
  */
 export function buildSMSShareURL(farmerID) {
-  const profileURL = `https://cropex.hashmarcropex.com/verify/${farmerID}`;
-  const message = `My Hashmar CropEx Farmer ID: ${farmerID}. Verify: ${profileURL}`;
+  const profileURL = `https://cropex.HFEIcropex.com/verify/${farmerID}`;
+  const message = `My HFEI CropEx Farmer ID: ${farmerID}. Verify: ${profileURL}`;
   return `sms:?body=${encodeURIComponent(message)}`;
 }
 

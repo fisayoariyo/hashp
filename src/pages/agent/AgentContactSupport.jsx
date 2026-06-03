@@ -81,7 +81,7 @@ export default function AgentContactSupport() {
         Help &amp; Support
       </h1>
       <p className="mt-2 max-w-[760px] text-[14px] leading-[20px] text-[#030F0F]/80">
-        Having issues on the field? Reach out to the Hashmar support team for support with farmer
+        Having issues on the field? Reach out to the HFEI support team for support with farmer
         registration, your profile, or any other concerns.
       </p>
 
@@ -159,7 +159,7 @@ export default function AgentContactSupport() {
 
       <div className="mt-8 w-full max-w-[520px] rounded-[20px] bg-[#FFFFFF] p-5">
         <p className="text-[14px] leading-6 text-[#030F0F]">
-          If you experience network issues, contact Hashmar support directly at these phone numbers.
+          If you experience network issues, contact HFEI support directly at these phone numbers.
         </p>
         <div className="mt-4 space-y-3 text-[14px] leading-5 text-[#030F0F]">
           <p className="flex items-center gap-2">

@@ -51,7 +51,7 @@ export default function AgentDesktopShell({ active = "dashboard", isOnline = tru
           <aside className="h-full w-[295px] shrink-0 overflow-hidden rounded-[20px] bg-white px-[29px] py-[31px]">
           <img
             src="/brand/HFEI_Primary_Logo_.png"
-            alt="HFEI by Hashmar Cropex Ltd"
+            alt="HFEI by HFEI Cropex Ltd"
             className="mb-[60px] h-[34px] w-auto object-contain"
           />
           <nav className="space-y-2">

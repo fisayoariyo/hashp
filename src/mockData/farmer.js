@@ -1,5 +1,5 @@
 // ============================================================
-// HASHMAR CROPEX — FARMER MOCK DATA
+// HFEI CROPEX — FARMER MOCK DATA
 // TODO: Replace with API calls from src/services/api.js
 // ============================================================
 import farmerSplashImage from "../assets/farmer-onboarding/FWM-CA-01-splash.png";
@@ -85,7 +85,7 @@ export const farmerNotifications = [
   {
     id: "notif-002",
     title: "Profile Verified ✅",
-    body: "Your farmer profile has been verified by a Hashmar CropEx field agent.",
+    body: "Your farmer profile has been verified by a HFEI CropEx field agent.",
     date: "2026-04-02",
     read: false,
     type: "verification",
@@ -105,7 +105,7 @@ export const farmerFAQs = [
     id: "faq-001",
     question: "What is my Farmer ID?",
     answer:
-      "Your Farmer ID is a unique code that identifies you as a verified farmer on the Hashmar CropEx platform.",
+      "Your Farmer ID is a unique code that identifies you as a verified farmer on the HFEI CropEx platform.",
   },
   {
     id: "faq-002",
@@ -117,7 +117,7 @@ export const farmerFAQs = [
     id: "faq-003",
     question: "Who can update my profile?",
     answer:
-      "Only a Hashmar CropEx field agent can update your profile.",
+      "Only a HFEI CropEx field agent can update your profile.",
   },
   {
     id: "faq-004",
@@ -137,7 +137,7 @@ export const farmerSupportContact = {
   phoneDisplay: "08153953002",
   phone: "08153953002",
   phoneHref: "tel:+2348153953002",
-  email: "hashmarfarms@gmail.com",
+  email: "HFEIfarms@gmail.com",
   whatsapp: "https://wa.me/2348153953002",
   fieldAgent: "Tomide Adelopo — 08012345678",
 };

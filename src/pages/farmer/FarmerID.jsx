@@ -23,12 +23,12 @@ function IDCard({ idCard }) {
 
 function ShareButtons({ farmerId, vertical = false }) {
   const shareViaWhatsApp = () => {
-    const message = `My Farmer ID: *${farmerId}*\nVerify: https://cropex.hashmarcropex.com/verify/${farmerId}`;
+    const message = `My Farmer ID: *${farmerId}*\nVerify: https://cropex.HFEIcropex.com/verify/${farmerId}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
   };
 
   const shareViaSMS = () => {
-    const message = `My Farmer ID: ${farmerId}. Verify: https://cropex.hashmarcropex.com/verify/${farmerId}`;
+    const message = `My Farmer ID: ${farmerId}. Verify: https://cropex.HFEIcropex.com/verify/${farmerId}`;
     window.open(`sms:?body=${encodeURIComponent(message)}`, "_blank");
   };
 

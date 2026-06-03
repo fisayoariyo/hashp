@@ -459,7 +459,7 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
             farmerId={display.id}
             cooperativeName={display.cooperative}
             agentName={agentName}
-            agentSignature="Hashmar"
+            agentSignature="HFEI"
             issueDate="20/04/2026"
             expiryDate="20/04/2027"
             className="mx-0"

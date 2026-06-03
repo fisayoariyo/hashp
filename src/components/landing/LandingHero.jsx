@@ -23,7 +23,7 @@ export default function LandingHero() {
             <span className="block">Through the use of Technology</span>
           </h1>
           <p className="mt-[14px] max-w-[346px] text-[13px] font-normal leading-[1.28] text-landing-green tablet:mt-[22px] tablet:max-w-[751px] tablet:text-[22px] desktop:text-[25px]">
-            Hashmar helps field agents register farmers, map farms, and unlock access to financing,
+            HFEI helps field agents register farmers, map farms, and unlock access to financing,
             training, and market opportunities.
           </p>
           <div className="mx-auto mt-[30px] flex w-[85%] max-w-[340px] flex-col items-stretch gap-3 tablet:mt-10 tablet:w-auto tablet:max-w-none tablet:flex-row tablet:items-center tablet:justify-center tablet:gap-4 desktop:mt-[51px]">

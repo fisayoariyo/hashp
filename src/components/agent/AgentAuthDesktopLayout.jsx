@@ -27,7 +27,7 @@ export default function AgentAuthDesktopLayout({
           <div className="absolute left-6 right-6 bottom-6 lg:left-8 lg:right-8 lg:bottom-8 text-white">
             <img
               src="/brand/HFEI_Primary_Logo_White.png"
-              alt="HFEI by Hashmar Cropex Ltd"
+              alt="HFEI by HFEI Cropex Ltd"
               className="block h-11 w-auto object-contain mb-4"
               draggable="false"
             />

@@ -58,7 +58,7 @@ export default function FarmerDesktopLayout({
       {!islandContent && (
         <img
           src="/brand/HFEI_Primary_Logo_.png"
-          alt="HFEI by Hashmar Cropex Ltd"
+          alt="HFEI by HFEI Cropex Ltd"
           className="h-10 w-auto object-contain"
           draggable="false"
         />
@@ -101,7 +101,7 @@ export default function FarmerDesktopLayout({
       {islandContent && (
         <img
           src="/brand/HFEI_Primary_Logo_.png"
-          alt="HFEI by Hashmar Cropex Ltd"
+          alt="HFEI by HFEI Cropex Ltd"
           className="mb-10 h-10 w-auto object-contain"
           draggable="false"
         />

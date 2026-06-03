@@ -5,7 +5,7 @@ import StartJourneyLeadForm from "../../components/shared/StartJourneyLeadForm";
 const COPY = {
   heroTitle: "Get Started as a Farmer",
   heroDescription: "Contact an agent near you to create an account as a farmer",
-  title: "Start Your Journey with Hashmar",
+  title: "Start Your Journey with HFEI",
   subtitle:
     "Register your interest today by sharing your name, location, and phone number. We'll reach out to guide you through the next steps and available opportunities.",
 };
@@ -29,7 +29,7 @@ function FarmerHeroPanel({ className = "" }) {
       <div className="absolute bottom-6 left-6 right-6 lg:bottom-10 lg:left-10 lg:right-10">
         <img
           src="/brand/HFEI_Primary_Logo_White.png"
-          alt="HFEI by Hashmar Cropex Ltd"
+          alt="HFEI by HFEI Cropex Ltd"
           className="mb-4 block h-10 w-auto max-w-[200px] object-contain object-left"
           draggable="false"
         />

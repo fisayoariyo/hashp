@@ -47,7 +47,7 @@ export default function SplashScreen() {
 
           <div className="text-center">
             <h1 className="font-display font-black text-4xl text-white tracking-widest uppercase">
-              HASHMAR
+              HFEI
             </h1>
             <p className="font-display font-light text-white/90 text-sm tracking-[0.3em] uppercase mt-1">
               CROPEX LIMITED

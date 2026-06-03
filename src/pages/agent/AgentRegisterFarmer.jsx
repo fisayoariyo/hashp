@@ -1258,7 +1258,7 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
           <div className="self-start mb-3">
             <img
               src="/brand/HFEI_Primary_Logo_White.png"
-              alt="HFEI by Hashmar Cropex Ltd"
+              alt="HFEI by HFEI Cropex Ltd"
               className="h-7 w-auto object-contain"
               draggable="false"
             />
@@ -1291,7 +1291,7 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
             </div>
             <div>
               <p className="text-white/60 text-[10px]">Agent signature</p>
-              <p className="font-sans italic text-[12px] mt-1 text-white/90">Hashmar</p>
+              <p className="font-sans italic text-[12px] mt-1 text-white/90">HFEI</p>
             </div>
           </div>
           <div className="flex items-center justify-center gap-5 w-full">

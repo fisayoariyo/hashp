@@ -129,7 +129,7 @@ export const getFarmerID = async () => {
       "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=320&q=80&fit=crop",
     qrCodeURL:
       readString(card.qr_code_url, card.qr_code, card.qrCodeURL) ||
-      "https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=Hashmar%20Farmer%20ID",
+      "https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=HFEI%20Farmer%20ID",
     cooperative: readString(card.cooperative_name),
     primaryCrop: readString(card.primary_crop, card.crop_type),
     expiryDate: readString(card.expiry_date, card.expires_at),
@@ -152,14 +152,14 @@ export const getNotifications = async () => {
 };
 
 export const shareIDViaWhatsApp = async (farmerID) => {
-  const profileURL = `https://cropex.hashmarcropex.com/verify/${farmerID}`;
-  const message = `My Hashmar CropEx Farmer ID is *${farmerID}*. Verify my profile here: ${profileURL}`;
+  const profileURL = `https://cropex.HFEIcropex.com/verify/${farmerID}`;
+  const message = `My HFEI CropEx Farmer ID is *${farmerID}*. Verify my profile here: ${profileURL}`;
   return `https://wa.me/?text=${encodeURIComponent(message)}`;
 };
 
 export const shareIDViaSMS = async (farmerID) => {
-  const profileURL = `https://cropex.hashmarcropex.com/verify/${farmerID}`;
-  const message = `My Hashmar CropEx Farmer ID: ${farmerID}. Verify: ${profileURL}`;
+  const profileURL = `https://cropex.HFEIcropex.com/verify/${farmerID}`;
+  const message = `My HFEI CropEx Farmer ID: ${farmerID}. Verify: ${profileURL}`;
   return `sms:?body=${encodeURIComponent(message)}`;
 };
 
@@ -227,7 +227,7 @@ export const getHelpContent = async () => {
     supportContact: {
       phone: readString(root.support_phone, "+2347000000000"),
       whatsapp: readString(root.support_whatsapp, "https://wa.me/2347000000000"),
-      email: readString(root.support_email, "support@hashmar.com"),
+      email: readString(root.support_email, "support@HFEI.com"),
       fieldAgent: readString(root.agent_name, "Assigned agent"),
     },
   };

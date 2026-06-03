@@ -88,7 +88,7 @@ export default function FarmerIDScreen() {
                     <BadgeCheck size={16} className="text-white" />
                   </div>
                   <span className="font-display font-bold text-white text-sm tracking-wider">
-                    HASHMAR CROPEX
+                    HFEI CROPEX
                   </span>
                 </div>
                 <span className="text-[10px] text-white/70 font-sans">
