@@ -39,7 +39,7 @@ export const agentOnboardingSlides = [
 export const agentSupportContact = {
   phoneDisplay: "08153953002",
   phoneHref: "tel:+2348153953002",
-  email: "HFEIfarms@gmail.com",
+  email: "hashmarfarms@gmail.com",
 };
 
 export const agentData = {

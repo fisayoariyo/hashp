@@ -116,7 +116,7 @@ export const faqs = [
 export const supportContact = {
   phone: "0800-HFEI",
   whatsapp: "https://wa.me/2348000000000",
-  email: "support@HFEIcropex.com",
+  email: "hashmarfarms@gmail.com",
   fieldAgent: "Bello Musa — 07012345678",
 };
 

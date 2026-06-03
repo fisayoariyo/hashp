@@ -137,7 +137,7 @@ export const farmerSupportContact = {
   phoneDisplay: "08153953002",
   phone: "08153953002",
   phoneHref: "tel:+2348153953002",
-  email: "HFEIfarms@gmail.com",
+  email: "hashmarfarms@gmail.com",
   whatsapp: "https://wa.me/2348153953002",
   fieldAgent: "Tomide Adelopo — 08012345678",
 };

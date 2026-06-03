@@ -227,7 +227,7 @@ export const getHelpContent = async () => {
     supportContact: {
       phone: readString(root.support_phone, "+2347000000000"),
       whatsapp: readString(root.support_whatsapp, "https://wa.me/2347000000000"),
-      email: readString(root.support_email, "support@HFEI.com"),
+      email: readString(root.support_email, "hashmarfarms@gmail.com"),
       fieldAgent: readString(root.agent_name, "Assigned agent"),
     },
   };
