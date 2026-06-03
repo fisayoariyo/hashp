@@ -17,13 +17,13 @@ export default function NotFoundScreen() {
         <img
           src="/landing/images/not-found-404.webp"
           alt="Error 404"
-          className="mt-5 h-auto max-h-[50vh] w-full max-w-[560px] object-contain md:mt-6 md:max-h-[52vh]"
+          className="mt-4 h-auto max-h-[56vh] w-full max-w-[620px] object-contain md:mt-5 md:max-h-[58vh]"
         />
         <div className="mt-auto flex w-full max-w-[420px] flex-col gap-3 pt-5 md:flex-row md:gap-4">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="auth-btn-secondary md:h-[56px]"
+          className="auth-btn-secondary bg-[#f7f7f7] md:h-[56px]"
         >
           Go back
         </button>
