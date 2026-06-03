@@ -292,14 +292,16 @@ export function clearFarmerSession() {
 }
 
 export function sendOtp(phone) {
-  return requestAuthOtp({ phone });
+  return requestAuthOtp({ phone, role: "FARMER" });
 }
 
 /** Request OTP via email or phone using unified auth login route. */
-export function requestAuthOtp({ email, phone } = {}) {
+export function requestAuthOtp({ email, phone, role } = {}) {
   const body = {};
   if (email?.trim()) body.email = email.trim();
   if (phone) body.phone_number = formatPhoneForApi(phone);
+  const normalizedRole = readString(role, "FARMER").toUpperCase();
+  if (normalizedRole) body.role = normalizedRole;
   return cropexFetch("/auth/login", {
     method: "POST",
     body,
@@ -453,9 +455,21 @@ export function completeAgentRegistration(body) {
 }
 
 export function agentLogin(body) {
+  const payload = {};
+  const normalizedEmail = readString(body?.email);
+  if (normalizedEmail) payload.email = normalizedEmail;
+
+  const normalizedPassword = readString(body?.password);
+  if (normalizedPassword) payload.password = normalizedPassword;
+
+  const normalizedPhone = readString(body?.phone_number, body?.phone);
+  if (normalizedPhone) payload.phone_number = formatPhoneForApi(normalizedPhone);
+
+  payload.role = readString(body?.role, "AGENT").toUpperCase();
+
   return cropexFetch("/auth/login", {
     method: "POST",
-    body,
+    body: payload,
   });
 }
 
@@ -613,6 +627,32 @@ export function getGeoStates() {
 
 export function getGeoLgas(stateId) {
   return cropexFetch(`/geo/states/${encodeURIComponent(stateId)}/lgas`);
+}
+
+export function submitFarmerInterest({
+  fullName,
+  state,
+  stateId,
+  localGovtArea,
+  phone,
+  email,
+} = {}) {
+  const body = {
+    full_name: readString(fullName),
+    state: readString(state),
+    state_id: readString(stateId),
+    local_govt_area: readString(localGovtArea),
+    lga: readString(localGovtArea),
+    phone_number: formatPhoneForApi(phone),
+  };
+
+  const normalizedEmail = readString(email);
+  if (normalizedEmail) body.email = normalizedEmail;
+
+  return cropexFetch("/farmers/interest", {
+    method: "POST",
+    body,
+  });
 }
 
 export function extractGeoArray(payload) {

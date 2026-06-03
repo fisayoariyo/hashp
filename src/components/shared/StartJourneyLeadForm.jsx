@@ -3,12 +3,14 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, X } from "lucide-react";
 import { LANDING_CONTACT } from "../../pages/landing/landingContent";
+import { getDisplayError } from "../../utils/apiErrors";
 import {
   extractGeoArray,
   getGeoLgas,
   getGeoStates,
   mapGeoLgaOption,
   mapGeoStateOption,
+  submitFarmerInterest,
 } from "../../services/cropexApi";
 
 const INITIAL_FORM = {
@@ -102,6 +104,8 @@ export default function StartJourneyLeadForm({
   const [lgaOptions, setLgaOptions] = useState([]);
   const [lgasLoading, setLgasLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const formId = `${idPrefix}-form`;
 
   useEffect(() => {
@@ -147,6 +151,7 @@ export default function StartJourneyLeadForm({
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    setSubmitError("");
     setForm((current) => {
       if (name === "location") {
         return {
@@ -159,10 +164,29 @@ export default function StartJourneyLeadForm({
     });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setForm(INITIAL_FORM);
-    setShowSuccess(true);
+    if (submitting) return;
+
+    setSubmitError("");
+    setSubmitting(true);
+    try {
+      const selectedState = stateOptions.find((option) => String(option.id) === String(form.location));
+      await submitFarmerInterest({
+        fullName: form.fullName,
+        state: selectedState?.name || form.location,
+        stateId: form.location,
+        localGovtArea: form.localGovt,
+        phone: form.phone,
+        email: form.email,
+      });
+      setForm(INITIAL_FORM);
+      setShowSuccess(true);
+    } catch (error) {
+      setSubmitError(getDisplayError(error, "Could not submit your interest right now. Please try again."));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const submitButtonClass =
@@ -296,17 +320,24 @@ export default function StartJourneyLeadForm({
         </div>
 
         {submitVariant === "inline-half" ? (
-          <button type="submit" className={submitButtonClass} style={{ boxShadow: "none" }}>
-            Submit
+          <button type="submit" className={submitButtonClass} style={{ boxShadow: "none" }} disabled={submitting}>
+            {submitting ? "Submitting..." : "Submit"}
           </button>
+        ) : null}
+
+        {submitError ? (
+          <p className="text-left text-sm font-medium text-red-600">{submitError}</p>
         ) : null}
           </div>
 
         {submitVariant === "footer-full" ? (
           <div className={`space-y-3 ${footerClassName}`}>
-            <button type="submit" className={submitButtonClass} style={{ boxShadow: "none" }}>
-              Submit
+            <button type="submit" className={submitButtonClass} style={{ boxShadow: "none" }} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit"}
             </button>
+            {submitError ? (
+              <p className="text-left text-sm font-medium text-red-600">{submitError}</p>
+            ) : null}
             {showAlreadyHaveAccount ? (
               <button
                 type="button"

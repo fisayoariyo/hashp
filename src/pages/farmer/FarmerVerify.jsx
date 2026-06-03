@@ -217,16 +217,9 @@ function OTPStep({ phone, onSuccess, onBack }) {
   };
 
   const otpDestinationLabel = formatPhoneForDisplay(phone);
-  const otpPhoneHint = otpDestinationLabel ? (
-    <p
-      className={`font-sans text-xs text-brand-text-muted ${
-        isDesktop ? "mb-4 text-center" : "mb-4"
-      }`}
-    >
-      Code sent to{" "}
-      <span className="font-medium text-brand-text-secondary">{otpDestinationLabel}</span>
-    </p>
-  ) : null;
+  const otpSubtitle = otpDestinationLabel
+    ? `Enter the ${OTP_LENGTH}-digit code we sent to ${otpDestinationLabel}`
+    : `Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`;
 
   const otpGrid = (
     <div className={`${isDesktop ? "flex justify-center gap-3" : "grid grid-cols-6 gap-3"}`}>
@@ -252,8 +245,8 @@ function OTPStep({ phone, onSuccess, onBack }) {
 
   const otpFooter = (
     <div className={isDesktop ? "text-center" : ""}>
-      {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
-      <p className="font-sans text-sm text-brand-text-secondary mb-1">
+      {error && <p className="mb-1 text-xs text-red-500">{error}</p>}
+      <p className="font-sans text-sm text-brand-text-secondary">
         I did not receive a code,{" "}
         <button type="button" onClick={() => void handleResend()} className="text-brand-green font-semibold">
           Resend Code
@@ -267,9 +260,10 @@ function OTPStep({ phone, onSuccess, onBack }) {
       <FarmerAuthDesktopLayout
         {...FARMER_LOGIN_LAYOUT_PROPS}
         title={`Enter ${OTP_LENGTH}-Digit code`}
-        subtitle={`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
+        subtitle={otpSubtitle}
         centerTitle
         contentClassName="max-w-[620px]"
+        actionsClassName="mt-auto pt-7"
         actions={
           <div className="w-full max-w-[560px] space-y-3">
             <button
@@ -290,9 +284,10 @@ function OTPStep({ phone, onSuccess, onBack }) {
           </div>
         }
       >
-        {otpGrid}
-        {otpPhoneHint}
-        {otpFooter}
+        <div className="mt-1 space-y-3">
+          {otpGrid}
+          {otpFooter}
+        </div>
       </FarmerAuthDesktopLayout>
     );
   }
@@ -306,11 +301,12 @@ function OTPStep({ phone, onSuccess, onBack }) {
         </button>
         <h1 className="auth-title mb-2">{`Enter ${OTP_LENGTH}-Digit code`}</h1>
         <p className="font-sans text-sm text-brand-text-secondary mb-8">
-          {`Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`}
+          {otpSubtitle}
         </p>
-        {otpGrid}
-        {otpPhoneHint}
-        {otpFooter}
+        <div className="mt-2 space-y-3">
+          {otpGrid}
+          {otpFooter}
+        </div>
       </div>
       <div className="px-5 pb-8 space-y-3">
         <button
