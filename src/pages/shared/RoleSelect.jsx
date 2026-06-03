@@ -17,13 +17,13 @@ const ROLE_SELECT_COPY = {
 };
 
 const LEFT_HERO = {
-  image: "/landing/images/farmer-card-cta.png",
+  image: "/landing/images/farmer-card-cta.webp",
   position: "62% 48%",
 };
 
-const FARMER_CARD_IMAGE = "/onboarding/farmer-role-select.png";
+const FARMER_CARD_IMAGE = "/onboarding/farmer-role-select.webp";
 const FARMER_CARD_IMAGE_POSITION = "center center";
-const AGENT_CARD_IMAGE = "/onboarding/agent-role-select.png";
+const AGENT_CARD_IMAGE = "/onboarding/agent-role-select.webp";
 const AGENT_CARD_IMAGE_POSITION = "center center";
 const DOUBLE_TAP_MS = 400;
 
@@ -134,7 +134,7 @@ function DesktopRoleActions({ onContinue, onGoBack }) {
       <button
         type="button"
         onClick={onGoBack}
-        className="w-full rounded-3xl bg-[#F6F6F6] px-6 py-4 font-display text-base font-semibold text-brand-green transition-all duration-200 active:scale-95"
+        className="w-full rounded-[14px] bg-[#F0F1F2] px-6 py-4 font-display text-base font-semibold text-brand-green transition-all duration-200 active:scale-95"
       >
         Go back
       </button>

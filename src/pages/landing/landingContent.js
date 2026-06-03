@@ -6,11 +6,11 @@ export const LANDING_NAV_ITEMS = [
 
 export const LANDING_ABOUT_IMAGES = [
   {
-    src: "/landing/images/about-left-agent.png",
+    src: "/landing/images/about-left-agent.webp",
     alt: "Farmer carrying produce in the field",
   },
   {
-    src: "/landing/images/about-right-farmer.png",
+    src: "/landing/images/about-right-farmer.webp",
     alt: "Farmers standing together outdoors",
   },
 ];
@@ -54,7 +54,7 @@ export const LANDING_TABS = {
       buttonLabel: "Get started",
       href: "/agent/create-account",
       returnState: { returnTo: "/" },
-      image: "/landing/images/agent-card-cta.png",
+      image: "/landing/images/agent-card-cta.webp",
       alt: "Agent registration call to action",
       position: "center",
     },
@@ -99,7 +99,7 @@ export const LANDING_TABS = {
       title: "Get started as a farmer",
       buttonLabel: "Get started",
       href: "#start-your-journey",
-      image: "/landing/images/farmer-card-cta.png",
+      image: "/landing/images/farmer-card-cta.webp",
       alt: "Farmer get started call to action",
       position: "62% 48%",
     },
@@ -108,12 +108,12 @@ export const LANDING_TABS = {
 
 export const LANDING_CONTACT = {
   sectionId: "start-your-journey",
-  sectionLabel: "Start your journey",
+  sectionLabel: "Become Better, Earn Better",
   title: "Start Your Journey with HFEI",
   description:
-    "Have questions, inquiries, or need HFEI services in your community? Reach out to us and let us know how we can support farmers and agricultural activities in your area. Our team is ready to help bring digital farming solutions closer to you.",
+    "Do you have questions, inquiries, or need the HFEI services in your community? Reach out to us and let us know how we can support farmers and agricultural activities in your area. Our team is ready to help bring digital farming solutions closer to you.",
   image: {
-    src: "/landing/images/contact-field.png",
+    src: "/landing/images/contact-field.webp",
     alt: "Farmer working in a green field",
   },
   successModal: {

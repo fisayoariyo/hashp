@@ -25,6 +25,8 @@ export default function LandingAbout() {
                 src={image.src}
                 alt={image.alt}
                 className="h-[313px] w-full object-cover tablet:h-[320px] desktop:h-[394px]"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           ))}

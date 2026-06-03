@@ -5,9 +5,13 @@ export default function LandingHero() {
     <section className="landing-max relative min-h-[662px] overflow-hidden bg-white desktop:h-[832px]">
       <div className="absolute inset-x-0 bottom-0 h-[432px] overflow-hidden tablet:h-[470px] desktop:h-[832px]">
         <img
-          src="/landing/images/hero-landscape.png"
+          src="/landing/images/hero-landscape.webp"
+          srcSet="/landing/images/hero-landscape-mobile.webp 1200w, /landing/images/hero-landscape.webp 2200w"
+          sizes="100vw"
           alt="Green farm landscape"
           className="h-full w-full object-cover object-center"
+          fetchPriority="high"
+          decoding="async"
         />
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-[235px] tablet:h-[320px] desktop:h-[572px]"

@@ -2,12 +2,12 @@
 // HFEI CROPEX — AGENT MOCK DATA
 // TODO: Replace with API calls from src/services/agentApi.js
 // ============================================================
-const agentSplashImage = "/onboarding/agent-splash.png";
+const agentSplashImage = "/onboarding/agent-splash.webp";
 
 // Mobile onboarding — matches AWM-CA-02–04 art (public/onboarding)
-const agentOnboard1Image = "/onboarding/agent-role-hero.png";
-const agentOnboard2Image = "/onboarding/agent-role-select.png";
-const agentOnboard3Image = "/onboarding/farmer-1.jpg";
+const agentOnboard1Image = "/onboarding/agent-role-hero.webp";
+const agentOnboard2Image = "/onboarding/agent-role-select.webp";
+const agentOnboard3Image = "/onboarding/farmer-1.webp";
 
 /** AWM-CA-01 */
 export const agentBrandSplash = {

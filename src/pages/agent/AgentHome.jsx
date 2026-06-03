@@ -11,7 +11,7 @@ import { getAgentStatusRoute } from "../../utils/agentStatus";
 import { getDisplayError } from "../../utils/apiErrors";
 
 // ── Asset imports ─────────────────────────────────────────
-import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.svg";
+import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.webp";
 import statFarmersIcon    from "../../assets/comps/tractor.svg";
 import statIdIcon         from "../../assets/comps/id.svg";
 import registerActionIcon from "../../assets/comps/user-add-01.svg";

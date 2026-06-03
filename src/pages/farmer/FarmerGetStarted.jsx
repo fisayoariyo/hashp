@@ -11,7 +11,7 @@ const COPY = {
 };
 
 const HERO_IMAGE = {
-  src: "/landing/images/farmer-card-cta.png",
+  src: "/landing/images/farmer-card-cta.webp",
   position: "62% 48%",
 };
 

@@ -1,4 +1,4 @@
-const AGENT_AUTH_HERO_IMAGE = "/onboarding/agent-role-hero.png";
+const AGENT_AUTH_HERO_IMAGE = "/onboarding/agent-role-hero.webp";
 
 export default function AgentAuthDesktopLayout({
   title,

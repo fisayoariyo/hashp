@@ -3,11 +3,18 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, X } from "lucide-react";
 import { LANDING_CONTACT } from "../../pages/landing/landingContent";
-import { extractGeoArray, getGeoStates, mapGeoStateOption } from "../../services/cropexApi";
+import {
+  extractGeoArray,
+  getGeoLgas,
+  getGeoStates,
+  mapGeoLgaOption,
+  mapGeoStateOption,
+} from "../../services/cropexApi";
 
 const INITIAL_FORM = {
   fullName: "",
   location: "",
+  localGovt: "",
   phone: "",
   email: "",
 };
@@ -82,7 +89,7 @@ export function StartJourneySuccessModal({ open, onClose }) {
 
 export default function StartJourneyLeadForm({
   idPrefix = "start-journey",
-  className = "space-y-[18px]",
+  className = "space-y-[22px]",
   wrapperClassName = "",
   submitVariant = "inline-half",
   showAlreadyHaveAccount = false,
@@ -92,6 +99,8 @@ export default function StartJourneyLeadForm({
   const navigate = useNavigate();
   const [form, setForm] = useState(INITIAL_FORM);
   const [stateOptions, setStateOptions] = useState([]);
+  const [lgaOptions, setLgaOptions] = useState([]);
+  const [lgasLoading, setLgasLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const formId = `${idPrefix}-form`;
 
@@ -110,9 +119,44 @@ export default function StartJourneyLeadForm({
     };
   }, []);
 
+  useEffect(() => {
+    if (!form.location) {
+      setLgaOptions([]);
+      setLgasLoading(false);
+      return undefined;
+    }
+
+    let active = true;
+    setLgasLoading(true);
+    getGeoLgas(form.location)
+      .then((payload) => {
+        if (!active) return;
+        setLgaOptions(extractGeoArray(payload).map(mapGeoLgaOption).filter(Boolean));
+      })
+      .catch(() => {
+        if (active) setLgaOptions([]);
+      })
+      .finally(() => {
+        if (active) setLgasLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [form.location]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => {
+      if (name === "location") {
+        return {
+          ...current,
+          location: value,
+          localGovt: "",
+        };
+      }
+      return { ...current, [name]: value };
+    });
   };
 
   const handleSubmit = (event) => {
@@ -123,8 +167,8 @@ export default function StartJourneyLeadForm({
 
   const submitButtonClass =
     submitVariant === "inline-half"
-      ? "landing-primary-button mt-[6px] h-[52px] w-1/2 rounded-[15px] text-[17px] desktop:h-auto desktop:text-[18px]"
-      : `w-full bg-brand-green px-6 py-4 font-display text-base font-semibold text-white shadow-[0_18px_12.5px_rgba(0,0,0,0.1)] transition-all duration-200 active:scale-95 rounded-[14px] md:rounded-full ${submitButtonClassName}`;
+      ? `landing-primary-button mt-[6px] h-[52px] w-1/2 rounded-[15px] text-[17px] desktop:h-auto desktop:text-[18px] ${submitButtonClassName}`
+      : `w-full bg-brand-green px-6 py-4 font-display text-base font-semibold text-white shadow-none transition-all duration-200 active:scale-95 rounded-[14px] ${submitButtonClassName}`;
 
   return (
     <>
@@ -134,11 +178,11 @@ export default function StartJourneyLeadForm({
           onSubmit={handleSubmit}
           className={
             submitVariant === "footer-full"
-              ? `${className}${className ? " " : ""}space-y-[18px]`
+              ? `${className}${className ? " " : ""}space-y-[22px]`
               : className
           }
         >
-          <div className={submitVariant === "footer-full" ? "space-y-[18px]" : "contents"}>
+          <div className={submitVariant === "footer-full" ? "space-y-[22px]" : "contents"}>
         <div>
           <label htmlFor={`${idPrefix}-full-name`} className="landing-contact-label">
             Full Name
@@ -148,6 +192,7 @@ export default function StartJourneyLeadForm({
             name="fullName"
             type="text"
             required
+            placeholder="Enter full name"
             value={form.fullName}
             onChange={handleChange}
             className="landing-contact-field"
@@ -173,6 +218,39 @@ export default function StartJourneyLeadForm({
                 Select
               </option>
               {stateOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={18}
+              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-landing-green/60"
+              aria-hidden
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor={`${idPrefix}-local-govt`} className="landing-contact-label">
+            Local Govt
+          </label>
+          <div className="relative">
+            <select
+              id={`${idPrefix}-local-govt`}
+              name="localGovt"
+              required
+              value={form.localGovt}
+              onChange={handleChange}
+              disabled={!form.location || lgasLoading}
+              className={`landing-contact-field landing-contact-select appearance-none pr-10 ${
+                form.localGovt ? "text-landing-black" : "text-landing-green/45"
+              } ${!form.location || lgasLoading ? "cursor-not-allowed opacity-70" : ""}`}
+            >
+              <option value="" disabled>
+                {!form.location ? "Select state first" : lgasLoading ? "Loading local govts..." : "Select local govt"}
+              </option>
+              {lgaOptions.map((option) => (
                 <option key={option.id} value={option.name}>
                   {option.name}
                 </option>
@@ -195,6 +273,7 @@ export default function StartJourneyLeadForm({
             name="phone"
             type="tel"
             required
+            placeholder="Enter phone number"
             value={form.phone}
             onChange={handleChange}
             className="landing-contact-field"
@@ -209,6 +288,7 @@ export default function StartJourneyLeadForm({
             id={`${idPrefix}-email`}
             name="email"
             type="email"
+            placeholder="Enter email address"
             value={form.email}
             onChange={handleChange}
             className="landing-contact-field"
@@ -216,7 +296,7 @@ export default function StartJourneyLeadForm({
         </div>
 
         {submitVariant === "inline-half" ? (
-          <button type="submit" className={submitButtonClass}>
+          <button type="submit" className={submitButtonClass} style={{ boxShadow: "none" }}>
             Submit
           </button>
         ) : null}
@@ -224,7 +304,7 @@ export default function StartJourneyLeadForm({
 
         {submitVariant === "footer-full" ? (
           <div className={`space-y-3 ${footerClassName}`}>
-            <button type="submit" className={submitButtonClass}>
+            <button type="submit" className={submitButtonClass} style={{ boxShadow: "none" }}>
               Submit
             </button>
             {showAlreadyHaveAccount ? (

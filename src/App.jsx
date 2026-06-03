@@ -1,40 +1,47 @@
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
-// ── Shared ──────────────────────────────────────
-import LandingPage from "./pages/landing/LandingPage";
-import RoleSelect from "./pages/shared/RoleSelect";
-
-// ── Farmer pages ─────────────────────────────────
-import FarmerSplash        from "./pages/farmer/FarmerSplash";
-import FarmerGetStarted      from "./pages/farmer/FarmerGetStarted";
-import FarmerVerify        from "./pages/farmer/FarmerVerify";
-import FarmerHome          from "./pages/farmer/FarmerHome";
-import FarmerID            from "./pages/farmer/FarmerID";
-import FarmerProfile       from "./pages/farmer/FarmerProfile";
-import FarmerSettings      from "./pages/farmer/FarmerSettings";
-import FarmerComingSoon     from "./pages/farmer/FarmerComingSoon";
-
-// ── Agent pages ──────────────────────────────────
-import AgentSplash              from "./pages/agent/AgentSplash";
-import AgentCreateAccount       from "./pages/agent/AgentCreateAccount";
-import AgentVerifyPhone         from "./pages/agent/AgentVerifyPhone";
-import AgentSelectLocation      from "./pages/agent/AgentSelectLocation";
-import AgentAccountUnderReview  from "./pages/agent/AgentAccountUnderReview";
-import AgentAccountVerified     from "./pages/agent/AgentAccountVerified";
-import AgentVerificationFailed  from "./pages/agent/AgentVerificationFailed";
-import AgentContactSupport      from "./pages/agent/AgentContactSupport";
-import AgentForgotPassword      from "./pages/agent/AgentForgotPassword";
-import AgentResetPasswordNew    from "./pages/agent/AgentResetPasswordNew";
-import AgentLogin               from "./pages/agent/AgentLogin";
-import AgentHome                from "./pages/agent/AgentHome";
-import AgentRegisterFarmer      from "./pages/agent/AgentRegisterFarmer";
-import AgentSavedFarmers        from "./pages/agent/AgentSavedFarmers";
-import AgentSettings            from "./pages/agent/AgentSettings";
 import RequireAgentAuth         from "./components/agent/RequireAgentAuth";
+
+const LandingPage = lazy(() => import("./pages/landing/LandingPage"));
+const RoleSelect = lazy(() => import("./pages/shared/RoleSelect"));
+
+const FarmerSplash = lazy(() => import("./pages/farmer/FarmerSplash"));
+const FarmerGetStarted = lazy(() => import("./pages/farmer/FarmerGetStarted"));
+const FarmerVerify = lazy(() => import("./pages/farmer/FarmerVerify"));
+const FarmerHome = lazy(() => import("./pages/farmer/FarmerHome"));
+const FarmerID = lazy(() => import("./pages/farmer/FarmerID"));
+const FarmerProfile = lazy(() => import("./pages/farmer/FarmerProfile"));
+const FarmerSettings = lazy(() => import("./pages/farmer/FarmerSettings"));
+const FarmerComingSoon = lazy(() => import("./pages/farmer/FarmerComingSoon"));
+
+const AgentSplash = lazy(() => import("./pages/agent/AgentSplash"));
+const AgentCreateAccount = lazy(() => import("./pages/agent/AgentCreateAccount"));
+const AgentVerifyPhone = lazy(() => import("./pages/agent/AgentVerifyPhone"));
+const AgentSelectLocation = lazy(() => import("./pages/agent/AgentSelectLocation"));
+const AgentAccountUnderReview = lazy(() => import("./pages/agent/AgentAccountUnderReview"));
+const AgentAccountVerified = lazy(() => import("./pages/agent/AgentAccountVerified"));
+const AgentVerificationFailed = lazy(() => import("./pages/agent/AgentVerificationFailed"));
+const AgentContactSupport = lazy(() => import("./pages/agent/AgentContactSupport"));
+const AgentForgotPassword = lazy(() => import("./pages/agent/AgentForgotPassword"));
+const AgentResetPasswordNew = lazy(() => import("./pages/agent/AgentResetPasswordNew"));
+const AgentLogin = lazy(() => import("./pages/agent/AgentLogin"));
+const AgentHome = lazy(() => import("./pages/agent/AgentHome"));
+const AgentRegisterFarmer = lazy(() => import("./pages/agent/AgentRegisterFarmer"));
+const AgentSavedFarmers = lazy(() => import("./pages/agent/AgentSavedFarmers"));
+const AgentSettings = lazy(() => import("./pages/agent/AgentSettings"));
+
+function RouteLoader() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-white px-5 text-center text-sm text-brand-text-secondary">
+      Loading...
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<RouteLoader />}>
       <Routes>
         {/* Shared */}
         <Route path="/"                        element={<LandingPage />} />
@@ -101,6 +108,7 @@ export default function App() {
         {/* Fallback */}
         <Route path="*"                        element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

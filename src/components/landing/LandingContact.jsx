@@ -18,7 +18,11 @@ export default function LandingContact() {
             </h2>
 
             <div className="mt-[28px] desktop:mt-[38px]">
-              <StartJourneyLeadForm idPrefix="landing-contact" />
+              <StartJourneyLeadForm
+                idPrefix="landing-contact"
+                className="space-y-[24px]"
+                submitButtonClassName="!mt-4 !shadow-none"
+              />
             </div>
           </div>
 
@@ -31,6 +35,8 @@ export default function LandingContact() {
                 src={LANDING_CONTACT.image.src}
                 alt={LANDING_CONTACT.image.alt}
                 className="h-[520px] w-full object-cover object-center"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           </div>

@@ -2,10 +2,10 @@
 // HFEI CROPEX — FARMER MOCK DATA
 // TODO: Replace with API calls from src/services/api.js
 // ============================================================
-import farmerSplashImage from "../assets/farmer-onboarding/FWM-CA-01-splash.png";
-import farmerOnboard1Image from "../assets/farmer-onboarding/FWM-CA-02-onboard1.jpg";
-import farmerOnboard2Image from "../assets/farmer-onboarding/FWM-CA-03-onboard2.jpg";
-import farmerOnboard3Image from "../assets/farmer-onboarding/FWM-CA-04-onboard3.jpg";
+import farmerSplashImage from "../assets/farmer-onboarding/FWM-CA-01-splash.webp";
+import farmerOnboard1Image from "../assets/farmer-onboarding/FWM-CA-02-onboard1.webp";
+import farmerOnboard2Image from "../assets/farmer-onboarding/FWM-CA-03-onboard2.webp";
+import farmerOnboard3Image from "../assets/farmer-onboarding/FWM-CA-04-onboard3.webp";
 
 /** FWM-CA-01 — full-bleed brand moment after role = Farmer (mobile + desktop). */
 export const farmerBrandSplash = {
