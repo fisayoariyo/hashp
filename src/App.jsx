@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RequireAgentAuth         from "./components/agent/RequireAgentAuth";
 import LandingPage from "./pages/landing/LandingPage";
 import RoleSelect from "./pages/shared/RoleSelect";
@@ -25,6 +25,7 @@ import AgentHome from "./pages/agent/AgentHome";
 import AgentRegisterFarmer from "./pages/agent/AgentRegisterFarmer";
 import AgentSavedFarmers from "./pages/agent/AgentSavedFarmers";
 import AgentSettings from "./pages/agent/AgentSettings";
+import NotFoundScreen from "./screens/NotFoundScreen";
 
 export default function App() {
   return (
@@ -93,7 +94,7 @@ export default function App() {
         />
 
         {/* Fallback */}
-        <Route path="*"                        element={<Navigate to="/" replace />} />
+        <Route path="*"                        element={<NotFoundScreen />} />
       </Routes>
     </BrowserRouter>
   );
