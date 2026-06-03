@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Mail, Phone, User } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
@@ -6,7 +6,7 @@ import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayou
 import { AgentBottomNav } from "./AgentHome";
 import { agentSupportContact } from "../../mockData/agent";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { createSupportTicket, getAgentDashboard, getAgentSession } from "../../services/cropexApi";
+import { createSupportTicket, getAgentSession } from "../../services/cropexApi";
 import { getDisplayError } from "../../utils/apiErrors";
 
 export default function AgentContactSupport() {
@@ -18,7 +18,6 @@ export default function AgentContactSupport() {
   const [issueDescription, setIssueDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", message: "" });
-  const [agentProfile, setAgentProfile] = useState(null);
 
   const session = getAgentSession();
   const hasAuthSession = Boolean(session);
@@ -31,21 +30,6 @@ export default function AgentContactSupport() {
         : location.state?.from === "login-suspended"
           ? "/agent/login"
           : "/agent/login";
-
-  useEffect(() => {
-    if (!hasAuthSession) return undefined;
-    let active = true;
-    getAgentDashboard()
-      .then((payload) => {
-        if (active) setAgentProfile(payload?.agent || null);
-      })
-      .catch(() => {
-        if (active) setAgentProfile(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [hasAuthSession]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -159,21 +143,30 @@ export default function AgentContactSupport() {
 
       <div className="mt-8 w-full max-w-[520px] rounded-[20px] bg-[#FFFFFF] p-5">
         <p className="text-[14px] leading-6 text-[#030F0F]">
-          If you experience network issues, contact HFEI support directly at these phone numbers.
+          If you experience network issues, contact HFEI support directly.
         </p>
         <div className="mt-4 space-y-3 text-[14px] leading-5 text-[#030F0F]">
           <p className="flex items-center gap-2">
-            <User size={14} className="text-[#030F0F]" />
+            <Phone size={14} className="text-[#030F0F]" />
             <span>
-              Agent Name: {agentProfile?.full_name || session?.fullName || session?.full_name || "Unavailable"}
+              Support Phone: {agentSupportContact.phoneDisplay || "Unavailable"}
             </span>
           </p>
           <p className="flex items-center gap-2">
-            <Phone size={14} className="text-[#030F0F]" />
+            <Mail size={14} className="text-[#030F0F]" />
             <span>
-              Phone Number: {agentProfile?.phone_number || session?.phone || "Unavailable"}
+              Support Email: {agentSupportContact.email || "Unavailable"}
             </span>
           </p>
+          {agentSupportContact.phoneHref ? (
+            <a
+              href={agentSupportContact.phoneHref}
+              className="inline-flex items-center gap-2 text-[#03624D] underline-offset-2 hover:underline"
+            >
+              <Phone size={14} />
+              Call support now
+            </a>
+          ) : null}
         </div>
       </div>
     </div>
