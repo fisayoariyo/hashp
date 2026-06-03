@@ -6,7 +6,13 @@ import {
   getFarmerSyncCountsFromStorage,
   syncAllPendingFarmersStorage,
 } from "../../hooks/useAgentFarmersSync";
-import { getAgentDashboard, getAgentSession, mapApiFarmerToUi } from "../../services/cropexApi";
+import {
+  extractFarmersArray,
+  getAgentDashboard,
+  getAgentSession,
+  listFarmers,
+  mapApiFarmerToUi,
+} from "../../services/cropexApi";
 import { getAgentStatusRoute } from "../../utils/agentStatus";
 import { getDisplayError } from "../../utils/apiErrors";
 
@@ -36,6 +42,12 @@ function getChangePct(current, previous) {
 
 function formatChangePct(value) {
   return `${value >= 0 ? "+" : ""}${value}%`;
+}
+
+function hasOfficialFarmerId(row) {
+  if (!row || typeof row !== "object") return false;
+  const candidate = row.farmer_id ?? row.hsh_id ?? row.official_farmer_id ?? row.officialFarmerId;
+  return typeof candidate === "string" ? candidate.trim().length > 0 : candidate != null;
 }
 
 // ── Desktop stat card — accepts img URL or React element for icon ──
@@ -103,6 +115,7 @@ export default function AgentHome() {
   const [syncCounts, setSyncCounts] = useState({ completed: 0, pending: 0 });
   const [isOnline,   setIsOnline]   = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [dashboard,  setDashboard]  = useState(null);
+  const [farmersSummary, setFarmersSummary] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -141,19 +154,36 @@ export default function AgentHome() {
     }
 
     let active = true;
-    getAgentDashboard()
-      .then((payload) => {
+    Promise.allSettled([getAgentDashboard(), listFarmers()])
+      .then(([dashboardResult, farmersResult]) => {
         if (!active) return;
-        const statusRoute = getAgentStatusRoute(payload);
-        if (statusRoute) {
-          navigate(statusRoute, { replace: true });
-          return;
+
+        if (dashboardResult.status === "fulfilled") {
+          const payload = dashboardResult.value;
+          const statusRoute = getAgentStatusRoute(payload);
+          if (statusRoute) {
+            navigate(statusRoute, { replace: true });
+            return;
+          }
+          setDashboard(payload);
+        } else {
+          setDashboard(null);
         }
-        setDashboard(payload);
+
+        if (farmersResult.status === "fulfilled") {
+          const farmers = extractFarmersArray(farmersResult.value);
+          setFarmersSummary({
+            totalRegisteredFarmers: farmers.length,
+            totalIdsIssued: farmers.filter(hasOfficialFarmerId).length,
+          });
+        } else {
+          setFarmersSummary(null);
+        }
       })
       .catch(() => {
         if (active) {
           setDashboard(null);
+          setFarmersSummary(null);
         }
       });
     return () => {
@@ -182,8 +212,9 @@ export default function AgentHome() {
     return fullName.split(" ")[0] || "Agent";
   }, [liveAgent]);
 
-  const registeredFarmersValue = liveStats?.total_registered_farmers ?? 0;
-  const idsIssuedValue = liveStats?.total_ids_issued ?? 0;
+  const registeredFarmersValue =
+    farmersSummary?.totalRegisteredFarmers ?? liveStats?.total_registered_farmers ?? 0;
+  const idsIssuedValue = farmersSummary?.totalIdsIssued ?? liveStats?.total_ids_issued ?? 0;
 
   const registeredFarmersChange = useMemo(() => getChangePct(registeredFarmersValue, 0), [registeredFarmersValue]);
   const idsIssuedChange = useMemo(() => getChangePct(idsIssuedValue, 0), [idsIssuedValue]);

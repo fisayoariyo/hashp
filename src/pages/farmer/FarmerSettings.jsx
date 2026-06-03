@@ -1,102 +1,191 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
+  BadgeCheck,
   ChevronDown,
-  ChevronUp,
-  Headphones,
+  CircleX,
+  LogOut,
   Mail,
+  MapPin,
   Phone,
+  Tractor,
+  Upload,
   User,
+  Users,
 } from "lucide-react";
 import FarmerDesktopLayout from "../../components/farmer/FarmerDesktopLayout";
-import { farmerFAQs, farmerSupportContact } from "../../mockData/farmer";
-import { getFarmerIdCard } from "../../services/cropexApi";
+import { clearFarmerSession, getFarmerDashboard } from "../../services/cropexApi";
 
-function FAQItem({ faq }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <button
-      onClick={() => setOpen((value) => !value)}
-      className="w-full text-left bg-white rounded-2xl p-4 shadow-sm active:scale-[0.99] transition-transform border border-brand-border"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <p className="font-sans font-semibold text-sm text-brand-text-primary">{faq.question}</p>
-        {open ? (
-          <ChevronUp size={16} className="text-brand-green shrink-0 mt-0.5" />
-        ) : (
-          <ChevronDown size={16} className="text-brand-text-muted shrink-0 mt-0.5" />
-        )}
-      </div>
-      {open && (
-        <p className="font-sans text-sm text-brand-text-secondary mt-3 border-t border-brand-border pt-3 leading-relaxed">
-          {faq.answer}
-        </p>
-      )}
-    </button>
-  );
+const MOCK_AGENT_STATUS_KEY = "hcx_farmer_agent_upgrade_mock_status";
+
+function readMockStatus() {
+  try {
+    const value = sessionStorage.getItem(MOCK_AGENT_STATUS_KEY);
+    if (value === "under_review" || value === "verified" || value === "failed") return value;
+  } catch {
+    /* ignore */
+  }
+  return "none";
 }
 
-function FAQContent() {
+function writeMockStatus(status) {
+  try {
+    if (status === "none") {
+      sessionStorage.removeItem(MOCK_AGENT_STATUS_KEY);
+      return;
+    }
+    sessionStorage.setItem(MOCK_AGENT_STATUS_KEY, status);
+  } catch {
+    /* ignore */
+  }
+}
+
+function ProfileCard({ profile }) {
   return (
-    <div className="space-y-3">
-      {farmerFAQs.map((faq) => (
-        <FAQItem key={faq.id} faq={faq} />
-      ))}
+    <div className="mb-5 flex flex-col gap-4 rounded-[20px] bg-[#F6F6F6] p-4 sm:flex-row sm:items-center">
+      <div className="h-28 w-28 overflow-hidden rounded-full bg-white ring-1 ring-[#E5E7EB]">
+        {profile.photo ? (
+          <img src={profile.photo} alt={profile.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-[#9CA3AF]">
+            <User size={36} />
+          </div>
+        )}
+      </div>
+      <div>
+        <p className="font-display text-[32px] font-bold leading-[40px] text-[#030F0F]">{profile.name}</p>
+        <p className="mt-1 font-sans text-[18px] text-[#030F0F]">
+          Farmer ID : <span className="font-semibold">{profile.farmerId}</span>
+        </p>
+        <p className="mt-2 flex items-center gap-2 font-sans text-[18px] text-[#030F0F]">
+          <Phone size={16} className="text-[#03624D]" />
+          {profile.phone}
+        </p>
+        <p className="mt-1 flex items-center gap-2 font-sans text-[18px] text-[#030F0F]">
+          <MapPin size={16} className="text-[#03624D]" />
+          {profile.location}
+        </p>
+      </div>
     </div>
   );
 }
 
-function ContactContent({ agentName, loading, error }) {
-  const supportPhone = farmerSupportContact.phone;
-  const supportEmail = farmerSupportContact.email;
+function SettingsMenu({ onFarmerMode, onLogout }) {
+  return (
+    <div className="rounded-[20px] bg-white p-3">
+      <button
+        type="button"
+        onClick={onFarmerMode}
+        className="flex h-14 w-full items-center justify-between rounded-xl px-3 text-left hover:bg-[#F8FAFC]"
+      >
+        <span className="inline-flex items-center gap-3 font-sans text-[22px] text-[#030F0F]">
+          <Tractor size={18} />
+          Farmer mode
+        </span>
+        <ChevronDown size={18} className="text-[#030F0F]/70" />
+      </button>
+      <button
+        type="button"
+        onClick={onLogout}
+        className="flex h-14 w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-[#F8FAFC]"
+      >
+        <LogOut size={18} className="text-[#030F0F]/80" />
+        <span className="font-sans text-[22px] text-[#030F0F]">Logout</span>
+      </button>
+    </div>
+  );
+}
+
+function BecomeAgentForm({ email, setEmail, bvn, setBvn, fileName, onChooseFile, onSubmit, onBack }) {
+  return (
+    <div>
+      <button type="button" onClick={onBack} className="mb-6 inline-flex items-center gap-2 text-sm text-brand-text-secondary">
+        <ArrowLeft size={16} />
+        Go back
+      </button>
+      <h2 className="font-display text-[48px] font-bold leading-[56px] text-[#030F0F]">Become an agent</h2>
+      <p className="mt-2 font-sans text-[20px] leading-[28px] text-[#030F0F]/75">
+        Complete your verification to activate your agent account and start operating as a field agent.
+      </p>
+
+      <div className="mt-8">
+        <p className="font-sans text-[24px] font-semibold text-[#030F0F]">Upload your image</p>
+        <p className="mt-1 font-sans text-[18px] text-[#030F0F]/70">
+          Please upload a recent passport photograph with a plain white background.
+        </p>
+        <label className="mt-4 flex h-[188px] w-full max-w-[360px] cursor-pointer flex-col items-center justify-center rounded-[20px] border border-dashed border-[#D9DDE3] bg-white text-center">
+          <Upload size={24} className="mb-3 text-[#9CA3AF]" />
+          <span className="rounded-full border border-[#C7CDD8] px-4 py-1 text-xs text-[#445250]">
+            Click to upload
+          </span>
+          <span className="mt-2 text-xs text-[#9CA3AF]">{fileName || "JPG, JPEG, PNG less than 1MB"}</span>
+          <input type="file" accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={onChooseFile} />
+        </label>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label className="block">
+          <span className="mb-2 block font-sans text-[22px] font-semibold text-[#030F0F]">Email Address</span>
+          <div className="flex h-[52px] items-center rounded-[15px] border border-[#E6E6E6] bg-white px-4">
+            <Mail size={16} className="text-[#9CA3AF]" />
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Enter your active email address"
+              className="ml-3 w-full bg-transparent font-sans text-sm text-[#030F0F] outline-none placeholder:text-[#9CA3AF]"
+            />
+          </div>
+        </label>
+        <label className="block">
+          <span className="mb-2 block font-sans text-[22px] font-semibold text-[#030F0F]">Bank Verification Number (BVN)</span>
+          <div className="flex h-[52px] items-center rounded-[15px] border border-[#E6E6E6] bg-white px-4">
+            <User size={16} className="text-[#9CA3AF]" />
+            <input
+              value={bvn}
+              onChange={(event) => setBvn(event.target.value)}
+              placeholder="Enter your 11 digit BVN for identity verification"
+              className="ml-3 w-full bg-transparent font-sans text-sm text-[#030F0F] outline-none placeholder:text-[#9CA3AF]"
+            />
+          </div>
+        </label>
+      </div>
+
+      <button type="button" onClick={onSubmit} className="btn-primary mt-10 max-w-[460px]">
+        Continue
+      </button>
+    </div>
+  );
+}
+
+function StatusView({ title, message, variant, primaryLabel, secondaryLabel, onPrimary, onSecondary, onBack }) {
+  const isFailed = variant === "failed";
+  const accentClass = isFailed ? "bg-[#D84B50]" : "bg-[#03624D]";
+  const icon = isFailed ? <CircleX size={62} className="text-white" /> : <BadgeCheck size={62} className="text-white" />;
 
   return (
-    <div className="max-w-md">
-      <div className="bg-white rounded-2xl p-5 border border-brand-border">
-        <div className="w-10 h-10 rounded-xl bg-brand-green-muted flex items-center justify-center mb-3">
-          <Headphones size={20} className="text-brand-green" />
+    <div>
+      <button type="button" onClick={onBack} className="mb-6 inline-flex items-center gap-2 text-sm text-brand-text-secondary">
+        <ArrowLeft size={16} />
+        Go back
+      </button>
+      <div className="mx-auto flex max-w-[640px] flex-col items-center text-center">
+        <div className={`mb-8 flex h-36 w-36 items-center justify-center rounded-full ${accentClass}`}>
+          {icon}
         </div>
-        <h3 className="font-sans font-bold text-base text-brand-text-primary mb-1">Support</h3>
-        <p className="font-sans text-sm text-brand-text-secondary mb-4">
-          For issues with your profile or information, contact your assigned agent or the HFEI
-          support team.
-        </p>
-
-        <div className="space-y-3 mb-5">
-          <p className="flex items-center gap-2 font-sans text-sm text-brand-text-primary">
-            <User size={16} className="text-brand-green shrink-0" />
-            <span>
-              <span className="font-semibold">Assigned Agent:</span>{" "}
-              {loading ? "Loading..." : agentName || "Unavailable"}
-            </span>
-          </p>
-          <p className="flex items-center gap-2 font-sans text-sm text-brand-text-primary">
-            <Phone size={16} className="text-brand-green shrink-0" />
-            <span>
-              <span className="font-semibold">Support Phone:</span> {supportPhone}
-            </span>
-          </p>
-          <p className="flex items-center gap-2 font-sans text-sm text-brand-text-primary">
-            <Mail size={16} className="text-brand-green shrink-0" />
-            <span>
-              <span className="font-semibold">Support Email:</span> {supportEmail}
-            </span>
-          </p>
-        </div>
-
-        {error && (
-          <p className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 font-sans text-xs text-amber-700">
-            {error}
-          </p>
-        )}
-
-        <a
-          href={`tel:${supportPhone}`}
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-brand-green text-white font-sans font-semibold text-sm hover:bg-brand-green-dark transition-colors"
-        >
-          <Phone size={16} /> Call Support
-        </a>
+        <h2 className="font-display text-[48px] font-bold leading-[54px] text-[#030F0F]">{title}</h2>
+        <p className="mt-3 max-w-[560px] font-sans text-[20px] leading-[28px] text-[#030F0F]/78">{message}</p>
+        {primaryLabel ? (
+          <button type="button" onClick={onPrimary} className="btn-primary mt-10 max-w-[460px]">
+            {primaryLabel}
+          </button>
+        ) : null}
+        {secondaryLabel ? (
+          <button type="button" onClick={onSecondary} className="auth-btn-secondary mt-4 max-w-[460px]">
+            {secondaryLabel}
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -104,30 +193,24 @@ function ContactContent({ agentName, loading, error }) {
 
 export default function FarmerSettings() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState("faq");
-  const [agentName, setAgentName] = useState("");
-  const [loadingAgent, setLoadingAgent] = useState(true);
-  const [contactError, setContactError] = useState("");
+  const location = useLocation();
+  const [dashboard, setDashboard] = useState(null);
+  const [mockStatus, setMockStatus] = useState("none");
+  const [screen, setScreen] = useState("settings");
+  const [email, setEmail] = useState("");
+  const [bvn, setBvn] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
 
   useEffect(() => {
     let active = true;
-    getFarmerIdCard()
+    getFarmerDashboard()
       .then((payload) => {
         if (!active) return;
-        setAgentName(payload?.agent_name || "");
-        setContactError("");
+        setDashboard(payload);
       })
-      .catch((fetchError) => {
-        if (!active) return;
-        setAgentName("");
-        setContactError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : "Assigned agent details are unavailable right now."
-        );
-      })
-      .finally(() => {
-        if (active) setLoadingAgent(false);
+      .catch(() => {
+        if (active) setDashboard(null);
       });
 
     return () => {
@@ -135,105 +218,188 @@ export default function FarmerSettings() {
     };
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const queryStatus = params.get("mockAgentStatus");
+    if (queryStatus === "under_review" || queryStatus === "verified" || queryStatus === "failed") {
+      setMockStatus(queryStatus);
+      setScreen(queryStatus);
+      writeMockStatus(queryStatus);
+      return;
+    }
+
+    const stored = readMockStatus();
+    setMockStatus(stored);
+    if (stored !== "none") setScreen(stored);
+  }, [location.search]);
+
+  const profile = useMemo(() => {
+    const farmer = dashboard?.farmer || {};
+    const displayName = farmer.full_name || "Farmer";
+    const id = farmer.farmer_id || "Unavailable";
+    const phone = farmer.phone_number || "Unavailable";
+    const state = farmer.state_of_origin || "";
+    const lga = farmer.lga || "";
+    const locationText =
+      [state && `${state.toLowerCase()} state`, lga && `${lga.toLowerCase()} local government`]
+        .filter(Boolean)
+        .join(", ") || "Location unavailable";
+
+    return {
+      name: displayName,
+      farmerId: id,
+      phone,
+      location: locationText,
+      photo: farmer.profile_photo_url || "",
+    };
+  }, [dashboard]);
+
+  const openFarmerModeFlow = () => {
+    if (mockStatus === "under_review" || mockStatus === "verified" || mockStatus === "failed") {
+      setScreen(mockStatus);
+      return;
+    }
+    setScreen("form");
+  };
+
+  const handleFormSubmit = () => {
+    setMockStatus("under_review");
+    writeMockStatus("under_review");
+    setScreen("under_review");
+  };
+
+  const handleLogout = () => {
+    clearFarmerSession();
+    navigate("/log-in");
+  };
+
+  const handleSwitchToAgent = () => {
+    setShowSwitchModal(true);
+  };
+
+  const confirmSwitchToAgent = () => {
+    setShowSwitchModal(false);
+    navigate("/agent/login");
+  };
+
+  const handleBack = () => {
+    if (screen === "settings") {
+      navigate("/farmer/home");
+      return;
+    }
+    setScreen("settings");
+  };
+
+  const activeContent = (() => {
+    if (screen === "form") {
+      return (
+        <BecomeAgentForm
+          email={email}
+          setEmail={setEmail}
+          bvn={bvn}
+          setBvn={setBvn}
+          fileName={fileName}
+          onChooseFile={(event) => {
+            const file = event.target.files?.[0];
+            setFileName(file?.name || "");
+          }}
+          onSubmit={handleFormSubmit}
+          onBack={handleBack}
+        />
+      );
+    }
+    if (screen === "under_review") {
+      return (
+        <StatusView
+          title="Account Under Review"
+          message="Your information is being processed. Once verified, you will be able to log in as an agent and start operating. You will also be assigned to a designated location based on operational needs. This usually takes a short while. We will notify you once your account is approved."
+          variant="review"
+          onBack={handleBack}
+        />
+      );
+    }
+    if (screen === "verified") {
+      return (
+        <StatusView
+          title="You're Verified as an Agent"
+          message="Your account has been successfully verified. You can now start registering farmers."
+          variant="review"
+          primaryLabel="Switch to Agent"
+          secondaryLabel="Continue as a farmer"
+          onPrimary={handleSwitchToAgent}
+          onSecondary={() => {
+            setScreen("settings");
+            setMockStatus("none");
+            writeMockStatus("none");
+          }}
+          onBack={handleBack}
+        />
+      );
+    }
+    if (screen === "failed") {
+      return (
+        <StatusView
+          title="Verification Failed"
+          message="Please review your details and try again to continue using the app. If you believe this is an error, please contact support for assistance."
+          variant="failed"
+          primaryLabel="Retry Verification"
+          secondaryLabel="Contact support"
+          onPrimary={() => setScreen("form")}
+          onSecondary={() => navigate("/agent/contact-support", { state: { preAuth: true, from: "verification-failed" } })}
+          onBack={handleBack}
+        />
+      );
+    }
+
+    return (
+      <div>
+        <h1 className="mb-6 font-display text-[40px] font-bold leading-[48px] text-[#030F0F]">Settings</h1>
+        <ProfileCard profile={profile} />
+        <SettingsMenu onFarmerMode={openFarmerModeFlow} onLogout={handleLogout} />
+      </div>
+    );
+  })();
+
   return (
     <>
       <div className="md:hidden page-container">
         <div className="flex-1 px-4 pt-5 pb-10 overflow-y-auto scrollbar-hide">
-          <button
-            onClick={() => navigate("/farmer/home")}
-            className="flex items-center gap-2 text-brand-text-secondary mb-5"
-          >
-            <ArrowLeft size={18} />
-            <span className="font-sans text-sm">Go back</span>
-          </button>
-
-          <div className="flex gap-2 mb-5 bg-white rounded-2xl p-1 shadow-sm">
-            {[["faq", "FAQs"], ["contact", "Contact"]].map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={`flex-1 py-2.5 rounded-xl font-sans font-semibold text-sm transition-all ${
-                  tab === key ? "bg-brand-green text-white" : "text-brand-text-secondary"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {tab === "faq" && (
-            <>
-              <h1 className="auth-title mb-1">
-                Frequently asked questions
-              </h1>
-              <p className="font-sans text-xs text-brand-text-secondary mb-5">
-                If you notice any mistake in your details, please contact your assigned agent or
-                HFEI support.
-              </p>
-              <FAQContent />
-            </>
-          )}
-          {tab === "contact" && (
-            <>
-              <h1 className="auth-title mb-1">
-                General Support
-              </h1>
-              <p className="font-sans text-xs text-brand-text-secondary mb-5">
-                Reach your assigned agent when available, or contact HFEI support directly.
-              </p>
-              <ContactContent agentName={agentName} loading={loadingAgent} error={contactError} />
-            </>
-          )}
+          {activeContent}
         </div>
       </div>
 
-      <FarmerDesktopLayout activeNav="Home" islandContent edgeToEdge>
-        <button
-          onClick={() => navigate("/farmer/home")}
-          className="flex items-center gap-2 text-brand-text-secondary mb-4 hover:text-brand-text-primary transition-colors"
-        >
-          <ArrowLeft size={16} />
-          <span className="font-sans text-sm">Go back</span>
-        </button>
-
-        <div className="flex gap-2 mb-6 border-b border-brand-border pb-0">
-          {[["faq", "Frequently asked questions"], ["contact", "General Support"]].map(
-            ([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={`font-sans font-semibold text-sm pb-3 border-b-2 transition-all px-1 ${
-                  tab === key
-                    ? "border-brand-green text-brand-green"
-                    : "border-transparent text-brand-text-secondary hover:text-brand-text-primary"
-                }`}
-              >
-                {label}
-              </button>
-            )
-          )}
-        </div>
-
-        {tab === "faq" && (
-          <>
-            <p className="font-sans text-sm text-brand-text-secondary mb-5">
-              If you notice any mistake in your details, please contact your assigned agent or
-              HFEI support.
-            </p>
-            <div className="max-w-2xl space-y-3">
-              <FAQContent />
-            </div>
-          </>
-        )}
-        {tab === "contact" && (
-          <>
-            <p className="font-sans text-sm text-brand-text-secondary mb-5">
-              Reach your assigned agent when available, or contact HFEI support directly.
-            </p>
-            <ContactContent agentName={agentName} loading={loadingAgent} error={contactError} />
-          </>
-        )}
+      <FarmerDesktopLayout activeNav="Settings" islandContent edgeToEdge>
+        {activeContent}
       </FarmerDesktopLayout>
+
+      {showSwitchModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-[520px] rounded-[24px] bg-white p-8 shadow-xl">
+            <div className="mb-4 flex justify-center text-[#03624D]">
+              <Users size={44} />
+            </div>
+            <p className="mx-auto max-w-[360px] text-center font-sans text-[26px] leading-[34px] text-[#03624D]">
+              Are you sure you want to switch to agent mode?
+            </p>
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setShowSwitchModal(false)}
+                className="h-[52px] rounded-full border border-[#C6DBD5] bg-white font-sans text-[18px] text-[#03624D]"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={confirmSwitchToAgent}
+                className="h-[52px] rounded-full bg-[#03624D] font-sans text-[18px] text-white"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, User, BadgeCheck, Copy } from "lucide-react";
+import { Home, User, Settings, BadgeCheck, Copy } from "lucide-react";
 import { getFarmerDashboard, getFarmerSession } from "../../services/cropexApi";
 
 const NAV = [
   { label: "Home",    path: "/farmer/home",    Icon: Home },
   { label: "Profile", path: "/farmer/profile", Icon: User },
+  { label: "Settings", path: "/farmer/settings", Icon: Settings },
 ];
 
 
@@ -18,7 +19,13 @@ export default function FarmerDesktopLayout({
 }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const active = activeNav || (pathname.includes("profile") ? "Profile" : "Home");
+  const active =
+    activeNav ||
+    (pathname.includes("settings")
+      ? "Settings"
+      : pathname.includes("profile")
+        ? "Profile"
+        : "Home");
   const session = getFarmerSession();
   const [dashboard, setDashboard] = useState(null);
 

@@ -678,15 +678,15 @@ export function mapGeoLgaOption(row) {
 }
 
 export function getFarmerDashboard() {
-  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/me");
+  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/me").then((payload) => extractDataRoot(payload));
 }
 
 export function getFarmerIdCard() {
-  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/id-card");
+  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/id-card").then((payload) => extractDataRoot(payload));
 }
 
 export function getAgentDashboard() {
-  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me");
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me").then((payload) => extractDataRoot(payload));
 }
 
 export function createSupportTicket(body) {
