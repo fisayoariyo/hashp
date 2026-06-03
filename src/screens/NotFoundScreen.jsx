@@ -1,32 +1,40 @@
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../constants/routes";
+import errorIllustration from "../assets/comps/badge-error.svg";
 
 export default function NotFoundScreen() {
   const navigate = useNavigate();
 
   return (
-    <div className="page-container bg-white items-center justify-center">
-      <div className="flex flex-col items-center justify-center flex-1 px-8 text-center">
-        <span className="text-7xl mb-6 select-none">🌾</span>
-        <h1 className="font-display font-bold text-2xl text-brand-text-primary mb-2">
+    <div className="min-h-dvh bg-[#f6f6f6] px-4 py-6 md:px-6 md:py-8">
+      <div className="mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-[760px] flex-col items-center rounded-[18px] bg-[#efefef] px-6 pb-8 pt-7 text-center md:rounded-[22px] md:px-10 md:pb-10 md:pt-9">
+        <h1 className="font-display text-[34px] font-bold leading-tight text-brand-text-primary md:text-[42px]">
           Page Not Found
         </h1>
-        <p className="font-sans text-sm text-brand-text-secondary leading-relaxed mb-10 max-w-xs">
-          Looks like this field hasn't been planted yet. Let's get you back to
-          familiar ground.
+        <p className="mt-2 max-w-[520px] font-sans text-[14px] leading-relaxed text-brand-text-secondary md:text-[16px]">
+          The page you're looking for doesn't exist or may have been moved.
+          <br className="hidden md:block" /> Let's get you back on track.
         </p>
+        <img
+          src={errorIllustration}
+          alt="Error 404"
+          className="mt-8 w-full max-w-[520px] object-contain md:mt-9"
+        />
+        <div className="mt-auto flex w-full max-w-[420px] flex-col gap-3 pt-8 md:flex-row md:gap-4">
         <button
-          onClick={() => navigate(ROUTES.HOME, { replace: true })}
-          className="btn-primary max-w-xs"
-        >
-          Go to Home
-        </button>
-        <button
+          type="button"
           onClick={() => navigate(-1)}
-          className="mt-4 text-brand-green font-sans text-sm font-medium py-2"
+          className="auth-btn-secondary"
         >
-          Go back
+          Try Again
         </button>
+        <button
+          type="button"
+          onClick={() => navigate("/", { replace: true })}
+          className="btn-primary"
+        >
+          Go to Dashboard
+        </button>
+        </div>
       </div>
     </div>
   );
