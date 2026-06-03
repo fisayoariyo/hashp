@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RequireAgentAuth         from "./components/agent/RequireAgentAuth";
+import RequireFarmerAuth        from "./components/farmer/RequireFarmerAuth";
 import LandingPage from "./pages/landing/LandingPage";
 import RoleSelect from "./pages/shared/RoleSelect";
 import FarmerSplash from "./pages/farmer/FarmerSplash";
@@ -40,13 +41,62 @@ export default function App() {
         <Route path="/farmer/splash"           element={<FarmerSplash />} />
         <Route path="/farmer/get-started"      element={<FarmerGetStarted />} />
         <Route path="/farmer/verify"           element={<FarmerVerify />} />
-        <Route path="/farmer/home"             element={<FarmerHome />} />
-        <Route path="/farmer/id"               element={<FarmerID />} />
-        <Route path="/farmer/profile"          element={<FarmerProfile />} />
-        <Route path="/farmer/settings"         element={<FarmerSettings />} />
-        <Route path="/farmer/loans"            element={<FarmerComingSoon />} />
-        <Route path="/farmer/support"          element={<FarmerComingSoon />} />
-        <Route path="/farmer/buyers"           element={<FarmerComingSoon />} />
+        <Route
+          path="/farmer/home"
+          element={
+            <RequireFarmerAuth>
+              <FarmerHome />
+            </RequireFarmerAuth>
+          }
+        />
+        <Route
+          path="/farmer/id"
+          element={
+            <RequireFarmerAuth>
+              <FarmerID />
+            </RequireFarmerAuth>
+          }
+        />
+        <Route
+          path="/farmer/profile"
+          element={
+            <RequireFarmerAuth>
+              <FarmerProfile />
+            </RequireFarmerAuth>
+          }
+        />
+        <Route
+          path="/farmer/settings"
+          element={
+            <RequireFarmerAuth>
+              <FarmerSettings />
+            </RequireFarmerAuth>
+          }
+        />
+        <Route
+          path="/farmer/loans"
+          element={
+            <RequireFarmerAuth>
+              <FarmerComingSoon />
+            </RequireFarmerAuth>
+          }
+        />
+        <Route
+          path="/farmer/support"
+          element={
+            <RequireFarmerAuth>
+              <FarmerComingSoon />
+            </RequireFarmerAuth>
+          }
+        />
+        <Route
+          path="/farmer/buyers"
+          element={
+            <RequireFarmerAuth>
+              <FarmerComingSoon />
+            </RequireFarmerAuth>
+          }
+        />
 
         {/* Agent */}
         <Route path="/agent/splash"              element={<AgentSplash />} />

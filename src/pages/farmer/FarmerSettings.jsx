@@ -71,20 +71,47 @@ function ProfileCard({ profile }) {
   );
 }
 
-function SettingsMenu({ onFarmerMode, onLogout }) {
+function SettingsMenu({ modeMenuOpen, setModeMenuOpen, onAgentMode, onLogout }) {
   return (
     <div className="rounded-[20px] bg-white p-3">
       <button
         type="button"
-        onClick={onFarmerMode}
-        className="flex h-14 w-full items-center justify-between rounded-xl px-3 text-left hover:bg-[#F8FAFC]"
+        onClick={() => setModeMenuOpen((value) => !value)}
+        className="flex h-14 w-full items-center rounded-xl px-3 text-left hover:bg-[#F8FAFC]"
       >
         <span className="inline-flex items-center gap-3 font-sans text-[22px] text-[#030F0F]">
           <Tractor size={18} />
           Farmer mode
+          {modeMenuOpen ? (
+            <ChevronDown size={18} className="rotate-180 text-[#030F0F]/70 transition-transform" />
+          ) : (
+            <ChevronDown size={18} className="text-[#030F0F]/70 transition-transform" />
+          )}
         </span>
-        <ChevronDown size={18} className="text-[#030F0F]/70" />
       </button>
+      {modeMenuOpen && (
+        <div className="ml-8 mb-1 w-[180px] rounded-[16px] border border-[#E9EDF1] bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+          <button
+            type="button"
+            onClick={() => setModeMenuOpen(false)}
+            className="flex h-11 w-full items-center gap-3 rounded-xl px-3 font-sans text-base text-[#030F0F] hover:bg-[#F8FAFC]"
+          >
+            <Tractor size={16} />
+            Farmer mode
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setModeMenuOpen(false);
+              onAgentMode();
+            }}
+            className="flex h-11 w-full items-center gap-3 rounded-xl px-3 font-sans text-base text-[#030F0F] hover:bg-[#F8FAFC]"
+          >
+            <Users size={16} />
+            Agent mode
+          </button>
+        </div>
+      )}
       <button
         type="button"
         onClick={onLogout}
@@ -104,7 +131,7 @@ function BecomeAgentForm({ email, setEmail, bvn, setBvn, fileName, onChooseFile,
         <ArrowLeft size={16} />
         Go back
       </button>
-      <h2 className="font-display text-[48px] font-bold leading-[56px] text-[#030F0F]">Become an agent</h2>
+      <h2 className="font-display text-[36px] font-bold leading-[44px] text-[#030F0F]">Become an agent</h2>
       <p className="mt-2 font-sans text-[20px] leading-[28px] text-[#030F0F]/75">
         Complete your verification to activate your agent account and start operating as a field agent.
       </p>
@@ -200,6 +227,7 @@ export default function FarmerSettings() {
   const [email, setEmail] = useState("");
   const [bvn, setBvn] = useState("");
   const [fileName, setFileName] = useState("");
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
 
   useEffect(() => {
@@ -255,6 +283,7 @@ export default function FarmerSettings() {
   }, [dashboard]);
 
   const openFarmerModeFlow = () => {
+    setModeMenuOpen(false);
     if (mockStatus === "under_review" || mockStatus === "verified" || mockStatus === "failed") {
       setScreen(mockStatus);
       return;
@@ -353,9 +382,14 @@ export default function FarmerSettings() {
 
     return (
       <div>
-        <h1 className="mb-6 font-display text-[40px] font-bold leading-[48px] text-[#030F0F]">Settings</h1>
+        <h1 className="mb-6 font-display text-[36px] font-bold leading-[44px] text-[#030F0F]">Settings</h1>
         <ProfileCard profile={profile} />
-        <SettingsMenu onFarmerMode={openFarmerModeFlow} onLogout={handleLogout} />
+        <SettingsMenu
+          modeMenuOpen={modeMenuOpen}
+          setModeMenuOpen={setModeMenuOpen}
+          onAgentMode={openFarmerModeFlow}
+          onLogout={handleLogout}
+        />
       </div>
     );
   })();
