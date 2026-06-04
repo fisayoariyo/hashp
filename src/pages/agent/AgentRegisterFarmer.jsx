@@ -1167,9 +1167,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
       </div>
 
       <div
-        className={`${footerClass} grid grid-cols-1 gap-3 sm:grid-cols-[auto_auto_auto] sm:items-center ${
-          embedded ? "sm:justify-start" : "sm:justify-center"
-        }`}
+        className={`${footerClass} flex flex-col gap-3 px-0 sm:flex-row sm:gap-4 sm:justify-center sm:items-center`}
       >
         <button
           type="button"
