@@ -409,7 +409,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
               ))}
             </select>
             <p className="mt-2 text-xs text-brand-text-secondary">
-              If the scan fails, pick another finger from the dropdown and try again.
+              Please note: if one finger fails, select another finger. Also ensure the correct finger is properly positioned on the scanner.
             </p>
           </div>
 
@@ -421,10 +421,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
               </p>
             </div>
           </div>
-
-          <p className="mt-5 text-center text-xs font-normal uppercase tracking-[0.3em] text-brand-text-secondary">
-            Please note: if one finger fails, select another finger. Also ensure the correct finger is properly positioned on the scanner.
-          </p>
+          
           {statusMessage ? (
             <p className="mt-3 text-center font-sans text-xs text-brand-text-secondary">{statusMessage}</p>
           ) : null}
