@@ -9,6 +9,7 @@ export default {
           "green-dark": "#0d3d27",
           "green-light": "#1a6645",
           "green-muted": "#e8f4ee",
+          surface: "#f7fafb",
           amber: "#d4900a",
           "amber-light": "#f5a623",
           cream: "#faf9f6",
