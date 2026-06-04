@@ -427,10 +427,6 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             </div>
           </div>
 
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.3em] text-brand-text-secondary">
-            Dropdown only · scan one finger · switch if needed
-          </p>
-
           {statusMessage ? (
             <p className="mt-3 text-center font-sans text-xs text-brand-text-secondary">{statusMessage}</p>
           ) : null}
