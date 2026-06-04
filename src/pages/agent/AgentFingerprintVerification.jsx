@@ -422,8 +422,8 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             </div>
           </div>
 
-          <p className="mt-5 text-center text-xs font-semibold uppercase tracking-[0.3em] text-brand-text-secondary">
-            Dropdown only · scan one finger · switch if needed
+          <p className="mt-5 text-center text-xs font-normal uppercase tracking-[0.3em] text-brand-text-secondary">
+            Please note: if one finger fails, select another finger. Also ensure the correct finger is properly positioned on the scanner.
           </p>
           {statusMessage ? (
             <p className="mt-3 text-center font-sans text-xs text-brand-text-secondary">{statusMessage}</p>
