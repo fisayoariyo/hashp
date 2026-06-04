@@ -106,6 +106,7 @@ export default function StartJourneyLeadForm({
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const formId = `${idPrefix}-form`;
 
   useEffect(() => {
@@ -152,6 +153,15 @@ export default function StartJourneyLeadForm({
   const handleChange = (event) => {
     const { name, value } = event.target;
     setSubmitError("");
+    setFieldErrors((current) => {
+      if (name === "location" && current.location) {
+        return { ...current, location: "" };
+      }
+      if (name === "phone" && current.phone) {
+        return { ...current, phone: "" };
+      }
+      return current;
+    });
     setForm((current) => {
       if (name === "location") {
         return {
@@ -183,11 +193,37 @@ export default function StartJourneyLeadForm({
       setForm(INITIAL_FORM);
       setShowSuccess(true);
     } catch (error) {
-      setSubmitError(getDisplayError(error, "Could not submit your interest right now. Please try again."));
+      const fieldLevel = parseFieldErrors(error);
+      if (Object.keys(fieldLevel).length) {
+        setFieldErrors(fieldLevel);
+      } else {
+        setSubmitError(getDisplayError(error, "Could not submit your interest right now. Please try again."));
+      }
     } finally {
       setSubmitting(false);
     }
   };
+
+  function parseFieldErrors(error) {
+    if (!error || typeof error !== "object") return {};
+    const pieces = [];
+    const body = error.body;
+    if (typeof body === "string") pieces.push(body);
+    if (body && typeof body === "object") {
+      pieces.push(body.message, body.error, body.details);
+      if (typeof body.errors === "string") pieces.push(body.errors);
+    }
+    const text = pieces.filter(Boolean).join(" ");
+    if (!text) return {};
+    const parsed = {};
+    if (/RegisterInterestRequest\.Location/i.test(text) || /Location.*required/i.test(text)) {
+      parsed.location = "Please select a location.";
+    }
+    if (/RegisterInterestRequest\.PhoneNumber/i.test(text) || /PhoneNumber.*len/i.test(text)) {
+      parsed.phone = "Please enter a valid phone number.";
+    }
+    return parsed;
+  }
 
   const submitButtonClass =
     submitVariant === "inline-half"
@@ -253,6 +289,9 @@ export default function StartJourneyLeadForm({
               aria-hidden
             />
           </div>
+          {fieldErrors.location ? (
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.location}</p>
+          ) : null}
         </div>
 
         <div>
@@ -302,6 +341,9 @@ export default function StartJourneyLeadForm({
             onChange={handleChange}
             className="landing-contact-field"
           />
+          {fieldErrors.phone ? (
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p>
+          ) : null}
         </div>
 
         <div>

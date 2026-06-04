@@ -1,0 +1,8 @@
+---
+description: Always reply with a single concise sentence unless the user explicitly asks for more detail.
+alwaysApply: true
+---
+
+# Single-sentence responses
+
+Every response should be one sentence that is direct and precise; do not add extra sentences, sections, or bullet lists unless the user explicitly requests further elaboration.

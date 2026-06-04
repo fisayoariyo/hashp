@@ -16,6 +16,10 @@ function collectErrorText(error) {
   return parts.filter(Boolean).join(" ");
 }
 
+function isAgentPhoneError(text) {
+  return /registered to an agent/i.test(text) || /registered as an agent/i.test(text);
+}
+
 export function parseOtpRetrySeconds(error) {
   const text = collectErrorText(error);
   const tryAgainMatch = text.match(/try again in (\d+)\s*seconds?/i);
@@ -46,6 +50,7 @@ export function getUserFacingError(error, fallback = "Something went wrong. Plea
   const retrySeconds = parseOtpRetrySeconds(error);
   const status = error instanceof CropexHttpError ? error.status : 0;
   const rawMessage = error instanceof Error ? error.message : "";
+  const fullText = collectErrorText(error);
 
   if (retrySeconds != null || status === 429) {
     return {
@@ -82,6 +87,14 @@ export function getUserFacingError(error, fallback = "Something went wrong. Plea
       message: rawMessage,
       retrySeconds: retrySeconds ?? 60,
       isCooldown: true,
+    };
+  }
+
+  if (isAgentPhoneError(fullText)) {
+    return {
+      message: "That phone number is not associated with any farmer account.",
+      retrySeconds: null,
+      isCooldown: false,
     };
   }
 
