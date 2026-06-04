@@ -275,11 +275,11 @@ function Steps({ current }) {
 }
 
 // ── Shared form helpers ────────────────────────────────────
-const Input = ({ value, onChange, placeholder, type = "text", icon }) => (
+const Input = ({ value, onChange, placeholder, type = "text", icon, className = "" }) => (
   <div className="flex items-center input-field gap-3">
     {icon && <span className="text-brand-text-muted shrink-0">{icon}</span>}
     <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-      className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
+      className={`flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted ${className}`} />
   </div>
 );
 const Sel = ({ value, onChange, options, placeholder }) => (
@@ -797,7 +797,7 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
                   addCrop(event.target.value);
                   event.target.value = "";
                 }}
-                className="text-xs text-brand-text-muted bg-transparent focus:outline-none cursor-pointer"
+                className="dropdown-field text-xs font-semibold min-w-[110px]"
               >
                 <option value="">+</option>
                 {CROP_OPTIONS.filter((crop) => !form.primaryCrops.includes(crop)).map((crop) => (
@@ -1048,7 +1048,12 @@ function CoopStep({ onNext, onBack, embedded, stateOptions }) {
             <Sel value={form.role} onChange={set("role")} options={["Member","Secretary","Chairman","Treasurer"]} />
           </F>
           <F label="Date Joined">
-            <Input value={form.joinedDate} onChange={set("joinedDate")} placeholder="DD/MM/YYYY" />
+            <Input
+              type="date"
+              value={form.joinedDate}
+              onChange={set("joinedDate")}
+              className="bg-white"
+            />
           </F>
           <F label="LGA of Cooperative">
             <Sel
