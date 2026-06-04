@@ -1111,8 +1111,8 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
 
   const footerClass =
     embedded
-      ? "mt-6 pt-4 border-t border-brand-border space-y-3 w-full shrink-0"
-      : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3 z-10";
+      ? "mt-6 pt-4 border-t border-brand-border w-full shrink-0"
+      : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 z-10";
   const scrollPb = embedded ? "pb-4" : "pb-36";
   const rootClass = embedded
     ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
