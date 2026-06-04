@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSessionExpiry } from "../../hooks/useSessionExpiry";
 import { CheckCircle2, ChevronRight, Home, Plus, Settings, UserPlus, Search, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import {
@@ -109,6 +110,7 @@ export function AgentBottomNav() {
 // ── Main component ────────────────────────────────────────
 export default function AgentHome() {
   const navigate = useNavigate();
+  useSessionExpiry("/agent/login");
   const [syncing,    setSyncing]    = useState(false);
   const [syncDone,   setSyncDone]   = useState(false);
   const [syncError,  setSyncError]  = useState("");

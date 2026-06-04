@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Headset, Home, Plus, Wifi } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getAgentDashboard, getAgentSession } from "../../services/cropexApi";
+import { useSessionExpiry } from "../../hooks/useSessionExpiry";
 
 // ── Custom sidebar icon assets ────────────────────────────
 import tractorIcon from "../../assets/comps/tractor.svg";
@@ -16,6 +17,7 @@ const NAV_LINKS = [
 
 export default function AgentDesktopShell({ active = "dashboard", isOnline = true, children }) {
   const navigate = useNavigate();
+  useSessionExpiry("/agent/login");
   const session = getAgentSession();
   const [dashboard, setDashboard] = useState(null);
 

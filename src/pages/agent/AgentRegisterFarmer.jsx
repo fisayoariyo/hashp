@@ -39,6 +39,10 @@ const DRAFT_KEY  = "hcx_reg_draft";
 const getDraft   = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
 const setDraft   = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...getDraft(), ...d })); } catch {} };
 const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
+const hasDraft   = () => {
+  const d = getDraft();
+  return !!(d.personal?.fullName || d.personal?.nin || d.personal?.phone || d.enrollment?.sessionId);
+};
 const readString = (...values) => {
   for (const value of values) {
     if (typeof value === "string" && value.trim()) return value.trim();
@@ -353,7 +357,7 @@ function FPIcon({ color = "#9ca3af", size = 20 }) {
 
 // ── RF01: Start screen ─────────────────────────────────────
 // Icons: green rounded-square with white SVG icon (matches Figma RF01)
-function StartScreen({ onStart, onBack, embedded }) {
+function StartScreen({ onStart, onBack, embedded, onResume, hasPendingDraft }) {
   const STEPS = [
     {
       label: "Biometric Capture",
@@ -429,7 +433,32 @@ function StartScreen({ onStart, onBack, embedded }) {
     </>
   );
 
-  const startBtn = (
+  const draftBanner = hasPendingDraft && (
+    <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <p className="font-sans text-sm font-semibold text-amber-900 mb-1">Unfinished registration found</p>
+      <p className="font-sans text-xs text-amber-700 mb-4">
+        You have a registration in progress. Would you like to continue where you left off, or start a new one?
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={onResume}
+          className="flex-1 rounded-[18px] bg-brand-green py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Continue registration
+        </button>
+        <button
+          type="button"
+          onClick={onStart}
+          className="flex-1 rounded-[18px] border border-brand-border bg-white py-3 text-sm font-semibold text-brand-text-primary transition-colors hover:bg-brand-page-bg"
+        >
+          Start new
+        </button>
+      </div>
+    </div>
+  );
+
+  const startBtn = !hasPendingDraft && (
     <button type="button" onClick={onStart} className="btn-primary w-full max-w-xs px-8">
       Start Registration
     </button>
@@ -438,20 +467,30 @@ function StartScreen({ onStart, onBack, embedded }) {
   if (embedded) {
     return (
       <div className="flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]">
-        <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">{body}</div>
-        <div className="shrink-0 pt-4 border-t border-brand-border flex justify-center">
-          {startBtn}
+        <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">
+          {draftBanner}
+          {body}
         </div>
+        {startBtn && (
+          <div className="shrink-0 pt-4 border-t border-brand-border flex justify-center">
+            {startBtn}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="page-container">
-      <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">{body}</div>
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex justify-center">
-        {startBtn}
+      <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">
+        {draftBanner}
+        {body}
       </div>
+      {startBtn && (
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex justify-center">
+          {startBtn}
+        </div>
+      )}
     </div>
   );
 }
@@ -1344,6 +1383,7 @@ export default function AgentRegisterFarmer() {
   );
   const [startingEnrollment, setStartingEnrollment] = useState(false);
   const [enrollmentStartError, setEnrollmentStartError] = useState("");
+  const [pendingDraft] = useState(() => hasDraft());
 
   const goHome = () => navigate("/agent/home");
   const agentSession = getAgentSession();
@@ -1506,10 +1546,21 @@ export default function AgentRegisterFarmer() {
     }
   };
 
-  const handleStartEnrollment = async () => {
+  const handleResumeDraft = () => {
+    const savedSessionId = readString(getDraft()?.enrollment?.sessionId);
+    if (savedSessionId) setEnrollmentSessionId(savedSessionId);
+    setStep("biometric");
+  };
+
+  const handleStartEnrollment = async (clearExisting = false) => {
     if (startingEnrollment) return;
     setEnrollmentStartError("");
-    if (enrollmentSessionId) {
+    if (clearExisting) {
+      clearDraft();
+      setFaceCapture("idle");
+      setFingerCapture("idle");
+      setEnrollmentSessionId("");
+    } else if (enrollmentSessionId) {
       setStep("biometric");
       return;
     }
@@ -1579,10 +1630,16 @@ export default function AgentRegisterFarmer() {
   }
 
   if (step === "start") {
+    const startProps = {
+      onStart: () => handleStartEnrollment(true),
+      onResume: handleResumeDraft,
+      hasPendingDraft: pendingDraft,
+      onBack: goHome,
+    };
     return (
       <>
         <div className="md:hidden">
-          <StartScreen onStart={handleStartEnrollment} onBack={goHome} />
+          <StartScreen {...startProps} />
           {enrollmentStartError ? (
             <p className="px-4 pb-3 text-sm text-red-600">{enrollmentStartError}</p>
           ) : null}
@@ -1592,7 +1649,7 @@ export default function AgentRegisterFarmer() {
         </div>
         <AgentDesktopShell active="farmers">
           <div className="w-full max-w-[862.81px]">
-            <StartScreen embedded onStart={handleStartEnrollment} onBack={goHome} />
+            <StartScreen embedded {...startProps} />
             {enrollmentStartError ? (
               <p className="px-4 pb-3 text-sm text-red-600">{enrollmentStartError}</p>
             ) : null}

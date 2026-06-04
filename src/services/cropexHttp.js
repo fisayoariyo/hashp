@@ -1,6 +1,15 @@
 const DEFAULT_CROPEX_BASE_URL = "https://hashmaramala-production.up.railway.app";
 const API_PROXY_PREFIX = "/api";
 
+// Broadcast a session-expired event so any mounted component can redirect
+function broadcastSessionExpired() {
+  try {
+    window.dispatchEvent(new CustomEvent("cropex:session-expired"));
+  } catch {
+    /* ignore in non-browser environments */
+  }
+}
+
 function resolveProxyBaseUrl() {
   if (typeof window !== "undefined" && window.location?.origin) {
     return `${window.location.origin}${API_PROXY_PREFIX}`;
@@ -166,6 +175,9 @@ export async function cropexFetch(path, opts = {}) {
 
   const parsedBody = await parseCropexBody(response);
   if (!response.ok) {
+    if (response.status === 401) {
+      broadcastSessionExpired();
+    }
     throw new CropexHttpError(getErrorMessage(response.status, parsedBody), response.status, parsedBody);
   }
 

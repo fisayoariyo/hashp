@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import PasswordField from "../../components/PasswordField";
@@ -23,11 +23,13 @@ import {
 
 export default function AgentLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
+  const sessionExpired = location.state?.sessionExpired === true;
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState("");
 
@@ -116,6 +118,11 @@ export default function AgentLogin() {
 
   const formFields = (
     <div className="space-y-5">
+      {sessionExpired && (
+        <div className="mb-4 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
+          Your session has expired. Please log in again to continue.
+        </div>
+      )}
       {banner && (
         <div className="mb-4 px-4 py-3 rounded-2xl bg-green-50 text-green-700 text-sm font-medium">
           {banner}
