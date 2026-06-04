@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import {
   acquireDigitalPersonaFmd,
   createDigitalPersonaWebApi,
@@ -48,14 +48,16 @@ function StatusLegendDot({ state }) {
 
 function FingerprintPrint() {
   return (
-    <div className="mx-auto flex max-w-[180px] flex-col items-center justify-center rounded-[24px] border border-brand-border bg-brand-surface/80 p-6 shadow-sm">
-      <img
-        src="/landing/icons/finger-access.svg"
-        alt="Fingerprint icon"
-        className="h-[96px] w-[96px]"
-        aria-hidden="false"
-      />
-      <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.2em] text-brand-text-secondary">
+    <div className="mx-auto flex w-full max-w-[220px] flex-col items-center gap-3">
+      <div className="flex h-[110px] w-[110px] items-center justify-center rounded-full border border-brand-border bg-brand-surface/80">
+        <img
+          src="/landing/icons/finger-access.svg"
+          alt=""
+          className="h-[64px] w-[64px]"
+          aria-hidden="true"
+        />
+      </div>
+      <p className="text-center text-xs font-semibold uppercase tracking-[0.4em] text-brand-text-secondary">
         Fingerprint
       </p>
     </div>
@@ -330,29 +332,27 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
   };
 
   const shell = (
-    <div className="min-h-screen bg-gradient-to-b from-white via-brand-page-bg to-white px-4 py-5">
-      <div className="mx-auto w-full max-w-[720px]">
-        <div className="mb-4">
+    <div className="min-h-screen bg-gradient-to-b from-brand-page-bg/80 via-brand-page-bg to-brand-page-bg px-4 py-8">
+      <div className="mx-auto w-full max-w-[720px] rounded-[32px] bg-brand-page-bg/70 px-6 py-8 shadow-sm">
+        <div className="mb-5 text-center">
           <button
             type="button"
             onClick={onBack}
-            className="mb-3 inline-flex items-center gap-1.5 font-sans text-sm text-brand-text-secondary"
+            className="mb-2 inline-flex items-center gap-1.5 font-sans text-sm text-brand-text-secondary"
           >
             <ArrowLeft size={16} />
             Go back
           </button>
-          <div className="w-full text-center">
-            <h1 className="font-heading text-[40px] leading-[46px] font-semibold text-brand-text-primary">
-              Fingerprint Verification
-            </h1>
-            <p className="font-sans text-sm text-brand-text-secondary">
-              Capture a single fingerprint to verify identity (DigitalPersona U.are.U)
-            </p>
-          </div>
+          <h1 className="font-heading text-[40px] leading-[46px] font-semibold text-brand-text-primary">
+            Fingerprint Verification
+          </h1>
+          <p className="font-sans text-sm text-brand-text-secondary">
+            Capture a single fingerprint to verify identity (DigitalPersona U.are.U)
+          </p>
         </div>
 
-        <div className="rounded-[20px] border border-brand-border bg-white px-5 py-6 shadow-sm">
-          <div className="mb-4 text-center">
+        <div className="space-y-6">
+          <div className="text-center">
             <p className="font-sans text-sm font-semibold text-brand-text-primary">
               Fingerprint scan status guide
             </p>
@@ -374,7 +374,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
 
           <FingerprintPrint />
 
-          <div className="mt-5 text-center">
+          <div className="text-center space-y-1">
             <p className="font-sans text-[28px] leading-[34px] text-brand-text-primary">
               {scanning
                 ? `Scanning ${currentFinger?.label || "finger"}...`
@@ -389,31 +389,36 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             </p>
           </div>
 
-          <div className="mt-6">
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-brand-text-secondary">
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-text-secondary">
               Select a finger
             </label>
-            <select
-              value={selectedFingerId}
-              onChange={(event) => {
-                setSelectedFingerId(event.target.value);
-                setStatusMessage("");
-              }}
-              className="w-full appearance-none rounded-[18px] border border-brand-border bg-brand-surface/60 px-3 py-2 text-sm font-sans font-semibold text-brand-text-primary focus:border-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40"
-              disabled={scanning || allDone}
-            >
-              {FINGER_OPTIONS.map((finger) => (
-                <option key={finger.id} value={finger.id}>
-                  {finger.label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-2 text-xs text-brand-text-secondary">
-              Please note: if one finger fails, select another finger. Also ensure the correct finger is properly positioned on the scanner.
+            <div className="relative">
+              <select
+                value={selectedFingerId}
+                onChange={(event) => {
+                  setSelectedFingerId(event.target.value);
+                  setStatusMessage("");
+                }}
+                className="w-full appearance-none rounded-[18px] border border-brand-border bg-brand-surface/70 px-4 py-3 text-sm font-sans font-semibold text-brand-text-primary focus:border-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40"
+                disabled={scanning || allDone}
+              >
+                {FINGER_OPTIONS.map((finger) => (
+                  <option key={finger.id} value={finger.id}>
+                    {finger.label}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-secondary">
+                <ChevronDown size={18} strokeWidth={3} />
+              </span>
+            </div>
+            <p className="text-xs text-brand-text-secondary">
+              Only one scan required; switch fingers here if the current choice fails.
             </p>
           </div>
 
-          <div className="mt-5 flex items-center justify-center">
+          <div className="flex items-center justify-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-brand-green/25 bg-brand-green/10 px-3 py-1.5">
               <StatusLegendDot state="success" />
               <p className="font-sans text-xs font-semibold text-brand-green">
@@ -421,7 +426,11 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
               </p>
             </div>
           </div>
-          
+
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.3em] text-brand-text-secondary">
+            Dropdown only · scan one finger · switch if needed
+          </p>
+
           {statusMessage ? (
             <p className="mt-3 text-center font-sans text-xs text-brand-text-secondary">{statusMessage}</p>
           ) : null}
@@ -430,7 +439,9 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
               Loading DigitalPersona Web SDK…
             </p>
           ) : null}
-          {scannerError ? <p className="mt-3 text-center font-sans text-sm text-red-600">{scannerError}</p> : null}
+          {scannerError ? (
+            <p className="mt-3 text-center font-sans text-sm text-red-600">{scannerError}</p>
+          ) : null}
         </div>
 
         <div className="mt-7 flex items-center justify-center gap-3">
