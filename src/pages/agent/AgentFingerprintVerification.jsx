@@ -9,12 +9,20 @@ import {
 } from "../../services/digitalPersonaFingerprint";
 import { getEnrollmentBiometricStatus, submitEnrollmentFingerprint } from "../../services/cropexApi";
 
-const SCAN_ORDER = [
+const FINGER_OPTIONS = [
   { id: "right_thumb", label: "Right Thumb" },
   { id: "right_index", label: "Right Index" },
+  { id: "right_middle", label: "Right Middle" },
+  { id: "right_ring", label: "Right Ring" },
+  { id: "right_little", label: "Right Little" },
   { id: "left_thumb", label: "Left Thumb" },
   { id: "left_index", label: "Left Index" },
+  { id: "left_middle", label: "Left Middle" },
+  { id: "left_ring", label: "Left Ring" },
+  { id: "left_little", label: "Left Little" },
 ];
+
+const TOTAL_SCANS_REQUIRED = 1;
 
 const READER_CONNECT_TIMEOUT_MS = 25000;
 
@@ -23,13 +31,6 @@ const STATUS_COLORS = {
   scanning: "#d4900a",
   success: "#155235",
   failed: "#ef4444",
-};
-
-const FINGER_POINTS = {
-  left_thumb: { cx: 32, cy: 88, labelX: 16, labelY: 108, anchor: "start" },
-  left_index: { cx: 58, cy: 36, labelX: 58, labelY: 20, anchor: "middle" },
-  right_index: { cx: 142, cy: 36, labelX: 142, labelY: 20, anchor: "middle" },
-  right_thumb: { cx: 168, cy: 88, labelX: 184, labelY: 108, anchor: "end" },
 };
 
 function StatusLegendDot({ state }) {
@@ -66,53 +67,19 @@ function FingerRow({ label, state, active }) {
   );
 }
 
-function HandsDiagram({ fingerStates, activeFingerId }) {
-  const stroke = "#e5e7eb";
-  const fill = "white";
+function FingerprintPrint() {
   return (
-    <svg viewBox="0 0 200 130" className="mx-auto w-full max-w-[380px]" aria-hidden="true">
-      <rect x="40" y="42" width="12" height="34" rx="6" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      <rect x="52" y="28" width="12" height="48" rx="6" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      <rect x="64" y="42" width="12" height="34" rx="6" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      <rect x="28" y="72" width="52" height="36" rx="12" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      <rect x="18" y="84" width="18" height="10" rx="5" fill={fill} stroke={stroke} strokeWidth="1.4" transform="rotate(-20 27 89)" />
-
-      <rect x="124" y="42" width="12" height="34" rx="6" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      <rect x="136" y="28" width="12" height="48" rx="6" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      <rect x="148" y="42" width="12" height="34" rx="6" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      <rect x="120" y="72" width="52" height="36" rx="12" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      <rect x="164" y="84" width="18" height="10" rx="5" fill={fill} stroke={stroke} strokeWidth="1.4" transform="rotate(20 173 89)" />
-
-      {SCAN_ORDER.map((finger) => {
-        const point = FINGER_POINTS[finger.id];
-        const state = fingerStates[finger.id];
-        const active = activeFingerId === finger.id;
-        const effectiveState = active ? "scanning" : state;
-        const color = STATUS_COLORS[effectiveState] || STATUS_COLORS.idle;
-        return (
-          <g key={finger.id}>
-            <circle cx={point.cx} cy={point.cy} r="8.5" fill="white" stroke={color} strokeWidth="2" />
-            <path
-              d={`M ${point.cx - 3} ${point.cy + 1} q 3 -5 6 0 M ${point.cx - 4.5} ${point.cy + 3.5} q 4.5 -7 9 0`}
-              stroke={color}
-              strokeWidth="1.2"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <text
-              x={point.labelX}
-              y={point.labelY}
-              textAnchor={point.anchor}
-              fontSize="7.5"
-              fill="#6b7280"
-              fontFamily="sans-serif"
-            >
-              {finger.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <div className="mx-auto flex max-w-[180px] flex-col items-center justify-center rounded-[24px] border border-brand-border bg-brand-surface/80 p-6 shadow-sm">
+      <img
+        src="/landing/icons/finger-access.svg"
+        alt="Fingerprint icon"
+        className="h-[96px] w-[96px]"
+        aria-hidden="false"
+      />
+      <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.2em] text-brand-text-secondary">
+        Fingerprint
+      </p>
+    </div>
   );
 }
 
@@ -138,11 +105,6 @@ function applyBackendFingerRows(previous, rows) {
   return next;
 }
 
-function nextPendingScanIndex(states) {
-  const nextIndex = SCAN_ORDER.findIndex((finger) => states[finger.id] !== "success");
-  return nextIndex === -1 ? SCAN_ORDER.length - 1 : nextIndex;
-}
-
 export default function AgentFingerprintVerification({ onSuccess, onBack, embedded, sessionId }) {
   const webApiRef = useRef(null);
   const readerTimerRef = useRef(null);
@@ -155,9 +117,9 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
   const [scannerError, setScannerError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [scanning, setScanning] = useState(false);
-  const [scanIndex, setScanIndex] = useState(0);
+  const [selectedFingerId, setSelectedFingerId] = useState(FINGER_OPTIONS[0].id);
   const [fingerStates, setFingerStates] = useState(
-    Object.fromEntries(SCAN_ORDER.map((finger) => [finger.id, "idle"]))
+    Object.fromEntries(FINGER_OPTIONS.map((finger) => [finger.id, "idle"]))
   );
 
   useEffect(() => {
@@ -259,11 +221,13 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
         const rows = Array.isArray(statusData.fingers) ? statusData.fingers : [];
         if (rows.length > 0) {
           const restoredStates = applyBackendFingerRows(
-            Object.fromEntries(SCAN_ORDER.map((finger) => [finger.id, "idle"])),
+            Object.fromEntries(FINGER_OPTIONS.map((finger) => [finger.id, "idle"])),
             rows
           );
           setFingerStates((prev) => applyBackendFingerRows(prev, rows));
-          setScanIndex(nextPendingScanIndex(restoredStates));
+          const nextPreferred =
+            FINGER_OPTIONS.find((finger) => restoredStates[finger.id] !== "success") || FINGER_OPTIONS[0];
+          setSelectedFingerId(nextPreferred.id);
         }
       } catch (error) {
         if (!mounted) return;
@@ -284,8 +248,8 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
   }, [sessionId]);
 
   const completedCount = Object.values(fingerStates).filter((state) => state === "success").length;
-  const allDone = completedCount >= SCAN_ORDER.length;
-  const currentFinger = SCAN_ORDER[scanIndex];
+  const allDone = completedCount >= TOTAL_SCANS_REQUIRED;
+  const currentFinger = FINGER_OPTIONS.find((finger) => finger.id === selectedFingerId);
 
   const captureCurrent = async () => {
     if (!sessionId || !currentFinger || scanning) return;
@@ -346,8 +310,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
           ? applyBackendFingerRows(prev, rows)
           : { ...prev, [currentFinger.id]: success ? "success" : "failed" }
       );
-      setScanIndex(nextPendingScanIndex(nextStates));
-      setStatusMessage(success ? `${currentFinger.label} captured.` : `${currentFinger.label} failed, retry.`);
+      setStatusMessage(success ? `${currentFinger.label} captured.` : `${currentFinger.label} failed, choose another finger.`);
     } catch (error) {
       if (activeCaptureIdRef.current !== captureId) return;
       logCaptureDebug("capture:failed", {
@@ -404,7 +367,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
               Fingerprint Verification
             </h1>
             <p className="font-sans text-sm text-brand-text-secondary">
-              Scan each finger to complete identity verification (DigitalPersona U.are.U)
+              Capture a single fingerprint to verify identity (DigitalPersona U.are.U)
             </p>
           </div>
         </div>
@@ -430,7 +393,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             </div>
           </div>
 
-          <HandsDiagram fingerStates={fingerStates} activeFingerId={scanning ? currentFinger?.id : ""} />
+          <FingerprintPrint />
 
           <div className="mt-5 text-center">
             <p className="font-sans text-[28px] leading-[34px] text-brand-text-primary">
@@ -447,17 +410,41 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             </p>
           </div>
 
+          <div className="mt-6">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-brand-text-secondary">
+              Select a finger
+            </label>
+            <select
+              value={selectedFingerId}
+              onChange={(event) => {
+                setSelectedFingerId(event.target.value);
+                setStatusMessage("");
+              }}
+              className="w-full rounded-xl border border-brand-border bg-white px-3 py-2 text-sm font-sans text-brand-text-primary focus:border-brand-blue focus:outline-none"
+              disabled={scanning || allDone}
+            >
+              {FINGER_OPTIONS.map((finger) => (
+                <option key={finger.id} value={finger.id}>
+                  {finger.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-brand-text-secondary">
+              If the scan fails, pick another finger from the dropdown and try again.
+            </p>
+          </div>
+
           <div className="mt-5 flex items-center justify-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-brand-green/25 bg-brand-green/10 px-3 py-1.5">
               <StatusLegendDot state="success" />
               <p className="font-sans text-xs font-semibold text-brand-green">
-                Completed Scans: {completedCount}/4
+                Completed Scans: {Math.min(completedCount, TOTAL_SCANS_REQUIRED)}/{TOTAL_SCANS_REQUIRED}
               </p>
             </div>
           </div>
 
           <div className="mx-auto mt-5 w-full max-w-[520px] space-y-2">
-            {SCAN_ORDER.map((finger) => (
+            {FINGER_OPTIONS.map((finger) => (
               <FingerRow
                 key={finger.id}
                 label={finger.label}
