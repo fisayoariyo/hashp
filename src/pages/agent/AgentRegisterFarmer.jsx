@@ -284,7 +284,7 @@ const Input = ({ value, onChange, placeholder, type = "text", icon }) => (
 );
 const Sel = ({ value, onChange, options, placeholder }) => (
   <div className="relative">
-    <select value={value} onChange={onChange} className="input-field appearance-none pr-8 w-full">
+    <select value={value} onChange={onChange} className="dropdown-field pr-10">
       <option value="">{placeholder || "Select"}</option>
       {toSelectOptions(options).map((option) => (
         <option key={`${option.value}-${option.label}`} value={option.value}>
@@ -292,7 +292,7 @@ const Sel = ({ value, onChange, options, placeholder }) => (
         </option>
       ))}
     </select>
-    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-muted pointer-events-none" />
+    <ChevronDown size={18} strokeWidth={3} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-muted pointer-events-none" />
   </div>
 );
 const F = ({ label, required = false, children }) => (
@@ -965,9 +965,7 @@ function CoopStep({ onNext, onBack, embedded, stateOptions }) {
     lgaId: "",
     lga: "",
     commodity: "",
-    size: "",
     landType: "",
-    supplier: "",
     ...d,
   });
   const [lgaOptions, setLgaOptions] = useState([]);
@@ -1063,14 +1061,8 @@ function CoopStep({ onNext, onBack, embedded, stateOptions }) {
           <F label="Commodity Focus">
             <Input value={form.commodity} onChange={set("commodity")} placeholder="e.g. Maize, Cassava" />
           </F>
-          <F label="Cooperative Size">
-            <Input value={form.size} onChange={set("size")} placeholder="Enter number of members" />
-          </F>
           <F label="Land Ownership Type">
             <Sel value={form.landType} onChange={set("landType")} options={["Owned","Leased","Communal","Family"]} placeholder="Select" />
-          </F>
-          <F label="Input Supplier Name">
-            <Input value={form.supplier} onChange={set("supplier")} placeholder="Enter supplier name" />
           </F>
         </div>
       </div>
@@ -1165,9 +1157,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
           ["Date Joined",         c.joinedDate],
           ["LGA",                 c.lga],
           ["Commodity Focus",     c.commodity],
-          ["Cooperative Size",    c.size ? `${c.size} members` : undefined],
           ["Land Ownership Type", c.landType],
-          ["Input Supplier Name", c.supplier],
         ]} />
       </div>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Mail, Phone, User } from "lucide-react";
+import { ArrowLeft, Mail, Phone, User, ChevronDown } from "lucide-react";
 import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import { AgentBottomNav } from "./AgentHome";
@@ -91,16 +91,14 @@ export default function AgentContactSupport() {
               <select
                 value={issueType}
                 onChange={(event) => setIssueType(event.target.value)}
-                className="h-[52px] w-full appearance-none rounded-[15px] border border-[#E6E6E6] bg-white px-4 pr-10 text-[14px] text-[#030F0F] outline-none focus:border-[#03624D]"
+                className="dropdown-field h-[52px] w-full rounded-[15px] px-4 pr-10 text-[14px] text-[#030F0F] font-semibold"
               >
                 <option>Profile Update</option>
                 <option>Farmer Sync Issue</option>
                 <option>Registration Issue</option>
                 <option>Login Issue</option>
               </select>
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#030F0F]/60">
-                &#9662;
-              </span>
+              <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#030F0F]/60" />
             </div>
           </label>
 

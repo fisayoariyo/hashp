@@ -400,7 +400,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
                   setSelectedFingerId(event.target.value);
                   setStatusMessage("");
                 }}
-                className="w-full appearance-none rounded-[18px] border border-brand-border bg-brand-surface/70 px-4 py-3 text-sm font-sans font-semibold text-brand-text-primary focus:border-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40"
+                className="dropdown-field pr-10"
                 disabled={scanning || allDone}
               >
                 {FINGER_OPTIONS.map((finger) => (

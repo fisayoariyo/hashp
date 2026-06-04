@@ -341,7 +341,7 @@ export default function AgentCreateAccount() {
           <select
             value={form.gender}
             onChange={set("gender")}
-            className={`w-full bg-white border rounded-2xl px-4 py-4 text-sm text-brand-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent transition-all pr-10 ${
+            className={`dropdown-field pr-10 text-sm ${
               fieldErrors.gender ? "border-red-400" : "border-brand-border"
             }`}
           >

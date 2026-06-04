@@ -5,7 +5,6 @@ import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import { useAgentFarmersSync } from "../../hooks/useAgentFarmersSync";
 import AgentStatusPanel from "../../components/agent/AgentStatusPanel";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
-import FarmerDigitalIdCard from "../../components/agent/FarmerDigitalIdCard";
 import { getAgentSession } from "../../services/cropexApi";
 import { getDisplayError } from "../../utils/apiErrors";
 
@@ -15,7 +14,7 @@ function FilterPill({ value, onChange, options }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-white border border-brand-border rounded-full py-2 pl-4 pr-9 text-xs font-sans text-brand-text-primary md:h-[36px] md:border-[#E6E6E6]"
+        className="dropdown-field h-[36px] w-[118px] rounded-full px-3 pr-10 text-xs font-semibold text-brand-text-primary"
       >
         {options.map((opt) => (
           <option key={`${opt.value}-${opt.label}`} value={opt.value}>
@@ -220,40 +219,40 @@ function ListScreen({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-[32px] w-[95px] appearance-none rounded-[10px] border border-[#E6E6E6] bg-white pl-3 pr-8 text-[14px] text-[#737373]"
+            className="dropdown-field h-[32px] w-[95px] px-3 text-[14px] font-semibold text-brand-text-primary rounded-[14px] pr-8 border-brand-border"
           >
             <option value="all">Status</option>
             <option value="synced">Synced</option>
             <option value="pending">Sync pending</option>
           </select>
-          <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#111827]" />
+          <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-text-muted" />
         </div>
         <div className="relative">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="h-[32px] w-[95px] appearance-none rounded-[10px] border border-[#E6E6E6] bg-white pl-3 pr-8 text-[14px] text-[#737373]"
+            className="dropdown-field h-[32px] w-[95px] px-3 text-[14px] font-semibold text-brand-text-primary rounded-[14px] pr-8 border-brand-border"
           >
             <option value="date-desc">Sort by</option>
             <option value="date-desc">Newest</option>
             <option value="date-asc">Oldest</option>
             <option value="name">Name</option>
           </select>
-          <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#111827]" />
+          <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-text-muted" />
         </div>
         <div className="relative">
           <select
             value={desktopViewMode}
             onChange={(e) => setDesktopViewMode(e.target.value)}
-            className="h-[32px] w-[150px] appearance-none rounded-[10px] border border-[#E6E6E6] bg-white pl-3 pr-8 text-[14px] text-[#737373]"
+            className="dropdown-field h-[32px] w-[150px] px-3 text-[14px] font-semibold text-brand-text-primary rounded-[14px] pr-10 border-brand-border"
             aria-label="View mode"
           >
             <option value="grid">View Grid</option>
             <option value="list">View List</option>
           </select>
-          <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center gap-1 text-[#374151]">
+          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-1 text-brand-text-muted">
             {desktopViewMode === "list" ? <List size={14} /> : <LayoutGrid size={14} />}
-            <ChevronDown size={14} className="text-[#111827]" />
+            <ChevronDown size={14} className="text-brand-text-muted" />
           </span>
         </div>
       </div>
@@ -385,21 +384,10 @@ function Section({ title, rows }) {
   );
 }
 
-function tabBtnClass(active) {
-  return `flex-1 min-w-[120px] py-2.5 px-4 rounded-full text-sm font-sans font-semibold transition-all border-2 ${
-    active
-      ? "bg-brand-green text-white border-brand-green shadow-sm"
-      : "bg-white text-brand-text-primary border-brand-border hover:border-brand-green/40 hover:bg-brand-green/5"
-  }`;
-}
-
 function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
-  const [tab, setTab] = useState("id");
   const display = { ...farmer };
-  const canViewId = !farmer.offline || farmer.hasOfficialId;
   const session = getAgentSession();
   const agentName = session?.fullName || session?.full_name || "Assigned agent";
-
   const pending = farmer.status === "pending";
 
   const content = (
@@ -408,64 +396,33 @@ function DetailScreen({ farmer, onBack, onSyncFarmer, syncing }) {
         <ArrowLeft size={18} />
         <span className="font-sans text-sm">Go back</span>
       </button>
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display font-bold text-2xl md:text-3xl text-brand-text-primary mb-0.5">Farmer details</h1>
           <p className="font-sans text-xs text-brand-text-secondary">{display.id}</p>
-        </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="rounded-2xl bg-gray-100 p-1 flex gap-1 w-full sm:w-auto sm:min-w-[188px]">
-          <button type="button" onClick={() => setTab("details")} className={tabBtnClass(tab === "details")}>
-            Details
-          </button>
-          {canViewId && (
-            <button type="button" onClick={() => setTab("id")} className={tabBtnClass(tab === "id")}>
-              ID
-            </button>
-          )}
         </div>
         <button
           type="button"
           onClick={() => onSyncFarmer(farmer.id)}
           disabled={!pending || syncing}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#f6bc2f] text-black text-xs font-semibold shrink-0 disabled:opacity-45 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#f6bc2f] px-4 py-2 text-xs font-semibold text-black disabled:opacity-45 disabled:cursor-not-allowed"
         >
           <RefreshCw size={12} className={syncing && pending ? "animate-spin" : ""} />
           {pending ? "Sync now" : "Synced"}
         </button>
       </div>
 
-      {tab === "details" ? (
-        <>
-          <div className="md:grid md:grid-cols-2 md:gap-8">
-            <div>
-              <Section title="Online synchronization" rows={[["Status", farmer.status === "synced" ? "Synced" : "Sync pending"]]} />
-              <Section title="Biometric Information" rows={[["Face", display.biometric?.face ? "Captured" : "Not captured"], ["Fingerprint", display.biometric?.fingerprint ? "Captured" : "Not captured"]]} />
-              <Section title="Personal Information" rows={[["Full Name", display.name], ["Phone", display.phone], ["Gender", display.gender], ["State", display.state], ["LGA", display.lga], ["Address", display.address], ["NIN", display.nin]]} />
-            </div>
-            <div>
-              <Section title="Farm Information" rows={[["Primary Crop", display.primaryCrop], ["Farm Size", display.farmSize], ["Land Ownership", display.landOwnership], ["Reg date", display.regDate]]} />
-              <Section title="Cooperative & Association" rows={[["Name", display.cooperative], ["Agent", agentName]]} />
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <FarmerDigitalIdCard
-            photo={display.photo}
-            name={display.name}
-            farmerId={display.id}
-            cooperativeName={display.cooperative}
-            agentName={agentName}
-            agentSignature="HFEI"
-            issueDate="20/04/2026"
-            expiryDate="20/04/2027"
-            className="mx-0"
-          />
-        </>
-      )}
+      <div className="md:grid md:grid-cols-2 md:gap-8">
+        <div>
+          <Section title="Online synchronization" rows={[["Status", farmer.status === "synced" ? "Synced" : "Sync pending"]]} />
+          <Section title="Biometric Information" rows={[["Face", display.biometric?.face ? "Captured" : "Not captured"], ["Fingerprint", display.biometric?.fingerprint ? "Captured" : "Not captured"]]} />
+          <Section title="Personal Information" rows={[["Full Name", display.name], ["Phone", display.phone], ["Gender", display.gender], ["State", display.state], ["LGA", display.lga], ["Address", display.address], ["NIN", display.nin]]} />
+        </div>
+        <div>
+          <Section title="Farm Information" rows={[["Primary Crop", display.primaryCrop], ["Farm Size", display.farmSize], ["Land Ownership", display.landOwnership], ["Reg date", display.regDate]]} />
+          <Section title="Cooperative & Association" rows={[["Name", display.cooperative], ["Agent", agentName]]} />
+        </div>
+      </div>
     </>
   );
 

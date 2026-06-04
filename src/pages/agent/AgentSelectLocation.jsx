@@ -141,7 +141,7 @@ export default function AgentSelectLocation() {
       {regError && <AgentFormFeedback variant="error">{regError}</AgentFormFeedback>}
       <div className="flex flex-col gap-1.5">
         <label className="block text-left font-sans text-sm font-medium text-brand-text-primary">State</label>
-        <div className="relative">
+          <div className="relative">
           <select
             value={stateId}
             onChange={(event) => {
@@ -152,7 +152,7 @@ export default function AgentSelectLocation() {
               setLga("");
             }}
             disabled={geoLoading && states.length === 0}
-            className="w-full bg-white border border-brand-border rounded-2xl px-4 py-3.5 text-left text-sm text-brand-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50"
+            className="dropdown-field text-left text-sm text-brand-text-primary disabled:opacity-50"
           >
             <option value="">{geoLoading && states.length === 0 ? "Loading states..." : "Select state"}</option>
             {states.map((state) => (
@@ -166,12 +166,12 @@ export default function AgentSelectLocation() {
       </div>
       <div className="flex flex-col gap-1.5">
         <label className="block text-left font-sans text-sm font-medium text-brand-text-primary">Local government</label>
-        <div className="relative">
+          <div className="relative">
           <select
             value={lga}
             onChange={(event) => setLga(event.target.value)}
             disabled={!stateId || (geoLoading && lgas.length === 0)}
-            className="w-full bg-white border border-brand-border rounded-2xl px-4 py-3.5 text-left text-sm text-brand-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50"
+            className="dropdown-field text-left text-sm text-brand-text-primary disabled:opacity-50"
           >
             <option value="">
               {!stateId
