@@ -46,27 +46,6 @@ function StatusLegendDot({ state }) {
   );
 }
 
-function FingerRow({ label, state, active }) {
-  const effectiveState = active ? "scanning" : state;
-  const color = STATUS_COLORS[effectiveState] || STATUS_COLORS.idle;
-  const statusText =
-    effectiveState === "success"
-      ? "Captured"
-      : effectiveState === "failed"
-        ? "Failed"
-        : effectiveState === "scanning"
-          ? "Scanning..."
-          : "Pending";
-  return (
-    <div className="flex items-center justify-between rounded-xl border border-brand-border bg-white px-4 py-3">
-      <p className="font-sans text-sm text-brand-text-primary">{label}</p>
-      <p className="font-sans text-sm font-semibold" style={{ color }}>
-        {statusText}
-      </p>
-    </div>
-  );
-}
-
 function FingerprintPrint() {
   return (
     <div className="mx-auto flex max-w-[180px] flex-col items-center justify-center rounded-[24px] border border-brand-border bg-brand-surface/80 p-6 shadow-sm">
@@ -420,7 +399,7 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
                 setSelectedFingerId(event.target.value);
                 setStatusMessage("");
               }}
-              className="w-full rounded-xl border border-brand-border bg-white px-3 py-2 text-sm font-sans text-brand-text-primary focus:border-brand-blue focus:outline-none"
+              className="w-full appearance-none rounded-[18px] border border-brand-border bg-brand-surface/60 px-3 py-2 text-sm font-sans font-semibold text-brand-text-primary focus:border-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40"
               disabled={scanning || allDone}
             >
               {FINGER_OPTIONS.map((finger) => (
@@ -443,16 +422,9 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
             </div>
           </div>
 
-          <div className="mx-auto mt-5 w-full max-w-[520px] space-y-2">
-            {FINGER_OPTIONS.map((finger) => (
-              <FingerRow
-                key={finger.id}
-                label={finger.label}
-                state={fingerStates[finger.id]}
-                active={scanning && currentFinger?.id === finger.id}
-              />
-            ))}
-          </div>
+          <p className="mt-5 text-center text-xs font-semibold uppercase tracking-[0.3em] text-brand-text-secondary">
+            Dropdown only · scan one finger · switch if needed
+          </p>
           {statusMessage ? (
             <p className="mt-3 text-center font-sans text-xs text-brand-text-secondary">{statusMessage}</p>
           ) : null}
