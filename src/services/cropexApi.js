@@ -631,19 +631,14 @@ export function getGeoLgas(stateId) {
 
 export function submitFarmerInterest({
   fullName,
-  state,
-  stateId,
-  localGovtArea,
+  location,
   phone,
   email,
 } = {}) {
   const body = {
     full_name: readString(fullName),
-    state: readString(state),
-    state_id: readString(stateId),
-    local_govt_area: readString(localGovtArea),
-    lga: readString(localGovtArea),
-    phone_number: formatPhoneForApi(phone),
+    location: readString(location),
+    phone_number: normalizeFarmerInterestPhone(phone),
   };
 
   const normalizedEmail = readString(email);
@@ -754,6 +749,20 @@ export function formatPhoneForApi(digits) {
   if (normalized.startsWith("234")) return `+${normalized}`;
   if (normalized.startsWith("0")) return `+234${normalized.slice(1)}`;
   return `+234${normalized}`;
+}
+
+export function normalizeFarmerInterestPhone(digits) {
+  const normalized = String(digits || "").replace(/\D/g, "");
+  if (!normalized) return "";
+  if (normalized.startsWith("234") && normalized.length > 3) {
+    return `0${normalized.slice(3)}`;
+  }
+  if (normalized.startsWith("+234")) {
+    const stripped = normalized.replace(/^\+/, "");
+    return `0${stripped.slice(3)}`;
+  }
+  if (normalized.startsWith("0") && normalized.length === 11) return normalized;
+  return normalized.length === 10 ? `0${normalized}` : normalized;
 }
 
 export function mapGenderToFarmerApi(gender) {

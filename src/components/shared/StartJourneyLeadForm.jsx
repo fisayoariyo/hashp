@@ -184,9 +184,7 @@ export default function StartJourneyLeadForm({
       const selectedState = stateOptions.find((option) => String(option.id) === String(form.location));
       await submitFarmerInterest({
         fullName: form.fullName,
-        state: selectedState?.name || form.location,
-        stateId: form.location,
-        localGovtArea: form.localGovt,
+        location: selectedState?.name || form.location,
         phone: form.phone,
         email: form.email,
       });
