@@ -179,6 +179,7 @@ export default function StartJourneyLeadForm({
     if (submitting) return;
 
     setSubmitError("");
+    setFieldErrors({});
     setSubmitting(true);
     try {
       const selectedState = stateOptions.find((option) => String(option.id) === String(form.location));
@@ -199,11 +200,11 @@ export default function StartJourneyLeadForm({
       setFieldErrors({});
       setShowSuccess(true);
     } catch (error) {
-      const fieldLevel = parseFieldErrors(error);
-      if (Object.keys(fieldLevel).length) {
-        setFieldErrors(fieldLevel);
-      } else {
-        setSubmitError(getDisplayError(error, "Could not submit your interest right now. Please try again."));
+      const { fieldErrors: parsedFields, formMessage } = normalizeInterestError(error);
+      if (Object.keys(parsedFields).length) {
+        setFieldErrors(parsedFields);
+      } else if (formMessage) {
+        setSubmitError(formMessage);
       }
     } finally {
       setSubmitting(false);
@@ -232,6 +233,20 @@ export default function StartJourneyLeadForm({
       parsed.email = "Please provide a valid email address.";
     }
     return parsed;
+  }
+
+  function normalizeInterestError(error) {
+    const fieldErrors = parseFieldErrors(error);
+    if (Object.keys(fieldErrors).length) {
+      return { fieldErrors, formMessage: "" };
+    }
+    return {
+      fieldErrors: {},
+      formMessage: getDisplayError(
+        error,
+        "Could not submit your interest right now. Please try again.",
+      ),
+    };
   }
 
   const submitButtonClass =
