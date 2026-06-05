@@ -20,7 +20,6 @@ import { getDisplayError } from "../../utils/apiErrors";
 // ── Asset imports ─────────────────────────────────────────
 import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.webp";
 import statFarmersIcon    from "../../assets/comps/tractor.svg";
-import statIdIcon         from "../../assets/comps/id.svg";
 import registerActionIcon from "../../assets/comps/user-add-01.svg";
 import lookupActionIcon   from "../../assets/comps/user-search-01.svg";
 import wifiOffStatusIcon  from "../../assets/comps/wifi-off-02.svg";
@@ -216,10 +215,8 @@ export default function AgentHome() {
 
   const registeredFarmersValue =
     farmersSummary?.totalRegisteredFarmers ?? liveStats?.total_registered_farmers ?? 0;
-  const idsIssuedValue = farmersSummary?.totalIdsIssued ?? liveStats?.total_ids_issued ?? 0;
 
   const registeredFarmersChange = useMemo(() => getChangePct(registeredFarmersValue, 0), [registeredFarmersValue]);
-  const idsIssuedChange = useMemo(() => getChangePct(idsIssuedValue, 0), [idsIssuedValue]);
 
   const handleSync = async () => {
     if (syncCounts.pending === 0) return;
@@ -290,32 +287,8 @@ export default function AgentHome() {
             <p className="relative z-10 font-sans text-white/70 text-sm">Registered Farmers</p>
             <p className="relative z-10 font-display font-bold text-4xl text-white mt-1">{registeredFarmersValue}</p>
           </div>
-          {/* Two half-width cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="relative isolate overflow-hidden rounded-2xl border border-white/10 bg-[#016A53] p-4">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 opacity-[0.45]"
-                style={{
-                  backgroundImage: `url(${cardPatternDesktop})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                }}
-              />
-              <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#016A53]/25 mix-blend-multiply" />
-              <div className="relative z-10 flex items-center justify-between mb-1">
-                <img
-                  src={statIdIcon}
-                  alt=""
-                  aria-hidden="true"
-                  className="h-6 w-6 brightness-0 invert"
-                />
-                <span className="text-xs font-sans font-semibold text-brand-amber bg-brand-amber/20 px-2 py-0.5 rounded-full">+12%</span>
-              </div>
-              <p className="relative z-10 font-sans text-white/70 text-xs">Digital IDs Issued</p>
-              <p className="relative z-10 font-display font-bold text-2xl text-white mt-1">{idsIssuedValue}</p>
-            </div>
+          {/* Pending sync card */}
+          <div className="grid gap-3">
             <div className="relative isolate overflow-hidden rounded-2xl border border-white/10 bg-[#016A53] p-4">
               <div
                 aria-hidden
@@ -476,7 +449,7 @@ export default function AgentHome() {
         <h2 className="mb-5 font-display text-[20px] font-bold leading-6 text-brand-text-primary">
           Registration stats
         </h2>
-        <div className="mb-6 grid w-full grid-cols-3 gap-5">
+        <div className="mb-6 grid w-full grid-cols-2 gap-5">
           <DesktopStatCard
             icon={statFarmersIcon}
             iconClassName="brightness-0 invert"
@@ -485,16 +458,6 @@ export default function AgentHome() {
             badge={
               <span className="inline-flex h-10 items-center rounded-[50px] bg-[#007158] px-4 text-[20px] font-light leading-none text-[#F6F6F6]">
                 {formatChangePct(registeredFarmersChange)}
-              </span>
-            }
-          />
-          <DesktopStatCard
-            icon={statIdIcon}
-            label="Digital IDs Issued"
-            value={idsIssuedValue.toLocaleString()}
-            badge={
-              <span className="inline-flex h-10 items-center rounded-[50px] bg-[#007158] px-4 text-[20px] font-light leading-none text-[#F6F6F6]">
-                {formatChangePct(idsIssuedChange)}
               </span>
             }
           />

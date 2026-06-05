@@ -634,12 +634,36 @@ export function submitFarmerInterest({
   location,
   phone,
   email,
+  stateId,
+  stateName,
+  localGovtId,
+  localGovtName,
 } = {}) {
   const body = {
     full_name: readString(fullName),
     location: readString(location),
     phone_number: normalizeFarmerInterestPhone(phone),
   };
+
+  const normalizedStateId = readString(stateId);
+  if (normalizedStateId) {
+    body.state_id = normalizedStateId;
+  }
+
+  const normalizedStateName = readString(stateName);
+  if (normalizedStateName) {
+    body.state = normalizedStateName;
+  }
+
+  const normalizedLocalGovtId = readString(localGovtId);
+  if (normalizedLocalGovtId) {
+    body.local_govt_id = normalizedLocalGovtId;
+  }
+
+  const normalizedLocalGovtName = readString(localGovtName);
+  if (normalizedLocalGovtName) {
+    body.local_govt = normalizedLocalGovtName;
+  }
 
   const normalizedEmail = readString(email);
   if (normalizedEmail) body.email = normalizedEmail;

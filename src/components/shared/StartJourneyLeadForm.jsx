@@ -157,6 +157,9 @@ export default function StartJourneyLeadForm({
       if (name === "location" && current.location) {
         return { ...current, location: "" };
       }
+      if (name === "localGovt" && current.localGovt) {
+        return { ...current, localGovt: "" };
+      }
       if (name === "phone" && current.phone) {
         return { ...current, phone: "" };
       }
@@ -183,18 +186,23 @@ export default function StartJourneyLeadForm({
     setSubmitting(true);
     try {
       const selectedState = stateOptions.find((option) => String(option.id) === String(form.location));
+      const selectedLga = lgaOptions.find((option) => String(option.id) === String(form.localGovt));
       const locationLabel = [
         selectedState?.name || form.location,
-        form.localGovt,
+        selectedLga?.name,
       ]
         .filter(Boolean)
         .join(" - ");
 
       await submitFarmerInterest({
         fullName: form.fullName,
-        location: locationLabel || selectedState?.name || form.location,
+        location: locationLabel || selectedState?.name || selectedLga?.name || form.location,
         phone: form.phone,
         email: form.email,
+        stateId: selectedState?.id,
+        stateName: selectedState?.name,
+        localGovtId: selectedLga?.id,
+        localGovtName: selectedLga?.name,
       });
       setForm(INITIAL_FORM);
       setFieldErrors({});
@@ -225,6 +233,13 @@ export default function StartJourneyLeadForm({
     const parsed = {};
     if (/RegisterInterestRequest\.Location/i.test(text) || /Location.*required/i.test(text)) {
       parsed.location = "Please select a location.";
+    }
+    if (
+      /RegisterInterestRequest\.LocalGovt/i.test(text) ||
+      /Local\s*Govt.*required/i.test(text) ||
+      /Local\s*Government.*required/i.test(text)
+    ) {
+      parsed.localGovt = "Please select a local govt area.";
     }
     if (/RegisterInterestRequest\.PhoneNumber/i.test(text) || /PhoneNumber.*len/i.test(text)) {
       parsed.phone = "Please enter a valid phone number.";
@@ -338,7 +353,7 @@ export default function StartJourneyLeadForm({
                 {!form.location ? "Select state first" : lgasLoading ? "Loading local govts..." : "Select local govt"}
               </option>
               {lgaOptions.map((option) => (
-                <option key={option.id} value={option.name}>
+                <option key={option.id} value={option.id}>
                   {option.name}
                 </option>
               ))}
@@ -349,6 +364,9 @@ export default function StartJourneyLeadForm({
               aria-hidden
             />
           </div>
+          {fieldErrors.localGovt ? (
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.localGovt}</p>
+          ) : null}
         </div>
 
         <div>
