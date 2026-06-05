@@ -674,23 +674,18 @@ export function submitFarmerInterest({
   });
 }
 
-export function upgradeFarmerToAgent({ email, bvn, profilePhotoFile } = {}) {
-  const formData = new FormData();
-  if (profilePhotoFile) {
-    formData.append("profile_photo", profilePhotoFile);
-  }
+export function upgradeFarmerToAgent({ email, bvn, profilePhotoBase64 } = {}) {
+  const body = {};
   const normalizedEmail = readString(email);
-  if (normalizedEmail) {
-    formData.append("email", normalizedEmail);
-  }
+  if (normalizedEmail) body.email = normalizedEmail;
   const normalizedBvn = readString(bvn);
-  if (normalizedBvn) {
-    formData.append("bvn", normalizedBvn);
-  }
+  if (normalizedBvn) body.bvn = normalizedBvn;
+  const normalizedPhoto = readString(profilePhotoBase64);
+  if (normalizedPhoto) body.profile_photo = normalizedPhoto;
 
   return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/me/upgrade-to-agent", {
     method: "POST",
-    body: formData,
+    body,
   });
 }
 

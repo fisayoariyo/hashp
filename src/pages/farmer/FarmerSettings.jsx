@@ -270,8 +270,8 @@ export default function FarmerSettings() {
   const [fileName, setFileName] = useState("");
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
-  const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
+  const [photoBase64, setPhotoBase64] = useState("");
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -305,14 +305,6 @@ export default function FarmerSettings() {
     setMockStatus(stored);
     if (stored !== "none") setScreen(stored);
   }, [location.search]);
-
-  useEffect(() => {
-    return () => {
-      if (photoPreview) {
-        URL.revokeObjectURL(photoPreview);
-      }
-    };
-  }, [photoPreview]);
 
   const profile = useMemo(() => {
     const farmer = dashboard?.farmer || {};
@@ -348,9 +340,21 @@ export default function FarmerSettings() {
     const file = event.target.files?.[0];
     if (!file) return;
     setFileName(file.name || "");
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
     setFormError("");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        setPhotoPreview(result);
+        setPhotoBase64(result.split(",")[1] ?? result);
+      }
+    };
+    reader.onerror = () => {
+      setPhotoPreview("");
+      setPhotoBase64("");
+      setFormError("Unable to read the selected file.");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleFormSubmit = async () => {
@@ -361,7 +365,7 @@ export default function FarmerSettings() {
       setFormError("Email and BVN are required.");
       return;
     }
-    if (!photoFile) {
+    if (!photoBase64) {
       setFormError("Please upload your photo.");
       return;
     }
@@ -372,14 +376,14 @@ export default function FarmerSettings() {
       await upgradeFarmerToAgent({
         email: normalizedEmail,
         bvn: normalizedBvn,
-        profilePhotoFile: photoFile,
+        profilePhotoBase64: photoBase64,
       });
       setMockStatus("under_review");
       writeMockStatus("under_review");
       setScreen("under_review");
       setFileName("");
-      setPhotoFile(null);
       setPhotoPreview("");
+      setPhotoBase64("");
     } catch (error) {
       setFormError(getDisplayError(error, "We could not upgrade your account right now."));
     } finally {
