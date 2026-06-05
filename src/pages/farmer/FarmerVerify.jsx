@@ -1,4 +1,4 @@
-import { createRef, useEffect, useMemo, useRef, useState } from "react";
+import { createRef, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Smartphone, ArrowLeft } from "lucide-react";
 import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
@@ -13,6 +13,7 @@ import { formatPhoneForDisplay } from "../../utils/helpers";
 import { getDisplayError } from "../../utils/apiErrors";
 
 const OTP_LENGTH = 6;
+const RESEND_SECONDS = 60;
 
 const FARMER_LOGIN_LAYOUT_PROPS = {
   fixedImage: farmerLoginHero.image,
@@ -139,12 +140,38 @@ function OTPStep({ phone, onSuccess, onBack }) {
   const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resendTimer, setResendTimer] = useState(RESEND_SECONDS);
+  const [canResend, setCanResend] = useState(false);
+  const timerRef = useRef(null);
 
   const refs = useMemo(() => Array.from({ length: OTP_LENGTH }, () => createRef()), []);
 
   useEffect(() => {
     refs[0].current?.focus();
   }, []);
+
+  const startResendTimer = useCallback(() => {
+    setResendTimer(RESEND_SECONDS);
+    setCanResend(false);
+    clearInterval(timerRef.current);
+    timerRef.current = window.setInterval(() => {
+      setResendTimer((previous) => {
+        if (previous <= 1) {
+          clearInterval(timerRef.current);
+          setCanResend(true);
+          return 0;
+        }
+        return previous - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    startResendTimer();
+    return () => {
+      clearInterval(timerRef.current);
+    };
+  }, [startResendTimer]);
 
   const handleChange = (index, event) => {
     const raw = event.target.value.replace(/\D/g, "");
@@ -209,6 +236,7 @@ function OTPStep({ phone, onSuccess, onBack }) {
     setLoading(true);
     try {
       await sendOtp(phone);
+      startResendTimer();
     } catch (resendError) {
       setError(getDisplayError(resendError, "Could not resend the verification code."));
     } finally {
@@ -248,8 +276,15 @@ function OTPStep({ phone, onSuccess, onBack }) {
       {error && <p className="mb-1 text-xs text-red-500">{error}</p>}
       <p className="font-sans text-sm text-brand-text-secondary">
         I did not receive a code,{" "}
-        <button type="button" onClick={() => void handleResend()} className="text-brand-green font-semibold">
-          Resend Code
+        <button
+          type="button"
+          onClick={() => void handleResend()}
+          disabled={!canResend}
+          className={`font-semibold transition-colors ${
+            canResend ? "text-brand-green active:opacity-70" : "text-brand-text-muted cursor-default"
+          }`}
+        >
+          {canResend ? "Resend Code" : `Resend in ${resendTimer}s`}
         </button>
       </p>
     </div>
