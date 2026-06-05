@@ -674,6 +674,26 @@ export function submitFarmerInterest({
   });
 }
 
+export function upgradeFarmerToAgent({ email, bvn, profilePhotoFile } = {}) {
+  const formData = new FormData();
+  if (profilePhotoFile) {
+    formData.append("profile_photo", profilePhotoFile);
+  }
+  const normalizedEmail = readString(email);
+  if (normalizedEmail) {
+    formData.append("email", normalizedEmail);
+  }
+  const normalizedBvn = readString(bvn);
+  if (normalizedBvn) {
+    formData.append("bvn", normalizedBvn);
+  }
+
+  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/me/upgrade-to-agent", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export function extractGeoArray(payload) {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];

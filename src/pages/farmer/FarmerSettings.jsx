@@ -15,7 +15,8 @@ import {
   Users,
 } from "lucide-react";
 import FarmerDesktopLayout from "../../components/farmer/FarmerDesktopLayout";
-import { clearFarmerSession, getFarmerDashboard } from "../../services/cropexApi";
+import { clearFarmerSession, getFarmerDashboard, upgradeFarmerToAgent } from "../../services/cropexApi";
+import { getDisplayError } from "../../utils/apiErrors";
 
 const MOCK_AGENT_STATUS_KEY = "hcx_farmer_agent_upgrade_mock_status";
 
@@ -124,7 +125,21 @@ function SettingsMenu({ modeMenuOpen, setModeMenuOpen, onAgentMode, onLogout }) 
   );
 }
 
-function BecomeAgentForm({ email, setEmail, bvn, setBvn, fileName, onChooseFile, onSubmit, onBack }) {
+function BecomeAgentForm({
+  email,
+  setEmail,
+  bvn,
+  setBvn,
+  fileName,
+  onChooseFile,
+  onSubmit,
+  onBack,
+  submitting,
+  formError,
+  photoPreview,
+  hasPhoto,
+}) {
+  const submitDisabled = submitting || !email.trim() || !bvn.trim() || !hasPhoto;
   return (
     <div>
       <button type="button" onClick={onBack} className="mb-6 inline-flex items-center gap-2 text-sm text-brand-text-secondary">
@@ -141,12 +156,30 @@ function BecomeAgentForm({ email, setEmail, bvn, setBvn, fileName, onChooseFile,
         <p className="mt-1 font-sans text-[18px] text-[#030F0F]/70">
           Please upload a recent passport photograph with a plain white background.
         </p>
-        <label className="mt-4 flex h-[188px] w-full max-w-[360px] cursor-pointer flex-col items-center justify-center rounded-[20px] border border-dashed border-[#D9DDE3] bg-white text-center">
-          <Upload size={24} className="mb-3 text-[#9CA3AF]" />
-          <span className="rounded-full border border-[#C7CDD8] px-4 py-1 text-xs text-[#445250]">
-            Click to upload
-          </span>
-          <span className="mt-2 text-xs text-[#9CA3AF]">{fileName || "JPG, JPEG, PNG less than 1MB"}</span>
+        <label className="mt-4 relative flex h-[188px] w-full max-w-[360px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[20px] border border-dashed border-[#D9DDE3] bg-white text-center">
+          {photoPreview ? (
+            <img
+              src={photoPreview}
+              alt="Selected avatar preview"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : null}
+          <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 px-5 text-center">
+            {photoPreview ? (
+              <>
+                <span className="text-sm font-semibold text-[#030F0F]">Change photo</span>
+                <span className="text-xs text-[#9CA3AF]">{fileName || "JPG, JPEG, PNG less than 1MB"}</span>
+              </>
+            ) : (
+              <>
+                <Upload size={24} className="mb-3 text-[#9CA3AF]" />
+                <span className="rounded-full border border-[#C7CDD8] px-4 py-1 text-xs text-[#445250]">
+                  Click to upload
+                </span>
+                <span className="mt-2 text-xs text-[#9CA3AF]">{fileName || "JPG, JPEG, PNG less than 1MB"}</span>
+              </>
+            )}
+          </div>
           <input type="file" accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={onChooseFile} />
         </label>
       </div>
@@ -179,9 +212,17 @@ function BecomeAgentForm({ email, setEmail, bvn, setBvn, fileName, onChooseFile,
         </label>
       </div>
 
-      <button type="button" onClick={onSubmit} className="btn-primary mt-10 max-w-[460px]">
-        Continue
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={submitDisabled}
+        className="btn-primary mt-10 max-w-[460px]"
+      >
+        {submitting ? "Submitting..." : "Continue"}
       </button>
+      {formError ? (
+        <p className="mt-3 text-sm font-medium text-red-600">{formError}</p>
+      ) : null}
     </div>
   );
 }
@@ -229,6 +270,10 @@ export default function FarmerSettings() {
   const [fileName, setFileName] = useState("");
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [formError, setFormError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -261,6 +306,14 @@ export default function FarmerSettings() {
     if (stored !== "none") setScreen(stored);
   }, [location.search]);
 
+  useEffect(() => {
+    return () => {
+      if (photoPreview) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
+
   const profile = useMemo(() => {
     const farmer = dashboard?.farmer || {};
     const displayName = farmer.full_name || "Farmer";
@@ -291,10 +344,47 @@ export default function FarmerSettings() {
     setScreen("form");
   };
 
-  const handleFormSubmit = () => {
-    setMockStatus("under_review");
-    writeMockStatus("under_review");
-    setScreen("under_review");
+  const handleChooseFile = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name || "");
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setFormError("");
+  };
+
+  const handleFormSubmit = async () => {
+    if (submitting) return;
+    const normalizedEmail = String(email || "").trim();
+    const normalizedBvn = String(bvn || "").trim();
+    if (!normalizedEmail || !normalizedBvn) {
+      setFormError("Email and BVN are required.");
+      return;
+    }
+    if (!photoFile) {
+      setFormError("Please upload your photo.");
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError("");
+    try {
+      await upgradeFarmerToAgent({
+        email: normalizedEmail,
+        bvn: normalizedBvn,
+        profilePhotoFile: photoFile,
+      });
+      setMockStatus("under_review");
+      writeMockStatus("under_review");
+      setScreen("under_review");
+      setFileName("");
+      setPhotoFile(null);
+      setPhotoPreview("");
+    } catch (error) {
+      setFormError(getDisplayError(error, "We could not upgrade your account right now."));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleLogout = () => {
@@ -328,12 +418,13 @@ export default function FarmerSettings() {
           bvn={bvn}
           setBvn={setBvn}
           fileName={fileName}
-          onChooseFile={(event) => {
-            const file = event.target.files?.[0];
-            setFileName(file?.name || "");
-          }}
+          onChooseFile={handleChooseFile}
           onSubmit={handleFormSubmit}
           onBack={handleBack}
+          submitting={submitting}
+          formError={formError}
+          photoPreview={photoPreview}
+          hasPhoto={Boolean(photoFile)}
         />
       );
     }
