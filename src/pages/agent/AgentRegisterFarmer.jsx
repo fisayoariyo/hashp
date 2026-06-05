@@ -1286,7 +1286,7 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
           {description}
         </p>
 
-        <div className="mx-auto w-full max-w-[284px] bg-brand-green rounded-[22px] px-4 py-4 flex flex-col items-center text-white shadow-md">
+        <div className="w-full max-w-[284px] self-start bg-brand-green rounded-[22px] px-4 py-4 flex flex-col items-center text-white shadow-md">
           <div className="self-start mb-3">
             <img
               src="/brand/HFEI_Primary_Logo_White.png"
@@ -1341,7 +1341,7 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
       </div>
 
       <div
-        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-stretch`}
+        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-start items-stretch`}
       >
         {isOnlineSubmission ? (
           <button
