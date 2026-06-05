@@ -189,6 +189,7 @@ export default function StartJourneyLeadForm({
         email: form.email,
       });
       setForm(INITIAL_FORM);
+      setFieldErrors({});
       setShowSuccess(true);
     } catch (error) {
       const fieldLevel = parseFieldErrors(error);
@@ -219,6 +220,9 @@ export default function StartJourneyLeadForm({
     }
     if (/RegisterInterestRequest\.PhoneNumber/i.test(text) || /PhoneNumber.*len/i.test(text)) {
       parsed.phone = "Please enter a valid phone number.";
+    }
+    if (/RegisterInterestRequest\.Email/i.test(text) || /Email.*failed on the 'email'/i.test(text)) {
+      parsed.email = "Please provide a valid email address.";
     }
     return parsed;
   }
@@ -357,6 +361,9 @@ export default function StartJourneyLeadForm({
             onChange={handleChange}
             className="landing-contact-field"
           />
+          {fieldErrors.email ? (
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+          ) : null}
         </div>
 
         {submitVariant === "inline-half" ? (
