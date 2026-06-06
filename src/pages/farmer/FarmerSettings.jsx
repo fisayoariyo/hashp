@@ -270,6 +270,7 @@ export default function FarmerSettings() {
   const [fileName, setFileName] = useState("");
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const [photoBase64, setPhotoBase64] = useState("");
   const [formError, setFormError] = useState("");
@@ -341,6 +342,7 @@ export default function FarmerSettings() {
     if (!file) return;
     setFileName(file.name || "");
     setFormError("");
+    setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result;
@@ -352,6 +354,7 @@ export default function FarmerSettings() {
     reader.onerror = () => {
       setPhotoPreview("");
       setPhotoBase64("");
+      setPhotoFile(null);
       setFormError("Unable to read the selected file.");
     };
     reader.readAsDataURL(file);
@@ -384,6 +387,7 @@ export default function FarmerSettings() {
       setFileName("");
       setPhotoPreview("");
       setPhotoBase64("");
+      setPhotoFile(null);
     } catch (error) {
       setFormError(getDisplayError(error, "We could not upgrade your account right now."));
     } finally {
