@@ -92,7 +92,7 @@ export function getUserFacingError(error, fallback = "Something went wrong. Plea
 
   if (isAgentPhoneError(fullText)) {
     return {
-      message: "This number is not associated to a farmer.",
+      message: "This number is not associated to any farmer account.",
       retrySeconds: null,
       isCooldown: false,
     };
