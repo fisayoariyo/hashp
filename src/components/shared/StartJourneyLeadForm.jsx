@@ -412,7 +412,7 @@ export default function StartJourneyLeadForm({
           </button>
         ) : null}
 
-        {submitError ? (
+        {submitError && submitVariant !== "footer-full" ? (
           <p className="text-left text-sm font-medium text-red-600">{submitError}</p>
         ) : null}
           </div>
