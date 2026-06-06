@@ -20,6 +20,10 @@ function isAgentPhoneError(text) {
   return /registered to an agent/i.test(text) || /registered as an agent/i.test(text);
 }
 
+function isRateLimitError(text) {
+  return /rate limit exceeded/i.test(text);
+}
+
 export function parseOtpRetrySeconds(error) {
   const text = collectErrorText(error);
   const tryAgainMatch = text.match(/try again in (\d+)\s*seconds?/i);
@@ -62,6 +66,22 @@ export function getUserFacingError(error, fallback = "Something went wrong. Plea
     };
   }
 
+  if (isAgentPhoneError(fullText)) {
+    return {
+      message: "This number is not associated to any farmer account.",
+      retrySeconds: null,
+      isCooldown: false,
+    };
+  }
+
+  if (isRateLimitError(fullText)) {
+    return {
+      message: "Too many attempts. Please wait a few minutes before trying again.",
+      retrySeconds: null,
+      isCooldown: false,
+    };
+  }
+
   if (isTechnicalApiMessage(rawMessage) || isTechnicalApiMessage(collectErrorText(error))) {
     if (status === 404) {
       return { message: "We could not find an account with that email.", retrySeconds: null, isCooldown: false };
@@ -87,14 +107,6 @@ export function getUserFacingError(error, fallback = "Something went wrong. Plea
       message: rawMessage,
       retrySeconds: retrySeconds ?? 60,
       isCooldown: true,
-    };
-  }
-
-  if (isAgentPhoneError(fullText)) {
-    return {
-      message: "This number is not associated to any farmer account.",
-      retrySeconds: null,
-      isCooldown: false,
     };
   }
 
