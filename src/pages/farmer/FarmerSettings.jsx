@@ -420,7 +420,7 @@ function AmberBadgeIcon() {
   );
 }
 
-function UnderReviewView({ onRefresh, onContactSupport, onBack }) {
+function UnderReviewView({ onRefresh, onBack }) {
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -467,13 +467,6 @@ function UnderReviewView({ onRefresh, onContactSupport, onBack }) {
           className="btn-primary mt-8 max-w-[460px]"
         >
           {refreshing ? "Checking..." : "Refresh status"}
-        </button>
-        <button
-          type="button"
-          onClick={onContactSupport}
-          className="auth-btn-secondary mt-3 max-w-[460px]"
-        >
-          Contact support
         </button>
       </div>
     </div>
@@ -743,7 +736,6 @@ export default function FarmerSettings() {
       return (
         <UnderReviewView
           onRefresh={handleRefreshStatus}
-          onContactSupport={() => navigate("/agent/contact-support", { state: { preAuth: true, from: "under-review" } })}
           onBack={handleBack}
         />
       );
