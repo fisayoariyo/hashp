@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { getAgentAccessToken, getAgentDashboard, getAgentSession } from "../../services/cropexApi";
+import { getAgentAccessToken, getAgentDashboard } from "../../services/cropexApi";
 import {
   clearAgentStatusPreview,
   extractAgentStatus,
@@ -20,15 +20,15 @@ export default function AgentAccountUnderReview() {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState("");
-  const hasAgentSession = Boolean(getAgentAccessToken());
+  const hasAgentSession = () => Boolean(getAgentAccessToken());
+  const sessionActive = hasAgentSession();
 
   useEffect(() => {
     try {
-      const session = getAgentSession();
       const preview = getAgentStatusPreview();
       const raw = sessionStorage.getItem(REG_KEY);
 
-      if (!session?.accessToken && !preview) {
+      if (!hasAgentSession() && !preview) {
         navigate("/agent/login", { replace: true });
         return;
       }
@@ -46,7 +46,7 @@ export default function AgentAccountUnderReview() {
   }, [navigate]);
 
   const handleRefresh = async () => {
-    if (!hasAgentSession) {
+    if (!hasAgentSession()) {
       navigate("/agent/login", {
         replace: true,
         state: { sessionExpired: true, from: "under-review" },
@@ -113,7 +113,7 @@ export default function AgentAccountUnderReview() {
         disabled={loading}
         className="btn-primary w-full disabled:opacity-50"
       >
-        {loading ? "Checking..." : hasAgentSession ? "Refresh status" : "Sign in to continue"}
+        {loading ? "Checking..." : sessionActive ? "Refresh status" : "Sign in to continue"}
       </button>
       <button
         type="button"
