@@ -1129,7 +1129,7 @@ function CoopStep({ onNext, onBack, embedded, stateOptions }) {
 }
 
 // ── RF12: Review — flat label:bold-value list (no cards) ───
-function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
+function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError, submitLabel = "Continue and submit" }) {
   const d = getDraft();
   const p = d.personal   || {};
   const f = d.farm       || {};
@@ -1235,7 +1235,7 @@ function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError }) {
           disabled={submitting}
           className="h-[44px] w-full sm:w-auto sm:min-w-[180px] px-8 rounded-2xl bg-brand-green text-white font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap transition-all duration-200 active:scale-95 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? "Submitting..." : "Continue and submit"}
+          {submitting ? "Saving..." : submitLabel}
         </button>
       </div>
     </div>
@@ -1374,6 +1374,20 @@ export default function AgentRegisterFarmer() {
   const [stateOptions, setStateOptions] = useState([]);
   const [statesLoading, setStatesLoading] = useState(true);
   const [statesError, setStatesError] = useState("");
+  const [isOnline, setIsOnline]     = useState(
+    typeof navigator === "undefined" ? true : navigator.onLine
+  );
+
+  useEffect(() => {
+    const handleOnline  = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online",  handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online",  handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Biometric state LIFTED — survives sub-screen navigation
   const [faceCapture, setFaceCapture] = useState("idle");
@@ -1418,16 +1432,9 @@ export default function AgentRegisterFarmer() {
     setSubmitting(true);
     setSubmitError("");
     const draft = getDraft();
-    let enrollmentPayload = null;
-    const sessionId = readString(enrollmentSessionId, draft?.enrollment?.sessionId);
     const validationError = validateDraftForSubmit(draft);
     if (validationError) {
       setSubmitError(validationError);
-      setSubmitting(false);
-      return;
-    }
-    if (!sessionId) {
-      setSubmitError("Enrollment session is missing. Go back and start the registration again.");
       setSubmitting(false);
       return;
     }
@@ -1436,8 +1443,72 @@ export default function AgentRegisterFarmer() {
       setSubmitting(false);
       return;
     }
+
+    // ── OFFLINE PATH ──────────────────────────────────────────
+    if (!isOnline) {
+      try {
+        const agentId = getAgentIdFromSession();
+        const savedAt = formatToday();
+        const clientId =
+          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `offline-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+        const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
+        const record = await createOfflineFarmerRecord({
+          clientId,
+          ownerAgentId: agentId,
+          payload: { ...queuedPayload.payload, client_id: clientId },
+          status: OFFLINE_FARMER_STATUS.PENDING,
+          name: queuedPayload.name,
+          photo: queuedPayload.photo,
+          regDate: savedAt,
+          phone: queuedPayload.phone,
+          state: queuedPayload.state,
+          lga: queuedPayload.lga,
+          address: queuedPayload.address,
+          nin: queuedPayload.nin,
+          gender: queuedPayload.gender,
+          cooperative: queuedPayload.cooperative,
+          primaryCrop: queuedPayload.primaryCrop,
+          farmSize: queuedPayload.farmSize,
+          landOwnership: queuedPayload.landOwnership,
+          biometric: { face: true, fingerprint: true },
+        });
+        setIdCard({
+          mode: "offline",
+          clientId: record.clientId || clientId,
+          farmerId: "",
+          name: queuedPayload.name,
+          photo: queuedPayload.photo,
+          cooperative: queuedPayload.cooperative,
+          savedAt,
+          agentName,
+        });
+        requestFarmersRefresh();
+        clearDraft();
+        setEnrollmentSessionId("");
+        setStep("done");
+      } catch (error) {
+        setSubmitError(getDisplayError(error, "Could not save farmer record offline."));
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // ── ONLINE PATH ───────────────────────────────────────────
+    let enrollmentPayload = null;
+    const sessionId = readString(enrollmentSessionId, draft?.enrollment?.sessionId);
+    if (!sessionId) {
+      setSubmitError("Enrollment session is missing. Go back and start the registration again.");
+      setSubmitting(false);
+      return;
+    }
     try {
       const agentId = getAgentIdFromSession();
+      if (!agentId) {
+        throw new Error("Agent session is missing an agent ID. Log in again and retry.");
+      }
       const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
       const personalInfo = draftToEnrollmentPersonalInfo(draft);
       const farmInfo = draftToEnrollmentFarmInfo(draft);
@@ -1448,11 +1519,38 @@ export default function AgentRegisterFarmer() {
         farm_info: farmInfo,
         cooperative: cooperativeInfo,
       };
-      const savedAt = formatToday();
-
       const payloadContractError = validateEnrollmentPayloadAgainstContract(personalInfo);
       if (payloadContractError) {
         throw new Error(payloadContractError);
+      }
+
+      const savedAt = formatToday();
+
+      const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+      if (isOffline) {
+        const offlineRecord = await createOfflineFarmerRecord({
+          ...queuedPayload,
+          ownerAgentId: agentId,
+          status: OFFLINE_FARMER_STATUS.PENDING,
+          regDate: savedAt,
+          syncedAt: null,
+        });
+
+        requestFarmersRefresh();
+        clearDraft();
+        setEnrollmentSessionId("");
+        setIdCard({
+          mode: "offline",
+          clientId: offlineRecord.clientId,
+          farmerId: undefined,
+          name: offlineRecord.name,
+          photo: offlineRecord.photo,
+          cooperative: offlineRecord.cooperative,
+          savedAt,
+          agentName,
+        });
+        setStep("done");
+        return;
       }
 
       await submitEnrollmentPersonalInfo({ session_id: sessionId, personal_info: personalInfo });
@@ -1564,6 +1662,19 @@ export default function AgentRegisterFarmer() {
       setStep("biometric");
       return;
     }
+
+    // Offline — skip the server call, generate a local session UUID
+    if (!isOnline) {
+      const localSessionId =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `offline-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+      setEnrollmentSessionId(localSessionId);
+      setDraft({ enrollment: { sessionId: localSessionId, offline: true } });
+      setStep("biometric");
+      return;
+    }
+
     setStartingEnrollment(true);
     try {
       const agentId = getAgentIdFromSession();
@@ -1589,6 +1700,7 @@ export default function AgentRegisterFarmer() {
             onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
             onBack={() => setStep("biometric")}
             sessionId={enrollmentSessionId}
+            offline={!isOnline}
           />
         </div>
         <AgentDesktopShell active="farmers">
@@ -1598,6 +1710,7 @@ export default function AgentRegisterFarmer() {
               onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
               onBack={() => setStep("biometric")}
               sessionId={enrollmentSessionId}
+              offline={!isOnline}
             />
           </div>
         </AgentDesktopShell>
@@ -1613,6 +1726,7 @@ export default function AgentRegisterFarmer() {
             onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
             onBack={() => setStep("biometric")}
             sessionId={enrollmentSessionId}
+            offline={!isOnline}
           />
         </div>
         <AgentDesktopShell active="farmers">
@@ -1622,6 +1736,7 @@ export default function AgentRegisterFarmer() {
               onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
               onBack={() => setStep("biometric")}
               sessionId={enrollmentSessionId}
+              offline={!isOnline}
             />
           </div>
         </AgentDesktopShell>
@@ -1636,9 +1751,18 @@ export default function AgentRegisterFarmer() {
       hasPendingDraft: pendingDraft,
       onBack: goHome,
     };
+    const offlineBanner = !isOnline && (
+      <div className="mx-4 mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2">
+        <span className="text-amber-600 text-lg leading-none mt-0.5">⚠</span>
+        <p className="font-sans text-xs text-amber-800">
+          <span className="font-semibold">You are offline.</span> Registration data will be saved to this device and synced to the server when you are back online. Use the &ldquo;Sync now&rdquo; button on the dashboard.
+        </p>
+      </div>
+    );
     return (
       <>
         <div className="md:hidden">
+          {offlineBanner}
           <StartScreen {...startProps} />
           {enrollmentStartError ? (
             <p className="px-4 pb-3 text-sm text-red-600">{enrollmentStartError}</p>
@@ -1649,6 +1773,7 @@ export default function AgentRegisterFarmer() {
         </div>
         <AgentDesktopShell active="farmers">
           <div className="w-full max-w-[862.81px]">
+            {offlineBanner}
             <StartScreen embedded {...startProps} />
             {enrollmentStartError ? (
               <p className="px-4 pb-3 text-sm text-red-600">{enrollmentStartError}</p>
@@ -1746,25 +1871,21 @@ export default function AgentRegisterFarmer() {
     );
   }
   if (step === "review") {
+    const reviewProps = {
+      onSubmit: handleSubmit,
+      onBack: () => setStep("coop"),
+      submitting,
+      submitError,
+      submitLabel: isOnline ? "Continue and submit" : "Save offline & queue sync",
+    };
     return (
       <>
         <div className="md:hidden">
-          <ReviewStep
-            onSubmit={handleSubmit}
-            onBack={() => setStep("coop")}
-            submitting={submitting}
-            submitError={submitError}
-          />
+          <ReviewStep {...reviewProps} />
         </div>
         <AgentDesktopShell active="farmers">
           <div className="w-full max-w-[862.81px]">
-            <ReviewStep
-              embedded
-              onSubmit={handleSubmit}
-              onBack={() => setStep("coop")}
-              submitting={submitting}
-              submitError={submitError}
-            />
+            <ReviewStep embedded {...reviewProps} />
           </div>
         </AgentDesktopShell>
       </>

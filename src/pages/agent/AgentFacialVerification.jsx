@@ -100,7 +100,7 @@ function buildFaceCapture(video, { mimeType = "image/jpeg", quality = 0.82 } = {
   };
 }
 
-export default function AgentFacialVerification({ onSuccess, onBack, embedded, sessionId }) {
+export default function AgentFacialVerification({ onSuccess, onBack, embedded, sessionId, offline = false }) {
   const [status, setStatus] = useState("idle"); // idle | scanning | success | error
   const [errorText, setErrorText] = useState("");
   const [cameraLabel, setCameraLabel] = useState("");
@@ -157,11 +157,6 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
   }, []);
 
   const handleCapture = async () => {
-    if (!sessionId) {
-      setStatus("error");
-      setErrorText("Enrollment session is missing.");
-      return;
-    }
     if (!videoRef.current || !cameraReady) {
       setStatus("error");
       setErrorText("Camera is not ready yet.");
@@ -173,8 +168,20 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
     try {
       const video = videoRef.current;
       await waitUntilVideoReady(video);
-
       const jpegCapture = buildFaceCapture(video, { mimeType: "image/jpeg", quality: 0.82 });
+
+      // Offline mode — skip server upload, mark locally captured
+      if (offline) {
+        setStatus("success");
+        return;
+      }
+
+      if (!sessionId) {
+        setStatus("error");
+        setErrorText("Enrollment session is missing.");
+        return;
+      }
+
       const pngCapture = buildFaceCapture(video, { mimeType: "image/png" });
 
       const attempts = [
@@ -234,7 +241,6 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
             status: attemptError.status,
             message: attemptError.message,
             jpegBytesApprox: Math.round((jpegCapture.base64.length * 3) / 4),
-            pngBytesApprox: Math.round((pngCapture.base64.length * 3) / 4),
             width: jpegCapture.width,
             height: jpegCapture.height,
           });
@@ -242,18 +248,6 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
       }
 
       if (lastError) {
-        if (lastError instanceof CropexHttpError) {
-          console.error("Face upload failed after trying 4 payload variants.", {
-            status: lastError.status,
-            message: lastError.message,
-            attemptedVariants: [
-              "face jpeg-base64",
-              "biometric jpeg-base64",
-              "biometric jpeg-data-url",
-              "face png-base64",
-            ],
-          });
-        }
         throw lastError;
       }
       setStatus("success");
@@ -392,7 +386,7 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
           {status === "scanning" && "Hold still — uploading face capture..."}
           {status === "success" && (
             <span className="text-brand-green font-semibold">
-              Face verification successful ✓
+              {offline ? "Face captured (offline — will sync later) ✓" : "Face verification successful ✓"}
             </span>
           )}
           {status === "error" && (

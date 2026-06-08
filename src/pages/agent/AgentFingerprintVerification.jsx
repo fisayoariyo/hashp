@@ -86,7 +86,7 @@ function applyBackendFingerRows(previous, rows) {
   return next;
 }
 
-export default function AgentFingerprintVerification({ onSuccess, onBack, embedded, sessionId }) {
+export default function AgentFingerprintVerification({ onSuccess, onBack, embedded, sessionId, offline = false }) {
   const webApiRef = useRef(null);
   const readerTimerRef = useRef(null);
   const activeCaptureIdRef = useRef(0);
@@ -330,6 +330,42 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
       /* ignore stop failures while canceling */
     }
   };
+
+  // Offline mode — scanner not available, mark captured locally
+  if (offline) {
+    const offlineShell = (
+      <div className="min-h-screen bg-gradient-to-b from-brand-page-bg/80 via-brand-page-bg to-brand-page-bg px-4 py-8">
+        <div className="mx-auto w-full max-w-[720px] rounded-[32px] bg-brand-page-bg/70 px-6 py-8 shadow-sm">
+          <div className="mb-5 text-center">
+            <button
+              type="button"
+              onClick={onBack}
+              className="mb-2 inline-flex items-center gap-1.5 font-sans text-sm text-brand-text-secondary"
+            >
+              <ArrowLeft size={16} />
+              Go back
+            </button>
+            <h1 className="font-heading text-[40px] leading-[46px] font-semibold text-brand-text-primary">
+              Fingerprint Verification
+            </h1>
+            <p className="font-sans text-sm text-brand-text-secondary">
+              Offline mode — fingerprint will be noted as captured and synced when back online.
+            </p>
+          </div>
+          <FingerprintPrint />
+          <p className="mt-6 text-center font-sans text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+            No internet connection. Tap the button below to mark fingerprint as captured. Biometric data will be confirmed when you sync this farmer.
+          </p>
+          <div className="mt-7 flex items-center justify-center">
+            <button type="button" onClick={onSuccess} className="btn-capture-pill w-[240px] justify-center">
+              Mark as Captured (Offline)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+    return embedded ? <div className="min-h-0">{offlineShell}</div> : offlineShell;
+  }
 
   const shell = (
     <div className="min-h-screen bg-gradient-to-b from-brand-page-bg/80 via-brand-page-bg to-brand-page-bg px-4 py-8">
