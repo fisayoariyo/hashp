@@ -79,11 +79,11 @@ export default function AgentAccountUnderReview() {
     }
   };
 
-  const iconBlock = <AgentStatusBadge variant="pending" className="mb-6" />;
+  const iconBlock = <AgentStatusBadge variant="pending" size={200} className="mb-8" />;
 
   const bodyText = (
-    <div className="w-full max-w-[36rem] self-stretch text-left">
-      <p className="font-sans text-sm text-brand-text-primary mb-2">
+    <div className="w-full">
+      <p className="font-sans text-sm font-semibold text-brand-text-primary mb-2">
         You will be able to start registering farmers once your account is verified.
       </p>
       <p className="font-sans text-xs text-brand-text-secondary mb-6">
@@ -98,10 +98,10 @@ export default function AgentAccountUnderReview() {
   );
 
   const body = (
-    <>
-      <div className="flex w-full justify-center">{iconBlock}</div>
+    <div className="flex flex-col w-full">
+      <div className="flex justify-center w-full">{iconBlock}</div>
       {bodyText}
-    </>
+    </div>
   );
 
   const actions = (
@@ -127,14 +127,11 @@ export default function AgentAccountUnderReview() {
   if (isDesktop) {
     return (
       <AgentAuthDesktopLayout
-        centerTitle
         title="Account Under Review"
         subtitle="Your details have been submitted successfully and are currently being reviewed."
-        titleClassName="block w-full max-w-[36rem] self-stretch text-left"
-        subtitleClassName="block w-full max-w-[36rem] self-stretch text-left mb-8"
         actions={actions}
       >
-        <div className="flex w-full flex-col items-center">{body}</div>
+        <div className="flex w-full flex-col">{body}</div>
       </AgentAuthDesktopLayout>
     );
   }
@@ -150,12 +147,11 @@ export default function AgentAccountUnderReview() {
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="auth-title text-left">Account Under Review</h1>
-        <p className="auth-subtitle mb-6 text-left max-w-[36rem]">
+        <h1 className="auth-title text-center">Account Under Review</h1>
+        <p className="auth-subtitle mb-6 text-center">
           Your details have been submitted successfully and are currently being reviewed.
         </p>
-        <div className="flex w-full justify-center">{iconBlock}</div>
-        {bodyText}
+        <div className="flex w-full flex-col items-center">{body}</div>
       </div>
       <div className="px-5 pb-8">{actions}</div>
     </div>
