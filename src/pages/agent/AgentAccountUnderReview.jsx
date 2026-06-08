@@ -8,7 +8,6 @@ import { getAgentAccessToken, getAgentDashboard } from "../../services/cropexApi
 import {
   clearAgentStatusPreview,
   extractAgentStatus,
-  getAgentStatusPreview,
   getAgentStatusRoute,
   isAgentStatusApproved,
 } from "../../utils/agentStatus";
@@ -25,10 +24,9 @@ export default function AgentAccountUnderReview() {
 
   useEffect(() => {
     try {
-      const preview = getAgentStatusPreview();
       const raw = sessionStorage.getItem(REG_KEY);
 
-      if (!hasAgentSession() && !preview) {
+      if (!hasAgentSession()) {
         navigate("/agent/login", { replace: true });
         return;
       }
@@ -113,7 +111,7 @@ export default function AgentAccountUnderReview() {
         disabled={loading}
         className="btn-primary w-full disabled:opacity-50"
       >
-        {loading ? "Checking..." : sessionActive ? "Refresh status" : "Sign in to continue"}
+        {loading ? "Checking..." : "Refresh status"}
       </button>
       <button
         type="button"
