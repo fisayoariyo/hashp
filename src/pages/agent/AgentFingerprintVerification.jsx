@@ -196,19 +196,21 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
           });
         }, READER_CONNECT_TIMEOUT_MS);
 
-        const biometricStatus = await getEnrollmentBiometricStatus(sessionId).catch(() => null);
-        if (!mounted) return;
-        const statusData = getBiometricData(biometricStatus);
-        const rows = Array.isArray(statusData.fingers) ? statusData.fingers : [];
-        if (rows.length > 0) {
-          const restoredStates = applyBackendFingerRows(
-            Object.fromEntries(FINGER_OPTIONS.map((finger) => [finger.id, "idle"])),
-            rows
-          );
-          setFingerStates((prev) => applyBackendFingerRows(prev, rows));
-          const nextPreferred =
-            FINGER_OPTIONS.find((finger) => restoredStates[finger.id] !== "success") || FINGER_OPTIONS[0];
-          setSelectedFingerId(nextPreferred.id);
+        if (!offline) {
+          const biometricStatus = await getEnrollmentBiometricStatus(sessionId).catch(() => null);
+          if (!mounted) return;
+          const statusData = getBiometricData(biometricStatus);
+          const rows = Array.isArray(statusData.fingers) ? statusData.fingers : [];
+          if (rows.length > 0) {
+            const restoredStates = applyBackendFingerRows(
+              Object.fromEntries(FINGER_OPTIONS.map((finger) => [finger.id, "idle"])),
+              rows
+            );
+            setFingerStates((prev) => applyBackendFingerRows(prev, rows));
+            const nextPreferred =
+              FINGER_OPTIONS.find((finger) => restoredStates[finger.id] !== "success") || FINGER_OPTIONS[0];
+            setSelectedFingerId(nextPreferred.id);
+          }
         }
       } catch (error) {
         if (!mounted) return;
@@ -267,6 +269,13 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
       const fmdTemplate = await acquireDigitalPersonaFmd(webApi);
       if (activeCaptureIdRef.current !== captureId) return;
       logCaptureDebug("capture:templateReady", { templateLength: fmdTemplate.length });
+
+      // Offline — scanner captured locally, skip API submission
+      if (offline) {
+        if (activeCaptureIdRef.current !== captureId) return;
+        setFingerStates((prev) => ({ ...prev, [currentFinger.id]: "success" }));
+        setStatusMessage(`${currentFinger.label} captured (offline — will sync later).`);
+      } else {
       const apiStartedAt = Date.now();
       logCaptureDebug("api:submit:start");
       const response = await submitEnrollmentFingerprint({
@@ -282,16 +291,13 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
       const rows = Array.isArray(responseData.fingers) ? responseData.fingers : [];
       const saved = rows.find((item) => item.position === currentFinger.id);
       const success = rows.length === 0 || String(saved?.status || "").toLowerCase() === "success";
-      const nextStates =
-        rows.length > 0
-          ? applyBackendFingerRows(fingerStates, rows)
-          : { ...fingerStates, [currentFinger.id]: success ? "success" : "failed" };
       setFingerStates((prev) =>
         rows.length > 0
           ? applyBackendFingerRows(prev, rows)
           : { ...prev, [currentFinger.id]: success ? "success" : "failed" }
       );
       setStatusMessage(success ? `${currentFinger.label} captured.` : `${currentFinger.label} failed, choose another finger.`);
+      }
     } catch (error) {
       if (activeCaptureIdRef.current !== captureId) return;
       logCaptureDebug("capture:failed", {
@@ -331,42 +337,6 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
     }
   };
 
-  // Offline mode — scanner not available, mark captured locally
-  if (offline) {
-    const offlineShell = (
-      <div className="min-h-screen bg-gradient-to-b from-brand-page-bg/80 via-brand-page-bg to-brand-page-bg px-4 py-8">
-        <div className="mx-auto w-full max-w-[720px] rounded-[32px] bg-brand-page-bg/70 px-6 py-8 shadow-sm">
-          <div className="mb-5 text-center">
-            <button
-              type="button"
-              onClick={onBack}
-              className="mb-2 inline-flex items-center gap-1.5 font-sans text-sm text-brand-text-secondary"
-            >
-              <ArrowLeft size={16} />
-              Go back
-            </button>
-            <h1 className="font-heading text-[40px] leading-[46px] font-semibold text-brand-text-primary">
-              Fingerprint Verification
-            </h1>
-            <p className="font-sans text-sm text-brand-text-secondary">
-              Offline mode — fingerprint will be noted as captured and synced when back online.
-            </p>
-          </div>
-          <FingerprintPrint />
-          <p className="mt-6 text-center font-sans text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
-            No internet connection. Tap the button below to mark fingerprint as captured. Biometric data will be confirmed when you sync this farmer.
-          </p>
-          <div className="mt-7 flex items-center justify-center">
-            <button type="button" onClick={onSuccess} className="btn-capture-pill w-[240px] justify-center">
-              Mark as Captured (Offline)
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-    return embedded ? <div className="min-h-0">{offlineShell}</div> : offlineShell;
-  }
-
   const shell = (
     <div className="min-h-screen bg-gradient-to-b from-brand-page-bg/80 via-brand-page-bg to-brand-page-bg px-4 py-8">
       <div className="mx-auto w-full max-w-[720px] rounded-[32px] bg-brand-page-bg/70 px-6 py-8 shadow-sm">
@@ -385,6 +355,11 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
           <p className="font-sans text-sm text-brand-text-secondary">
             Capture a single fingerprint to verify identity (DigitalPersona U.are.U)
           </p>
+          {offline && (
+            <p className="mt-2 inline-block rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 font-sans text-xs text-amber-800">
+              Offline mode — scan will be saved locally and confirmed when you sync this farmer.
+            </p>
+          )}
         </div>
 
         <div className="space-y-6">
