@@ -79,18 +79,18 @@ export default function AgentAccountUnderReview() {
     }
   };
 
-  const iconBlock = <AgentStatusBadge variant="pending" size={200} className="mb-6" />;
+  const iconBlock = <AgentStatusBadge variant="pending" size={200} />;
 
   const bodyText = (
-    <div className="w-full max-w-xs text-center">
-      <p className="font-sans text-sm font-semibold text-brand-text-primary mb-2">
+    <div className="w-full max-w-[340px] text-center">
+      <p className="font-sans text-base font-semibold leading-snug text-brand-text-primary mb-3">
         You will be able to start registering farmers once your account is verified.
       </p>
-      <p className="font-sans text-xs text-brand-text-secondary mb-6">
+      <p className="font-sans text-sm leading-relaxed text-brand-text-secondary">
         This usually takes a short while. We will notify you once an administrator has approved your application.
       </p>
       {toast && (
-        <p className="font-sans text-sm text-brand-amber font-medium mb-4" role="status">
+        <p className="mt-4 font-sans text-sm text-brand-amber font-medium" role="status">
           {toast}
         </p>
       )}
@@ -98,7 +98,7 @@ export default function AgentAccountUnderReview() {
   );
 
   const body = (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex w-full flex-col items-center gap-8">
       {iconBlock}
       {bodyText}
     </div>
@@ -130,10 +130,13 @@ export default function AgentAccountUnderReview() {
         centerTitle
         title="Account Under Review"
         subtitle="Your details have been submitted successfully and are currently being reviewed."
-        subtitleClassName="block w-full text-center"
-        actions={actions}
+        subtitleClassName="block w-full max-w-[340px] text-center !text-base !leading-snug mb-8"
+        contentClassName="py-2 lg:py-3"
       >
-        <div className="flex w-full flex-col items-center">{body}</div>
+        <div className="flex w-full max-w-sm flex-col items-center gap-10">
+          {body}
+          {actions}
+        </div>
       </AgentAuthDesktopLayout>
     );
   }
