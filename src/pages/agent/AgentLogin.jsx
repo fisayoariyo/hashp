@@ -4,7 +4,6 @@ import { Mail, Lock, ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import PasswordField from "../../components/PasswordField";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { CropexHttpError } from "../../services/cropexHttp";
 import {
   agentLogin,
   clearAgentSession,
@@ -15,10 +14,7 @@ import {
 import { getDisplayError } from "../../utils/apiErrors";
 import {
   clearAgentStatusPreview,
-  getAgentStatusNavigateOptions,
   getAgentStatusRoute,
-  inferStatusFromLoginFailure,
-  setAgentStatusPreview,
 } from "../../utils/agentStatus";
 
 export default function AgentLogin() {
@@ -86,19 +82,6 @@ export default function AgentLogin() {
 
       navigate("/agent/home");
     } catch (loginError) {
-      if (loginError instanceof CropexHttpError) {
-        const inferred = inferStatusFromLoginFailure(loginError.message, loginError.body);
-        const target = getAgentStatusNavigateOptions(inferred);
-        if (target) {
-          if (!getAgentSession()?.accessToken) {
-            setAgentStatusPreview(inferred);
-          } else {
-            clearAgentStatusPreview();
-          }
-          navigate(target.path, target.state ? { state: target.state } : undefined);
-          return;
-        }
-      }
       setError(getDisplayError(loginError, "Invalid email or password."));
     } finally {
       setLoading(false);
