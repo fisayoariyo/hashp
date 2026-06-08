@@ -98,7 +98,7 @@ export default function AgentAccountUnderReview() {
   );
 
   const body = (
-    <div className="flex w-full flex-col items-center gap-8">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-10">
       {iconBlock}
       {bodyText}
     </div>
@@ -131,12 +131,10 @@ export default function AgentAccountUnderReview() {
         title="Account Under Review"
         subtitle="Your details have been submitted successfully and are currently being reviewed."
         subtitleClassName="block w-full max-w-[340px] text-center !text-base !leading-snug mb-8"
-        contentClassName="py-2 lg:py-3"
+        contentClassName="!justify-between h-full py-2 lg:py-3"
+        actions={actions}
       >
-        <div className="flex w-full max-w-sm flex-col items-center gap-10">
-          {body}
-          {actions}
-        </div>
+        <div className="flex h-full w-full max-w-sm flex-col items-center">{body}</div>
       </AgentAuthDesktopLayout>
     );
   }
