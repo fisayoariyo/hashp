@@ -47,7 +47,14 @@ function appendScript(src, marker) {
       resolve();
     };
     script.onerror = () => {
-      reject(new Error(`Could not load ${src}.`));
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      reject(
+        new Error(
+          offline
+            ? "Scanner software is not available offline yet. Open HFEI once while online, then try again."
+            : `Could not load ${src}.`,
+        ),
+      );
     };
 
     if (!existing) {
@@ -71,6 +78,17 @@ async function loadScriptUntilReady({ sources, marker, isReady, label }) {
   }
 
   throw lastError || new Error(`${label} could not be loaded.`);
+}
+
+/** Warm the SDK cache while online so fingerprint capture still works after connectivity drops. */
+export function preloadDigitalPersonaSdk() {
+  if (typeof window === "undefined" || navigator.onLine === false) {
+    return Promise.resolve();
+  }
+  if (isDigitalPersonaSdkLoaded()) return Promise.resolve();
+  return loadDigitalPersonaSdk().catch(() => {
+    /* best-effort preload; capture screen shows errors if still unavailable */
+  });
 }
 
 export function loadDigitalPersonaSdk() {

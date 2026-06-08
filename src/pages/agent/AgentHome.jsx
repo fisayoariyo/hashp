@@ -16,6 +16,7 @@ import {
 } from "../../services/cropexApi";
 import { getAgentStatusRoute } from "../../utils/agentStatus";
 import { getDisplayError } from "../../utils/apiErrors";
+import { preloadDigitalPersonaSdk } from "../../services/digitalPersonaFingerprint";
 
 // ── Asset imports ─────────────────────────────────────────
 import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.webp";
@@ -117,6 +118,10 @@ export default function AgentHome() {
   const [isOnline,   setIsOnline]   = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [dashboard,  setDashboard]  = useState(null);
   const [farmersSummary, setFarmersSummary] = useState(null);
+
+  useEffect(() => {
+    void preloadDigitalPersonaSdk();
+  }, [isOnline]);
 
   useEffect(() => {
     let active = true;

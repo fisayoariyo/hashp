@@ -10,6 +10,7 @@ import AgentFingerprintVerification from "./AgentFingerprintVerification";
 import { buildWhatsAppShareURL } from "../../utils/helpers";
 import { CropexHttpError } from "../../services/cropexHttp";
 import { getDisplayError } from "../../utils/apiErrors";
+import { preloadDigitalPersonaSdk } from "../../services/digitalPersonaFingerprint";
 import { OFFLINE_FARMER_STATUS, createOfflineFarmerRecord } from "../../services/offlineFarmersDb";
 import {
   draftToEnrollmentCooperativeInfo,
@@ -1388,6 +1389,10 @@ export default function AgentRegisterFarmer() {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    void preloadDigitalPersonaSdk();
+  }, [isOnline]);
 
   // Biometric state LIFTED — survives sub-screen navigation
   const [faceCapture, setFaceCapture] = useState("idle");
