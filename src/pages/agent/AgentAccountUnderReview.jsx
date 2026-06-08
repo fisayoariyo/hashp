@@ -82,11 +82,11 @@ export default function AgentAccountUnderReview() {
   const iconBlock = <AgentStatusBadge variant="pending" size={200} />;
 
   const bodyText = (
-    <div className="w-full max-w-[340px] text-center">
-      <p className="font-sans text-base font-semibold leading-snug text-brand-text-primary mb-3">
+    <div className="w-full max-w-[360px] text-center">
+      <p className="font-sans text-xl font-semibold leading-snug text-brand-text-primary mb-3">
         You will be able to start registering farmers once your account is verified.
       </p>
-      <p className="font-sans text-sm leading-relaxed text-brand-text-secondary">
+      <p className="font-sans text-base leading-relaxed text-brand-text-secondary">
         This usually takes a short while. We will notify you once an administrator has approved your application.
       </p>
       {toast && (
@@ -98,7 +98,7 @@ export default function AgentAccountUnderReview() {
   );
 
   const body = (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-10">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-8">
       {iconBlock}
       {bodyText}
     </div>
@@ -126,16 +126,18 @@ export default function AgentAccountUnderReview() {
 
   if (isDesktop) {
     return (
-      <AgentAuthDesktopLayout
-        centerTitle
-        title="Account Under Review"
-        subtitle="Your details have been submitted successfully and are currently being reviewed."
-        subtitleClassName="block w-full max-w-[340px] text-center !text-base !leading-snug mb-8"
-        contentClassName="!justify-between h-full py-2 lg:py-3"
-        actions={actions}
-      >
-        <div className="flex h-full w-full max-w-sm flex-col items-center">{body}</div>
-      </AgentAuthDesktopLayout>
+      <div className="h-dvh overflow-hidden">
+        <AgentAuthDesktopLayout
+          centerTitle
+          title="Account Under Review"
+          subtitle="Your details have been submitted successfully and are currently being reviewed."
+          subtitleClassName="block w-full max-w-[360px] text-center !text-[18px] !leading-snug mb-8"
+          contentClassName="!justify-between h-full py-2 lg:py-3"
+          actions={actions}
+        >
+          <div className="flex h-full w-full max-w-sm flex-col items-center">{body}</div>
+        </AgentAuthDesktopLayout>
+      </div>
     );
   }
 
