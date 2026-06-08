@@ -86,7 +86,7 @@ function applyBackendFingerRows(previous, rows) {
   return next;
 }
 
-export default function AgentFingerprintVerification({ onSuccess, onBack, embedded, sessionId, offline = false }) {
+export default function AgentFingerprintVerification({ onSuccess, onBack, embedded, sessionId, offline = false, onOfflineCapture }) {
   const webApiRef = useRef(null);
   const readerTimerRef = useRef(null);
   const activeCaptureIdRef = useRef(0);
@@ -273,6 +273,10 @@ export default function AgentFingerprintVerification({ onSuccess, onBack, embedd
       // Offline — scanner captured locally, skip API submission
       if (offline) {
         if (activeCaptureIdRef.current !== captureId) return;
+        onOfflineCapture?.({
+          position: currentFinger.id,
+          fmr_template: fmdTemplate,
+        });
         setFingerStates((prev) => ({ ...prev, [currentFinger.id]: "success" }));
         setStatusMessage(`${currentFinger.label} captured (offline — will sync later).`);
       } else {

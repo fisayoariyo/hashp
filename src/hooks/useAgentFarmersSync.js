@@ -6,10 +6,7 @@ import {
   listFarmers,
   searchFarmers,
   mapApiFarmerToUi,
-  syncFarmers,
   extractFarmersArray,
-  buildFarmerSyncPayload,
-  validateFarmerSyncPayload,
 } from "../services/cropexApi";
 import {
   applyOfflineSyncResults,
@@ -19,6 +16,10 @@ import {
   listOfflineFarmers,
   setOfflineFarmersSyncing,
 } from "../services/offlineFarmersDb";
+import {
+  replayOfflineEnrollment,
+  validateOfflineEnrollmentRecord,
+} from "../services/offlineEnrollmentSync";
 import { getDisplayError } from "../utils/apiErrors";
 
 function mergeFarmers(offlineFarmers, remoteFarmers = []) {
@@ -87,34 +88,62 @@ async function syncPendingOfflineFarmers(references = []) {
   const submittedIds = recordsToSync.map((record) => record.clientId);
   await setOfflineFarmersSyncing(submittedIds, ownerAgentId);
 
-  const syncPayloads = recordsToSync.map((record) => buildFarmerSyncPayload(record, ownerAgentId));
+  const successes = [];
+  const failures = [];
 
   try {
-    const validationError = syncPayloads
-      .map((payload) => validateFarmerSyncPayload(payload))
-      .find(Boolean);
-    if (validationError) {
-      throw new Error(validationError);
+    for (const record of recordsToSync) {
+      const validationError = validateOfflineEnrollmentRecord(record);
+      if (validationError) {
+        failures.push({
+          clientId: record.clientId,
+          phone: record.payload?.phone_number,
+          nin: record.payload?.nin,
+          name: record.payload?.full_name,
+          errorMessage: validationError,
+        });
+        continue;
+      }
+
+      try {
+        const successEntry = await replayOfflineEnrollment(record, ownerAgentId);
+        successes.push(successEntry);
+      } catch (error) {
+        failures.push({
+          clientId: record.clientId,
+          phone: record.payload?.phone_number,
+          nin: record.payload?.nin,
+          name: record.payload?.full_name,
+          errorMessage: getDisplayError(error, "Sync failed."),
+        });
+      }
     }
 
-    const response = await syncFarmers(syncPayloads);
+    if (successes.length === 0 && failures.length > 0) {
+      throw new Error(failures[0].errorMessage || "Sync failed.");
+    }
 
     return applyOfflineSyncResults({
       ownerAgentId,
       submittedIds,
-      successes: response.successes,
-      failures: response.failures,
-      assumeAllSucceeded: response.assumeAllSucceeded,
+      successes,
+      failures,
+      assumeAllSucceeded: false,
     });
   } catch (error) {
-    const firstPayload = syncPayloads[0];
-    let errorMessage = getDisplayError(error, "Sync failed.");
-    if (
-      firstPayload &&
-      String(error?.message || "").toLowerCase().includes("invalid request body")
-    ) {
-      const payloadCheck = validateFarmerSyncPayload(firstPayload);
-      if (payloadCheck) errorMessage = payloadCheck;
+    if (failures.length > 0) {
+      return applyOfflineSyncResults({
+        ownerAgentId,
+        submittedIds,
+        successes,
+        failures,
+        assumeAllSucceeded: false,
+      }).then((result) => {
+        throw Object.assign(error instanceof Error ? error : new Error("Sync failed."), {
+          message: getDisplayError(error, failures[0]?.errorMessage || "Sync failed."),
+          syncResult: result,
+        });
+      });
     }
 
     return applyOfflineSyncResults({
@@ -125,11 +154,10 @@ async function syncPendingOfflineFarmers(references = []) {
         phone: record.payload?.phone_number,
         nin: record.payload?.nin,
         name: record.payload?.full_name,
-        errorMessage,
+        errorMessage: getDisplayError(error, "Sync failed."),
       })),
     }).then((result) => {
       throw Object.assign(error instanceof Error ? error : new Error("Sync failed."), {
-        message: errorMessage,
         syncResult: result,
       });
     });

@@ -100,7 +100,7 @@ function buildFaceCapture(video, { mimeType = "image/jpeg", quality = 0.82 } = {
   };
 }
 
-export default function AgentFacialVerification({ onSuccess, onBack, embedded, sessionId, offline = false }) {
+export default function AgentFacialVerification({ onSuccess, onBack, embedded, sessionId, offline = false, onOfflineCapture }) {
   const [status, setStatus] = useState("idle"); // idle | scanning | success | error
   const [errorText, setErrorText] = useState("");
   const [cameraLabel, setCameraLabel] = useState("");
@@ -170,8 +170,9 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
       await waitUntilVideoReady(video);
       const jpegCapture = buildFaceCapture(video, { mimeType: "image/jpeg", quality: 0.82 });
 
-      // Offline mode — skip server upload, mark locally captured
+      // Offline mode — persist capture locally for enrollment replay on sync
       if (offline) {
+        onOfflineCapture?.(jpegCapture.base64);
         setStatus("success");
         return;
       }

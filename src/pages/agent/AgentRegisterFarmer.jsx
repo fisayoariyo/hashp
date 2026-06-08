@@ -91,6 +91,51 @@ const buildQueuedFarmerRecord = (draft, agentId) => ({
   biometric: { face: true, fingerprint: true },
 });
 
+function buildEnrollmentDraftSnapshot(draft) {
+  return {
+    personal: draft.personal || {},
+    farm: draft.farm || {},
+    cooperative: draft.cooperative || {},
+    biometrics: draft.biometrics || {},
+  };
+}
+
+function buildOfflinePhotoUrl(draft) {
+  const facePhoto = readString(draft?.biometrics?.facePhoto);
+  if (!facePhoto) return DEMO_FARMER_PHOTO;
+  if (facePhoto.startsWith("data:")) return facePhoto;
+  return `data:image/jpeg;base64,${facePhoto}`;
+}
+
+function saveOfflineFaceCapture(facePhoto) {
+  const draft = getDraft();
+  const biometrics = draft.biometrics && typeof draft.biometrics === "object" ? draft.biometrics : {};
+  setDraft({ biometrics: { ...biometrics, facePhoto } });
+}
+
+function saveOfflineFingerprintCapture({ position, fmr_template }) {
+  const draft = getDraft();
+  const biometrics = draft.biometrics && typeof draft.biometrics === "object" ? draft.biometrics : {};
+  const fingerprints = Array.isArray(biometrics.fingerprints) ? [...biometrics.fingerprints] : [];
+  const index = fingerprints.findIndex((entry) => entry.position === position);
+  const nextEntry = { position, fmr_template };
+  if (index >= 0) fingerprints[index] = nextEntry;
+  else fingerprints.push(nextEntry);
+  setDraft({ biometrics: { ...biometrics, fingerprints } });
+}
+
+function validateOfflineBiometricsForSubmit(draft) {
+  const biometrics = draft?.biometrics || {};
+  if (!readString(biometrics.facePhoto)) {
+    return "Face photo was not saved. Capture face verification again before saving.";
+  }
+  const fingerprints = Array.isArray(biometrics.fingerprints) ? biometrics.fingerprints : [];
+  if (!fingerprints.some((entry) => readString(entry?.position) && readString(entry?.fmr_template))) {
+    return "Fingerprint data was not saved. Capture fingerprint verification again before saving.";
+  }
+  return "";
+}
+
 function validateDraftForSubmit(draft) {
   const personal = draft?.personal || {};
   const farm = draft?.farm || {};
@@ -1435,9 +1480,18 @@ export default function AgentRegisterFarmer() {
 
     // ── OFFLINE PATH ──────────────────────────────────────────
     if (!isOnline) {
+      const biometricError = validateOfflineBiometricsForSubmit(draft);
+      if (biometricError) {
+        setSubmitError(biometricError);
+        setSubmitting(false);
+        return;
+      }
+
       try {
         const agentId = getAgentIdFromSession();
         const savedAt = formatToday();
+        const enrollmentDraft = buildEnrollmentDraftSnapshot(draft);
+        const offlinePhoto = buildOfflinePhotoUrl(draft);
         const clientId =
           typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
             ? crypto.randomUUID()
@@ -1446,10 +1500,11 @@ export default function AgentRegisterFarmer() {
         const record = await createOfflineFarmerRecord({
           clientId,
           ownerAgentId: agentId,
+          enrollmentDraft,
           payload: { ...queuedPayload.payload, client_id: clientId },
           status: OFFLINE_FARMER_STATUS.PENDING,
           name: queuedPayload.name,
-          photo: queuedPayload.photo,
+          photo: offlinePhoto,
           regDate: savedAt,
           phone: queuedPayload.phone,
           state: queuedPayload.state,
@@ -1517,9 +1572,20 @@ export default function AgentRegisterFarmer() {
 
       const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
       if (isOffline) {
+        const biometricError = validateOfflineBiometricsForSubmit(draft);
+        if (biometricError) {
+          setSubmitError(biometricError);
+          setSubmitting(false);
+          return;
+        }
+
+        const enrollmentDraft = buildEnrollmentDraftSnapshot(draft);
+        const offlinePhoto = buildOfflinePhotoUrl(draft);
         const offlineRecord = await createOfflineFarmerRecord({
           ...queuedPayload,
           ownerAgentId: agentId,
+          enrollmentDraft,
+          photo: offlinePhoto,
           status: OFFLINE_FARMER_STATUS.PENDING,
           regDate: savedAt,
           syncedAt: null,
@@ -1690,6 +1756,7 @@ export default function AgentRegisterFarmer() {
             onBack={() => setStep("biometric")}
             sessionId={enrollmentSessionId}
             offline={!isOnline}
+            onOfflineCapture={saveOfflineFaceCapture}
           />
         </div>
         <AgentDesktopShell active="farmers">
@@ -1700,6 +1767,7 @@ export default function AgentRegisterFarmer() {
               onBack={() => setStep("biometric")}
               sessionId={enrollmentSessionId}
               offline={!isOnline}
+              onOfflineCapture={saveOfflineFaceCapture}
             />
           </div>
         </AgentDesktopShell>
@@ -1716,6 +1784,7 @@ export default function AgentRegisterFarmer() {
             onBack={() => setStep("biometric")}
             sessionId={enrollmentSessionId}
             offline={!isOnline}
+            onOfflineCapture={saveOfflineFingerprintCapture}
           />
         </div>
         <AgentDesktopShell active="farmers">
@@ -1726,6 +1795,7 @@ export default function AgentRegisterFarmer() {
               onBack={() => setStep("biometric")}
               sessionId={enrollmentSessionId}
               offline={!isOnline}
+              onOfflineCapture={saveOfflineFingerprintCapture}
             />
           </div>
         </AgentDesktopShell>
