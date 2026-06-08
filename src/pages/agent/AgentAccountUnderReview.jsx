@@ -79,10 +79,10 @@ export default function AgentAccountUnderReview() {
     }
   };
 
-  const iconBlock = <AgentStatusBadge variant="pending" size={200} className="mb-8" />;
+  const iconBlock = <AgentStatusBadge variant="pending" size={200} className="mb-6" />;
 
   const bodyText = (
-    <div className="w-full">
+    <div className="w-full max-w-xs text-center">
       <p className="font-sans text-sm font-semibold text-brand-text-primary mb-2">
         You will be able to start registering farmers once your account is verified.
       </p>
@@ -98,8 +98,8 @@ export default function AgentAccountUnderReview() {
   );
 
   const body = (
-    <div className="flex flex-col w-full">
-      <div className="flex justify-center w-full">{iconBlock}</div>
+    <div className="flex flex-col items-center w-full">
+      {iconBlock}
       {bodyText}
     </div>
   );
@@ -127,11 +127,13 @@ export default function AgentAccountUnderReview() {
   if (isDesktop) {
     return (
       <AgentAuthDesktopLayout
+        centerTitle
         title="Account Under Review"
         subtitle="Your details have been submitted successfully and are currently being reviewed."
+        subtitleClassName="block w-full text-center"
         actions={actions}
       >
-        <div className="flex w-full flex-col">{body}</div>
+        <div className="flex w-full flex-col items-center">{body}</div>
       </AgentAuthDesktopLayout>
     );
   }
