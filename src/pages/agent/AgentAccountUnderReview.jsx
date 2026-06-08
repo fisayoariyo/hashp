@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { getAgentDashboard, getAgentSession } from "../../services/cropexApi";
+import { getAgentAccessToken, getAgentDashboard, getAgentSession } from "../../services/cropexApi";
 import {
   clearAgentStatusPreview,
   extractAgentStatus,
@@ -20,6 +20,7 @@ export default function AgentAccountUnderReview() {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState("");
+  const hasAgentSession = Boolean(getAgentAccessToken());
 
   useEffect(() => {
     try {
@@ -45,8 +46,11 @@ export default function AgentAccountUnderReview() {
   }, [navigate]);
 
   const handleRefresh = async () => {
-    if (!getAgentSession()?.accessToken) {
-      setToast("Sign in to refresh your account status.");
+    if (!hasAgentSession) {
+      navigate("/agent/login", {
+        replace: true,
+        state: { sessionExpired: true, from: "under-review" },
+      });
       return;
     }
 
@@ -109,7 +113,7 @@ export default function AgentAccountUnderReview() {
         disabled={loading}
         className="btn-primary w-full disabled:opacity-50"
       >
-        {loading ? "Checking..." : "Refresh status"}
+        {loading ? "Checking..." : hasAgentSession ? "Refresh status" : "Sign in to continue"}
       </button>
       <button
         type="button"
