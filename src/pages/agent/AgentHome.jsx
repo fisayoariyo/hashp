@@ -17,6 +17,7 @@ import {
 import { getAgentStatusRoute } from "../../utils/agentStatus";
 import { getDisplayError } from "../../utils/apiErrors";
 import { preloadDigitalPersonaSdk } from "../../services/digitalPersonaFingerprint";
+import { preloadGeoCache } from "../../services/geoCache";
 
 // ── Asset imports ─────────────────────────────────────────
 import cardPatternDesktop from "../../assets/comps/card-pattern-desktop.webp";
@@ -121,6 +122,7 @@ export default function AgentHome() {
 
   useEffect(() => {
     void preloadDigitalPersonaSdk();
+    void preloadGeoCache();
   }, [isOnline]);
 
   useEffect(() => {

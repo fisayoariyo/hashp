@@ -11,6 +11,7 @@ import { buildWhatsAppShareURL } from "../../utils/helpers";
 import { CropexHttpError } from "../../services/cropexHttp";
 import { getDisplayError } from "../../utils/apiErrors";
 import { preloadDigitalPersonaSdk } from "../../services/digitalPersonaFingerprint";
+import { loadGeoLgas, loadGeoStates } from "../../services/geoCache";
 import { OFFLINE_FARMER_STATUS, createOfflineFarmerRecord } from "../../services/offlineFarmersDb";
 import {
   draftToEnrollmentCooperativeInfo,
@@ -18,15 +19,10 @@ import {
   draftToEnrollmentPayload,
   draftToEnrollmentPersonalInfo,
   extractFarmersArray,
-  extractGeoArray,
   getAgentIdFromSession,
   getEnrollmentSession,
   getAgentSession,
-  getGeoLgas,
-  getGeoStates,
   listFarmers,
-  mapGeoLgaOption,
-  mapGeoStateOption,
   reviewEnrollmentSession,
   startEnrollmentSession,
   submitEnrollmentCooperativeInfo,
@@ -643,15 +639,11 @@ function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, s
     setLgasLoading(true);
     setLgasError("");
 
-    getGeoLgas(form.stateId)
-      .then((payload) => {
+    loadGeoLgas(form.stateId)
+      .then(({ options, error }) => {
         if (!active) return;
-        setLgaOptions(extractGeoArray(payload).map(mapGeoLgaOption).filter(Boolean));
-      })
-      .catch((error) => {
-        if (!active) return;
-        setLgaOptions([]);
-        setLgasError(getDisplayError(error, "Could not load LGAs right now."));
+        setLgaOptions(options);
+        setLgasError(error);
       })
       .finally(() => {
         if (active) setLgasLoading(false);
@@ -1024,15 +1016,11 @@ function CoopStep({ onNext, onBack, embedded, stateOptions }) {
     setLgasLoading(true);
     setLgasError("");
 
-    getGeoLgas(derivedStateId)
-      .then((payload) => {
+    loadGeoLgas(derivedStateId)
+      .then(({ options, error }) => {
         if (!active) return;
-        setLgaOptions(extractGeoArray(payload).map(mapGeoLgaOption).filter(Boolean));
-      })
-      .catch((error) => {
-        if (!active) return;
-        setLgaOptions([]);
-        setLgasError(getDisplayError(error, "Could not load cooperative LGAs."));
+        setLgaOptions(options);
+        setLgasError(error || "");
       })
       .finally(() => {
         if (active) setLgasLoading(false);
@@ -1414,15 +1402,11 @@ export default function AgentRegisterFarmer() {
     setStatesLoading(true);
     setStatesError("");
 
-    getGeoStates()
-      .then((payload) => {
+    loadGeoStates({ online: isOnline })
+      .then(({ options, error }) => {
         if (!active) return;
-        setStateOptions(extractGeoArray(payload).map(mapGeoStateOption).filter(Boolean));
-      })
-      .catch((error) => {
-        if (!active) return;
-        setStateOptions([]);
-        setStatesError(getDisplayError(error, "Could not load states right now."));
+        setStateOptions(options);
+        setStatesError(error);
       })
       .finally(() => {
         if (active) setStatesLoading(false);
@@ -1431,7 +1415,7 @@ export default function AgentRegisterFarmer() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isOnline]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
