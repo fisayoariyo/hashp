@@ -39,9 +39,6 @@ export default function AgentAccountUnderReview() {
         navigate("/agent/select-location", { replace: true });
         return;
       }
-      if (!session?.accessToken) {
-        navigate("/agent/verify-phone", { replace: true, state: { mode: "register" } });
-      }
     } catch {
       navigate("/agent/login", { replace: true });
     }
