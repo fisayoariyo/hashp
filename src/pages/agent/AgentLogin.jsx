@@ -8,6 +8,7 @@ import { CropexHttpError } from "../../services/cropexHttp";
 import {
   agentLogin,
   clearAgentSession,
+  getAgentAccessToken,
   getAgentDashboard,
   getAgentSession,
   setAgentSessionFromAuthResponse,
@@ -15,10 +16,8 @@ import {
 import { getDisplayError } from "../../utils/apiErrors";
 import {
   clearAgentStatusPreview,
-  getAgentStatusNavigateOptions,
   getAgentStatusRoute,
   inferStatusFromLoginFailure,
-  setAgentStatusPreview,
 } from "../../utils/agentStatus";
 
 export default function AgentLogin() {
@@ -62,8 +61,15 @@ export default function AgentLogin() {
       const response = await agentLogin({ email: email.trim(), password });
       setAgentSessionFromAuthResponse(response);
 
+      if (!getAgentAccessToken()) {
+        clearAgentSession();
+        setError("Sign-in succeeded but no session was returned. Please try again or contact support.");
+        return;
+      }
+
       const session = getAgentSession();
-      if (session?.role && session.role !== "AGENT") {
+      const role = String(session?.role || "").trim().toUpperCase();
+      if (role && role !== "AGENT") {
         clearAgentSession();
         setError("This account is not registered as an agent.");
         return;
@@ -88,10 +94,18 @@ export default function AgentLogin() {
     } catch (loginError) {
       if (loginError instanceof CropexHttpError) {
         const inferred = inferStatusFromLoginFailure(loginError.message, loginError.body);
-        const target = getAgentStatusNavigateOptions(inferred);
-        if (target) {
-          setAgentStatusPreview(inferred);
-          navigate(target.path, target.state ? { state: target.state } : undefined);
+        if (inferred === "PENDING") {
+          setError(
+            "Your account is still under administrator review. Try again after you receive approval.",
+          );
+          return;
+        }
+        if (inferred === "REJECTED") {
+          setError("Your account verification was not approved. Contact support if you need help.");
+          return;
+        }
+        if (inferred === "SUSPENDED") {
+          setError("This account is suspended. Contact support for assistance.");
           return;
         }
       }

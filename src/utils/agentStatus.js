@@ -55,6 +55,7 @@ export function extractAgentStatus(payload) {
 
   if (status) return status;
   if (agent?.is_active === true || root?.is_active === true) return "ACTIVE";
+  if (agent?.is_active === false || root?.is_active === false) return "PENDING";
   return "";
 }
 

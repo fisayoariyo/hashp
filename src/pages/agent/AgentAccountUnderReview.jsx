@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { CropexHttpError } from "../../services/cropexHttp";
 import { getAgentAccessToken, getAgentDashboard } from "../../services/cropexApi";
 import {
   clearAgentStatusPreview,
@@ -72,6 +73,13 @@ export default function AgentAccountUnderReview() {
 
       setToast("Still under review. An administrator must verify your account before you can use the app.");
     } catch (refreshError) {
+      if (refreshError instanceof CropexHttpError && refreshError.status === 401) {
+        navigate("/agent/login", {
+          replace: true,
+          state: { sessionExpired: true, from: "under-review" },
+        });
+        return;
+      }
       setToast(refreshError instanceof Error ? refreshError.message : "Could not refresh your review status.");
     } finally {
       setLoading(false);
