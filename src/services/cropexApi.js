@@ -595,9 +595,32 @@ export function getEnrollmentSession(sessionId) {
 }
 
 export async function syncFarmers(records) {
+  const ownerAgentId = getAgentIdFromSession();
+  const normalizedRecords = (Array.isArray(records) ? records : []).map((record) =>
+    record?.payload && typeof record.payload === "object"
+      ? buildFarmerSyncPayload(record, ownerAgentId)
+      : record
+  );
+
+  for (const syncPayload of normalizedRecords) {
+    const validationError = validateFarmerSyncPayload(syncPayload);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+  }
+
+  if (normalizedRecords.length === 0) {
+    return {
+      raw: null,
+      successes: [],
+      failures: [],
+      assumeAllSucceeded: true,
+    };
+  }
+
   const payload = await cropexSessionFetch(AGENT_AUTH_KEY, "/farmers/sync", {
     method: "POST",
-    body: records,
+    body: normalizedRecords,
   });
 
   const objects = collectObjects(payload);
@@ -821,10 +844,180 @@ export function mapYearsExperienceToInt(label) {
   return values[label] ?? 0;
 }
 
+const FARMER_SYNC_REQUIRED_FIELDS = [
+  "full_name",
+  "phone_number",
+  "nin",
+  "bvn",
+  "gender",
+  "date_of_birth",
+  "state_of_origin",
+  "lga",
+  "residential_address",
+  "client_id",
+  "enrolled_by_agent_id",
+];
+
+const FARMER_SYNC_FIELD_LABELS = {
+  full_name: "Full name",
+  phone_number: "Phone number",
+  nin: "NIN",
+  bvn: "BVN",
+  gender: "Gender",
+  date_of_birth: "Date of birth",
+  state_of_origin: "State",
+  lga: "LGA",
+  residential_address: "Residential address",
+  client_id: "Client ID",
+  enrolled_by_agent_id: "Agent ID",
+};
+
+export function formatDateOfBirthForApi(value) {
+  const text = readString(value);
+  if (!text) return "";
+
+  const slashMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (slashMatch) {
+    const [, dd, mm, yyyy] = slashMatch;
+    return `${yyyy}-${mm}-${dd}T00:00:00Z`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return `${text}T00:00:00Z`;
+  }
+
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return text;
+
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T00:00:00Z`;
+}
+
+function normalizeFarmerSyncGender(value) {
+  const gender = readString(value);
+  if (gender === "Male") return "M";
+  if (gender === "Female") return "F";
+  if (["M", "F", "Other"].includes(gender)) return gender;
+  return mapGenderToFarmerApi(gender);
+}
+
+export function validateFarmerSyncPayload(payload) {
+  for (const key of FARMER_SYNC_REQUIRED_FIELDS) {
+    if (!readString(payload?.[key])) {
+      return `${FARMER_SYNC_FIELD_LABELS[key] || key} is missing. Log in again or re-register the farmer, then retry sync.`;
+    }
+  }
+
+  const gender = readString(payload?.gender);
+  if (!["M", "F", "Other"].includes(gender)) {
+    return "Gender value is invalid for sync.";
+  }
+
+  const phoneDigits = readString(payload?.phone_number).replace(/\D/g, "");
+  if (phoneDigits.length < 10) {
+    return "Phone number is invalid for sync.";
+  }
+
+  const ninDigits = readString(payload?.nin).replace(/\D/g, "");
+  if (ninDigits.length !== 11) {
+    return "NIN must be 11 digits before sync.";
+  }
+
+  const bvnDigits = readString(payload?.bvn).replace(/\D/g, "");
+  if (bvnDigits.length !== 11) {
+    return "BVN must be 11 digits before sync.";
+  }
+
+  return "";
+}
+
+export function buildFarmerSyncPayload(record, enrolledByAgentId = "") {
+  const payloadSource =
+    record?.payload && typeof record.payload === "object" && !Array.isArray(record.payload)
+      ? record.payload
+      : {};
+  const clientId = readString(record?.clientId, payloadSource.client_id);
+  const agentId = readString(
+    payloadSource.enrolled_by_agent_id,
+    record?.ownerAgentId,
+    enrolledByAgentId
+  );
+
+  const syncPayload = {
+    client_id: clientId,
+    enrolled_by_agent_id: agentId,
+    full_name: readString(payloadSource.full_name, record?.name),
+    phone_number: normalizeFarmerInterestPhone(
+      readString(payloadSource.phone_number, record?.phone)
+    ),
+    nin: readString(payloadSource.nin, record?.nin).replace(/\D/g, ""),
+    bvn: readString(payloadSource.bvn).replace(/\D/g, ""),
+    gender: normalizeFarmerSyncGender(readString(payloadSource.gender, record?.gender)),
+    date_of_birth: formatDateOfBirthForApi(
+      readString(payloadSource.date_of_birth, payloadSource.dob, record?.dob)
+    ),
+    state_of_origin: readString(payloadSource.state_of_origin, payloadSource.state, record?.state),
+    lga: readString(payloadSource.lga, payloadSource.local_govt_area, record?.lga),
+    residential_address: readString(
+      payloadSource.residential_address,
+      payloadSource.address,
+      record?.address
+    ),
+  };
+
+  const optionalStringFields = [
+    ["marital_status", payloadSource.marital_status],
+    ["education_level", payloadSource.education_level],
+    ["next_of_kin_name", payloadSource.next_of_kin_name],
+    ["next_of_kin_relation", payloadSource.next_of_kin_relation],
+    ["crop_type", payloadSource.crop_type],
+    ["farm_location", payloadSource.farm_location],
+    ["farm_size", payloadSource.farm_size],
+    ["soil_type", payloadSource.soil_type],
+    ["profile_photo_url", payloadSource.profile_photo_url],
+  ];
+
+  optionalStringFields.forEach(([key, value]) => {
+    const normalized = readString(value);
+    if (normalized) syncPayload[key] = normalized;
+  });
+
+  const nextOfKinPhone = readString(payloadSource.next_of_kin_phone);
+  if (nextOfKinPhone) {
+    syncPayload.next_of_kin_phone = normalizeFarmerInterestPhone(nextOfKinPhone);
+  }
+
+  const primaryCrops = Array.isArray(payloadSource.primary_crops)
+    ? payloadSource.primary_crops.map((crop) => readString(crop)).filter(Boolean)
+    : [];
+  if (primaryCrops.length > 0) {
+    syncPayload.primary_crops = primaryCrops;
+  } else {
+    const cropType = readString(payloadSource.crop_type, record?.primaryCrop);
+    if (cropType) syncPayload.primary_crops = [cropType];
+  }
+
+  if (Array.isArray(payloadSource.secondary_crops) && payloadSource.secondary_crops.length > 0) {
+    syncPayload.secondary_crops = payloadSource.secondary_crops
+      .map((crop) => readString(crop))
+      .filter(Boolean);
+  }
+
+  const farmingExperience =
+    payloadSource.farming_experience ?? mapYearsExperienceToInt(payloadSource.years_of_experience);
+  if (Number.isFinite(Number(farmingExperience))) {
+    syncPayload.farming_experience = Math.max(0, Math.floor(Number(farmingExperience)));
+  }
+
+  return syncPayload;
+}
+
 export function draftToEnrollmentPayload(draft, enrolledByAgentId) {
   const personal = draft.personal || {};
   const farm = draft.farm || {};
-  const phone_number = formatPhoneForApi(personal.phone);
+  const phone_number = normalizeFarmerInterestPhone(personal.phone);
   const primaryCrops =
     Array.isArray(personal.primaryCrops) && personal.primaryCrops.length > 0
       ? personal.primaryCrops
@@ -838,10 +1031,11 @@ export function draftToEnrollmentPayload(draft, enrolledByAgentId) {
     nin: personal.nin,
     bvn: personal.bvn,
     gender: mapGenderToFarmerApi(personal.gender),
-    date_of_birth: personal.dob,
+    date_of_birth: formatDateOfBirthForApi(personal.dob),
     state_of_origin: personal.state,
     lga: personal.lga,
     residential_address: personal.address,
+    enrolled_by_agent_id: readString(enrolledByAgentId) || undefined,
     marital_status: personal.maritalStatus || undefined,
     education_level: personal.educationLevel || undefined,
     farming_experience: mapYearsExperienceToInt(personal.yearsExperience),
@@ -849,7 +1043,7 @@ export function draftToEnrollmentPayload(draft, enrolledByAgentId) {
     secondary_crops: [],
     next_of_kin_name: personal.nextKinName || undefined,
     next_of_kin_phone: personal.nextKinPhone
-      ? formatPhoneForApi(personal.nextKinPhone)
+      ? normalizeFarmerInterestPhone(personal.nextKinPhone)
       : undefined,
     next_of_kin_relation: personal.nextKinRelationship || undefined,
     crop_type: farm.cropType || undefined,

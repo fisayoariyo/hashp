@@ -8,6 +8,8 @@ import {
   mapApiFarmerToUi,
   syncFarmers,
   extractFarmersArray,
+  buildFarmerSyncPayload,
+  validateFarmerSyncPayload,
 } from "../services/cropexApi";
 import {
   applyOfflineSyncResults,
@@ -85,15 +87,17 @@ async function syncPendingOfflineFarmers(references = []) {
   const submittedIds = recordsToSync.map((record) => record.clientId);
   await setOfflineFarmersSyncing(submittedIds, ownerAgentId);
 
+  const syncPayloads = recordsToSync.map((record) => buildFarmerSyncPayload(record, ownerAgentId));
+
   try {
-    const response = await syncFarmers(
-      recordsToSync.map((record) => ({
-        ...(record.payload || {}),
-        client_id: record.clientId,
-        enrolled_by_agent_id:
-          record.payload?.enrolled_by_agent_id || record.ownerAgentId || ownerAgentId || undefined,
-      }))
-    );
+    const validationError = syncPayloads
+      .map((payload) => validateFarmerSyncPayload(payload))
+      .find(Boolean);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const response = await syncFarmers(syncPayloads);
 
     return applyOfflineSyncResults({
       ownerAgentId,
@@ -103,6 +107,16 @@ async function syncPendingOfflineFarmers(references = []) {
       assumeAllSucceeded: response.assumeAllSucceeded,
     });
   } catch (error) {
+    const firstPayload = syncPayloads[0];
+    let errorMessage = getDisplayError(error, "Sync failed.");
+    if (
+      firstPayload &&
+      String(error?.message || "").toLowerCase().includes("invalid request body")
+    ) {
+      const payloadCheck = validateFarmerSyncPayload(firstPayload);
+      if (payloadCheck) errorMessage = payloadCheck;
+    }
+
     return applyOfflineSyncResults({
       ownerAgentId,
       submittedIds,
@@ -111,10 +125,11 @@ async function syncPendingOfflineFarmers(references = []) {
         phone: record.payload?.phone_number,
         nin: record.payload?.nin,
         name: record.payload?.full_name,
-        errorMessage: getDisplayError(error, "Sync failed."),
+        errorMessage,
       })),
     }).then((result) => {
       throw Object.assign(error instanceof Error ? error : new Error("Sync failed."), {
+        message: errorMessage,
         syncResult: result,
       });
     });
