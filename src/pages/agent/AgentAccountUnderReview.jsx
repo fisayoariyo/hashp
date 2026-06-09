@@ -5,7 +5,19 @@ import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayou
 import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { CropexHttpError } from "../../services/cropexHttp";
-import { getAgentAccessToken, getAgentDashboard } from "../../services/cropexApi";
+import {
+  getAgentAccessToken,
+  getAgentDashboard,
+  getAgentIdFromSession,
+  getAgentStatus,
+} from "../../services/cropexApi";
+
+function readString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
 import {
   clearAgentStatusPreview,
   extractAgentStatus,
@@ -26,15 +38,16 @@ export default function AgentAccountUnderReview() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(REG_KEY);
+      const reg = raw ? JSON.parse(raw) : {};
+      const savedUserId = readString(reg.userId);
 
-      if (!hasAgentSession()) {
+      if (!hasAgentSession() && !savedUserId) {
         navigate("/agent/login", { replace: true });
         return;
       }
 
       if (!raw) return;
 
-      const reg = JSON.parse(raw);
       if (!reg.state || !reg.lga) {
         navigate("/agent/select-location", { replace: true });
         return;
@@ -44,8 +57,19 @@ export default function AgentAccountUnderReview() {
     }
   }, [navigate]);
 
+  const readRegistrationUserId = () => {
+    try {
+      const raw = sessionStorage.getItem(REG_KEY);
+      const reg = raw ? JSON.parse(raw) : {};
+      return readString(reg.userId);
+    } catch {
+      return "";
+    }
+  };
+
   const handleRefresh = async () => {
-    if (!hasAgentSession()) {
+    const userId = getAgentIdFromSession() || readRegistrationUserId();
+    if (!userId && !hasAgentSession()) {
       navigate("/agent/login", {
         replace: true,
         state: { sessionExpired: true, from: "under-review" },
@@ -56,7 +80,22 @@ export default function AgentAccountUnderReview() {
     setLoading(true);
     setToast("");
     try {
-      const payload = await getAgentDashboard();
+      let payload = null;
+      if (userId) {
+        try {
+          payload = await getAgentStatus(userId);
+        } catch (statusError) {
+          if (hasAgentSession() && (!(statusError instanceof CropexHttpError) || statusError.status !== 404)) {
+            payload = await getAgentDashboard();
+          } else {
+            throw statusError;
+          }
+        }
+      } else if (hasAgentSession()) {
+        payload = await getAgentDashboard();
+      } else {
+        throw new Error("Could not find your account ID. Log in again and retry.");
+      }
       clearAgentStatusPreview();
 
       const status = extractAgentStatus(payload);

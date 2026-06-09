@@ -8,6 +8,7 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useOtpCountdown } from "../../hooks/useOtpCountdown";
 import {
   agentVerifyOtp,
+  getAgentIdFromSession,
   resendAuthOtp,
   setAgentSessionFromAuthResponse,
   verifyChangePasswordOtp,
@@ -142,6 +143,16 @@ export default function AgentVerifyPhone() {
       }
       const response = await agentVerifyOtp(registerPhone, otp);
       setAgentSessionFromAuthResponse(response);
+      try {
+        const raw = sessionStorage.getItem(REG_KEY);
+        const reg = raw ? JSON.parse(raw) : {};
+        const userId = getAgentIdFromSession();
+        if (userId) {
+          sessionStorage.setItem(REG_KEY, JSON.stringify({ ...reg, userId }));
+        }
+      } catch {
+        /* ignore */
+      }
       navigate("/agent/select-location");
     } catch (verifyError) {
       const facing =

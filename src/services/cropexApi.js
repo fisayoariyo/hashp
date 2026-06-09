@@ -742,6 +742,24 @@ export function getFarmerIdCard() {
   return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/id-card").then((payload) => extractDataRoot(payload));
 }
 
+export function getAgentStatus(userId) {
+  const id = readString(userId);
+  if (!id) {
+    return Promise.reject(new Error("Agent user ID is missing."));
+  }
+  return cropexFetch(`/agents/status/${encodeURIComponent(id)}`).then((payload) =>
+    extractDataRoot(payload)
+  );
+}
+
+export async function getAgentStatusForSession() {
+  const userId = getAgentIdFromSession();
+  if (!userId) {
+    throw new Error("Agent user ID is missing from session.");
+  }
+  return getAgentStatus(userId);
+}
+
 export function getAgentDashboard() {
   return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me").then((payload) => extractDataRoot(payload));
 }
