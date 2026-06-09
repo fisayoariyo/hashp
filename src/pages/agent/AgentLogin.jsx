@@ -30,9 +30,16 @@ export default function AgentLogin() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
-  const sessionExpired = location.state?.sessionExpired === true;
+  const [showSessionExpired, setShowSessionExpired] = useState(false);
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState("");
+
+  useEffect(() => {
+    if (location.state?.sessionExpired === true) {
+      setShowSessionExpired(true);
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+    }
+  }, [location.pathname, location.search, location.state, navigate]);
 
   useEffect(() => {
     try {
@@ -160,7 +167,7 @@ export default function AgentLogin() {
 
   const formFields = (
     <div className="space-y-5">
-      {sessionExpired && (
+      {showSessionExpired && (
         <div className="mb-4 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
           Your session has expired. Please log in again to continue.
         </div>
