@@ -1608,10 +1608,37 @@ export default function AgentRegisterFarmer() {
         return;
       }
 
-      await submitEnrollmentPersonalInfo({ session_id: sessionId, personal_info: personalInfo });
-      await submitEnrollmentFarmInfo({ session_id: sessionId, farm_info: farmInfo });
-      await submitEnrollmentCooperativeInfo({ session_id: sessionId, cooperative: cooperativeInfo });
-      const reviewResponse = await reviewEnrollmentSession(sessionId);
+      const runEnrollmentStep = async (label, runner) => {
+        try {
+          return await runner();
+        } catch (stepError) {
+          const baseMessage =
+            stepError instanceof Error && stepError.message
+              ? stepError.message
+              : "Request failed.";
+          const friendly = `${label} step failed: ${baseMessage}`;
+          if (typeof console !== "undefined" && console.error) {
+            console.error(`[enrollment:${label}]`, stepError);
+          }
+          throw Object.assign(
+            stepError instanceof Error ? stepError : new Error(friendly),
+            { message: friendly, enrollmentStep: label, cause: stepError }
+          );
+        }
+      };
+
+      await runEnrollmentStep("Personal info", () =>
+        submitEnrollmentPersonalInfo({ session_id: sessionId, personal_info: personalInfo })
+      );
+      await runEnrollmentStep("Farm info", () =>
+        submitEnrollmentFarmInfo({ session_id: sessionId, farm_info: farmInfo })
+      );
+      await runEnrollmentStep("Cooperative info", () =>
+        submitEnrollmentCooperativeInfo({ session_id: sessionId, cooperative: cooperativeInfo })
+      );
+      const reviewResponse = await runEnrollmentStep("Review", () =>
+        reviewEnrollmentSession(sessionId)
+      );
       let sessionResponse = null;
       try {
         sessionResponse = await getEnrollmentSession(sessionId);
