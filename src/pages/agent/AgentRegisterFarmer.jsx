@@ -8,27 +8,21 @@ import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
 import AgentFacialVerification from "./AgentFacialVerification";
 import AgentFingerprintVerification from "./AgentFingerprintVerification";
 import { buildWhatsAppShareURL } from "../../utils/helpers";
-import { CropexHttpError } from "../../services/cropexHttp";
 import { getDisplayError } from "../../utils/apiErrors";
 import { preloadDigitalPersonaSdk } from "../../services/digitalPersonaFingerprint";
 import { loadGeoLgas, loadGeoStates } from "../../services/geoCache";
 import { OFFLINE_FARMER_STATUS, createOfflineFarmerRecord } from "../../services/offlineFarmersDb";
 import {
-  draftToEnrollmentCooperativeInfo,
-  draftToEnrollmentFarmInfo,
   draftToEnrollmentPayload,
-  draftToEnrollmentPersonalInfo,
+  draftToFarmerEnrollmentRequest,
+  enrollFarmer,
   extractFarmersArray,
   getAgentIdFromSession,
-  getEnrollmentSession,
-  getEnrollmentBiometricStatus,
   getAgentSession,
+  getEnrollmentBiometricStatus,
   listFarmers,
-  reviewEnrollmentSession,
+  parseEnrolledFarmerResponse,
   startEnrollmentSession,
-  submitEnrollmentCooperativeInfo,
-  submitEnrollmentFarmInfo,
-  submitEnrollmentPersonalInfo,
 } from "../../services/cropexApi";
 
 const DEMO_FARMER_PHOTO = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop";
@@ -305,11 +299,13 @@ function validateEnrollmentPayloadAgainstContract(payload) {
     ["gender", "Gender"],
     ["date_of_birth", "Date of birth"],
     ["state_of_origin", "State"],
-    ["local_govt_area", "LGA"],
+    ["lga", "LGA"],
     ["residential_address", "Residential address"],
   ];
   for (const [key, label] of required) {
-    if (!readString(personal?.[key], key === "local_govt_area" ? personal?.lga : "")) {
+    const fallback =
+      key === "lga" ? readString(personal?.local_govt_area) : "";
+    if (!readString(personal?.[key], fallback)) {
       return `${label} is missing in submit payload.`;
     }
   }
@@ -326,40 +322,6 @@ function formatEnrollmentError(error, payload) {
     if (payloadCheck) return payloadCheck;
   }
   return getDisplayError(error, "Enrollment failed. Check required fields and try again.");
-}
-
-function getPayloadRoot(payload) {
-  if (!payload || typeof payload !== "object") return {};
-  return payload.data && typeof payload.data === "object" ? payload.data : payload;
-}
-
-function readEnrollmentPhoto(payload) {
-  const root = getPayloadRoot(payload);
-  const biometric =
-    root.biometric_data && typeof root.biometric_data === "object" ? root.biometric_data : {};
-  const farmer =
-    root.farmer && typeof root.farmer === "object"
-      ? root.farmer
-      : root.personal_info && typeof root.personal_info === "object"
-        ? root.personal_info
-        : {};
-
-  return readString(
-    root.profile_photo_url,
-    root.photo_url,
-    root.profile_photo,
-    root.photo,
-    root.face_photo,
-    farmer.profile_photo_url,
-    farmer.photo_url,
-    farmer.profile_photo,
-    farmer.photo,
-    biometric.profile_photo_url,
-    biometric.photo_url,
-    biometric.profile_photo,
-    biometric.photo,
-    biometric.face_photo
-  );
 }
 
 function requestFarmersRefresh() {
@@ -395,9 +357,9 @@ function pickCreatedFarmer(rows, personalInfo) {
   );
 }
 
-async function resolveCreatedFarmerFromBackend({ agentId, personalInfo }) {
+async function resolveCreatedFarmerFromBackend({ personalInfo }) {
   const searchText = readString(personalInfo?.full_name, personalInfo?.phone_number, personalInfo?.nin);
-  if (!agentId || !searchText) return null;
+  if (!searchText) return null;
 
   const runLookup = async () => {
     const payload = await listFarmers();
@@ -1653,28 +1615,14 @@ export default function AgentRegisterFarmer() {
 
     // ── ONLINE PATH ───────────────────────────────────────────
     let enrollmentPayload = null;
-    const sessionId = readString(enrollmentSessionId, draft?.enrollment?.sessionId);
-    if (!sessionId) {
-      setSubmitError("Enrollment session is missing. Go back and start the registration again.");
-      setSubmitting(false);
-      return;
-    }
     try {
       const agentId = getAgentIdFromSession();
       if (!agentId) {
         throw new Error("Agent session is missing an agent ID. Log in again and retry.");
       }
       const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
-      const personalInfo = draftToEnrollmentPersonalInfo(draft);
-      const farmInfo = draftToEnrollmentFarmInfo(draft);
-      const cooperativeInfo = draftToEnrollmentCooperativeInfo(draft);
-      enrollmentPayload = {
-        session_id: sessionId,
-        personal_info: personalInfo,
-        farm_info: farmInfo,
-        cooperative: cooperativeInfo,
-      };
-      const payloadContractError = validateEnrollmentPayloadAgainstContract(personalInfo);
+      enrollmentPayload = draftToFarmerEnrollmentRequest(draft, agentId);
+      const payloadContractError = validateEnrollmentPayloadAgainstContract(enrollmentPayload);
       if (payloadContractError) {
         throw new Error(payloadContractError);
       }
@@ -1719,85 +1667,37 @@ export default function AgentRegisterFarmer() {
         return;
       }
 
-      const runEnrollmentStep = async (label, runner) => {
-        try {
-          return await runner();
-        } catch (stepError) {
-          const baseMessage =
-            stepError instanceof Error && stepError.message
-              ? stepError.message
-              : "Request failed.";
-          const friendly = `${label} step failed: ${baseMessage}`;
-          if (typeof console !== "undefined" && console.error) {
-            console.error(`[enrollment:${label}]`, stepError);
-          }
-          throw Object.assign(
-            stepError instanceof Error ? stepError : new Error(friendly),
-            { message: friendly, enrollmentStep: label, cause: stepError }
-          );
-        }
-      };
+      const createResponse = await enrollFarmer(enrollmentPayload);
+      let farmerRoot = parseEnrolledFarmerResponse(createResponse);
+      let resolvedFarmerId = readString(farmerRoot.farmer_id, farmerRoot.id);
 
-      await runEnrollmentStep("Personal info", () =>
-        submitEnrollmentPersonalInfo({ session_id: sessionId, personal_info: personalInfo })
-      );
-      await runEnrollmentStep("Farm info", () =>
-        submitEnrollmentFarmInfo({ session_id: sessionId, farm_info: farmInfo })
-      );
-      await runEnrollmentStep("Cooperative info", () =>
-        submitEnrollmentCooperativeInfo({ session_id: sessionId, cooperative: cooperativeInfo })
-      );
-      const reviewResponse = await runEnrollmentStep("Review", () =>
-        reviewEnrollmentSession(sessionId)
-      );
-      let sessionResponse = null;
-      try {
-        sessionResponse = await getEnrollmentSession(sessionId);
-      } catch {
-        sessionResponse = null;
+      if (!resolvedFarmerId) {
+        const matched = await resolveCreatedFarmerFromBackend({
+          personalInfo: enrollmentPayload,
+        });
+        if (matched) {
+          farmerRoot = matched;
+          resolvedFarmerId = readString(matched.farmer_id, matched.id);
+        }
       }
-      const backendCreatedFarmer = await resolveCreatedFarmerFromBackend({ agentId, personalInfo });
-      const reviewRoot = getPayloadRoot(reviewResponse);
-      const sessionRoot = getPayloadRoot(sessionResponse);
-      const farmerRoot =
-        (backendCreatedFarmer && typeof backendCreatedFarmer === "object" ? backendCreatedFarmer : null) ||
-        (reviewRoot.farmer && typeof reviewRoot.farmer === "object" ? reviewRoot.farmer : null) ||
-        (reviewRoot.personal_info && typeof reviewRoot.personal_info === "object" ? reviewRoot.personal_info : null) ||
-        reviewRoot;
-      const cooperativeRoot =
-        (reviewRoot.cooperative && typeof reviewRoot.cooperative === "object" ? reviewRoot.cooperative : null) ||
-        (reviewRoot.cooperative_info && typeof reviewRoot.cooperative_info === "object"
-          ? reviewRoot.cooperative_info
-          : null) ||
-        {};
+
+      if (!resolvedFarmerId) {
+        throw new Error("POST /farmers succeeded but no farmer ID was returned.");
+      }
+
       const resolvedPhoto =
         readString(
           farmerRoot.profile_photo_url,
           farmerRoot.photo_url,
           farmerRoot.profile_photo,
           farmerRoot.photo
-        ) ||
-        readEnrollmentPhoto(reviewRoot) ||
-        readEnrollmentPhoto(sessionRoot) ||
-        queuedPayload.photo;
-      const resolvedFarmerId = readString(reviewRoot.farmer_id, farmerRoot.farmer_id, farmerRoot.id);
-      const resolvedClientId = readString(reviewRoot.client_id, farmerRoot.client_id, queuedPayload.clientId);
-
-      setIdCard({
-        mode: "online",
-        clientId: resolvedClientId,
-        farmerId: resolvedFarmerId,
-        name: readString(farmerRoot.full_name, farmerRoot.name, queuedPayload.name),
-        photo: resolvedPhoto,
-        cooperative: readString(cooperativeRoot.cooperative_name, queuedPayload.cooperative),
-        savedAt,
-        agentName,
-      });
+        ) || buildOfflinePhotoUrl(draft) || queuedPayload.photo;
+      const resolvedClientId = readString(farmerRoot.client_id, queuedPayload.clientId);
 
       await createOfflineFarmerRecord({
         clientId: resolvedClientId || undefined,
-        officialFarmerId: resolvedFarmerId || undefined,
-        id: resolvedFarmerId || resolvedClientId || undefined,
+        officialFarmerId: resolvedFarmerId,
+        id: resolvedFarmerId,
         ownerAgentId: agentId,
         payload: queuedPayload.payload,
         status: OFFLINE_FARMER_STATUS.SYNCED,
@@ -1815,7 +1715,7 @@ export default function AgentRegisterFarmer() {
         ),
         nin: readString(farmerRoot.nin, queuedPayload.nin),
         gender: readString(farmerRoot.gender, queuedPayload.gender),
-        cooperative: readString(cooperativeRoot.cooperative_name, queuedPayload.cooperative),
+        cooperative: readString(farmerRoot.cooperative_name, queuedPayload.cooperative),
         primaryCrop: readString(
           farmerRoot.primary_crop,
           farmerRoot.crop_type,
@@ -1824,6 +1724,17 @@ export default function AgentRegisterFarmer() {
         farmSize: readString(farmerRoot.farm_size, queuedPayload.farmSize),
         landOwnership: readString(farmerRoot.land_ownership, queuedPayload.landOwnership),
         biometric: { face: true, fingerprint: true },
+      });
+
+      setIdCard({
+        mode: "online",
+        clientId: resolvedClientId,
+        farmerId: resolvedFarmerId,
+        name: readString(farmerRoot.full_name, farmerRoot.name, queuedPayload.name),
+        photo: resolvedPhoto,
+        cooperative: readString(farmerRoot.cooperative_name, queuedPayload.cooperative),
+        savedAt,
+        agentName,
       });
       requestFarmersRefresh();
 

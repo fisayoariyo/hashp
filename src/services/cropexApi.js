@@ -519,6 +519,13 @@ export function enrollFarmer(body) {
   });
 }
 
+export function parseEnrolledFarmerResponse(payload) {
+  const farmer = extractFarmerRecord(payload);
+  if (farmer && typeof farmer === "object") return farmer;
+  const root = extractDataRoot(payload);
+  return root && typeof root === "object" ? root : {};
+}
+
 export function startEnrollmentSession({ agent_id, lat, long } = {}) {
   return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/start", {
     method: "POST",
@@ -1032,6 +1039,28 @@ export function buildFarmerSyncPayload(record, enrolledByAgentId = "") {
   }
 
   return syncPayload;
+}
+
+export function draftToFarmerEnrollmentRequest(draft, enrolledByAgentId, { clientId } = {}) {
+  const personal = draft?.personal || {};
+  const biometrics = draft?.biometrics || {};
+  const body = draftToEnrollmentPayload(draft, enrolledByAgentId);
+
+  const facePhoto = readString(biometrics.facePhoto);
+  const profile_photo_url = facePhoto
+    ? facePhoto.startsWith("data:")
+      ? facePhoto
+      : `data:image/jpeg;base64,${facePhoto}`
+    : undefined;
+
+  return {
+    ...body,
+    phone_number: formatPhoneForApi(personal.phone) || body.phone_number,
+    nin: readString(body.nin).replace(/\D/g, ""),
+    bvn: readString(body.bvn).replace(/\D/g, ""),
+    ...(clientId ? { client_id: readString(clientId) } : {}),
+    ...(profile_photo_url ? { profile_photo_url } : {}),
+  };
 }
 
 export function draftToEnrollmentPayload(draft, enrolledByAgentId) {

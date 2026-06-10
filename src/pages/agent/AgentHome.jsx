@@ -48,8 +48,13 @@ function formatChangePct(value) {
 
 function hasOfficialFarmerId(row) {
   if (!row || typeof row !== "object") return false;
-  const candidate = row.farmer_id ?? row.hsh_id ?? row.official_farmer_id ?? row.officialFarmerId;
-  return typeof candidate === "string" ? candidate.trim().length > 0 : candidate != null;
+  const candidate =
+    row.farmer_id ??
+    row.hsh_id ??
+    row.official_farmer_id ??
+    row.officialFarmerId ??
+    row.id;
+  return typeof candidate === "string" ? candidate.trim().startsWith("HSH-") : candidate != null;
 }
 
 // ── Desktop stat card — accepts img URL or React element for icon ──
@@ -118,7 +123,7 @@ export default function AgentHome() {
   const [syncCounts, setSyncCounts] = useState({ completed: 0, pending: 0 });
   const [isOnline,   setIsOnline]   = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [dashboard,  setDashboard]  = useState(null);
-  const [farmersSummary, setFarmersSummary] = useState(null);
+  const [apiFarmers, setApiFarmers] = useState([]);
 
   useEffect(() => {
     void preloadDigitalPersonaSdk();
@@ -162,40 +167,48 @@ export default function AgentHome() {
     }
 
     let active = true;
-    Promise.allSettled([getAgentDashboard(), listFarmers()])
-      .then(([dashboardResult, farmersResult]) => {
-        if (!active) return;
 
-        if (dashboardResult.status === "fulfilled") {
-          const payload = dashboardResult.value;
-          const statusRoute = getAgentStatusRoute(payload);
-          if (statusRoute) {
-            navigate(statusRoute, { replace: true });
-            return;
-          }
-          setDashboard(payload);
-        } else {
-          setDashboard(null);
-        }
+    const refreshDashboard = async () => {
+      const [dashboardResult, farmersResult] = await Promise.allSettled([
+        getAgentDashboard(),
+        listFarmers(),
+      ]);
 
-        if (farmersResult.status === "fulfilled") {
-          const farmers = extractFarmersArray(farmersResult.value);
-          setFarmersSummary({
-            totalRegisteredFarmers: farmers.length,
-            totalIdsIssued: farmers.filter(hasOfficialFarmerId).length,
-          });
-        } else {
-          setFarmersSummary(null);
+      if (!active) return;
+
+      if (dashboardResult.status === "fulfilled") {
+        const payload = dashboardResult.value;
+        const statusRoute = getAgentStatusRoute(payload);
+        if (statusRoute) {
+          navigate(statusRoute, { replace: true });
+          return;
         }
-      })
-      .catch(() => {
-        if (active) {
-          setDashboard(null);
-          setFarmersSummary(null);
-        }
-      });
+        setDashboard(payload);
+      } else {
+        setDashboard(null);
+      }
+
+      if (farmersResult.status === "fulfilled") {
+        const farmers = extractFarmersArray(farmersResult.value)
+          .map(mapApiFarmerToUi)
+          .filter(Boolean);
+        setApiFarmers(farmers);
+      } else {
+        setApiFarmers([]);
+      }
+    };
+
+    void refreshDashboard();
+    const onFarmersUpdated = () => {
+      void refreshDashboard();
+    };
+    window.addEventListener("hcx-farmers-refresh", onFarmersUpdated);
+    window.addEventListener("hcx-farmers-sync", onFarmersUpdated);
+
     return () => {
       active = false;
+      window.removeEventListener("hcx-farmers-refresh", onFarmersUpdated);
+      window.removeEventListener("hcx-farmers-sync", onFarmersUpdated);
     };
   }, [navigate]);
 
@@ -208,11 +221,12 @@ export default function AgentHome() {
   const liveAgent = dashboard?.agent || null;
   const liveStats = dashboard?.stats || null;
   const recentFarmers = useMemo(() => {
-    if (Array.isArray(dashboard?.recent_farmers) && dashboard.recent_farmers.length > 0) {
-      return dashboard.recent_farmers.map(mapApiFarmerToUi).filter(Boolean).slice(0, 4);
-    }
-    return [];
-  }, [dashboard]);
+    const fromDashboard = Array.isArray(dashboard?.recent_farmers)
+      ? dashboard.recent_farmers.map(mapApiFarmerToUi).filter(Boolean)
+      : [];
+    if (fromDashboard.length > 0) return fromDashboard.slice(0, 4);
+    return apiFarmers.slice(0, 4);
+  }, [dashboard, apiFarmers]);
 
   const displayAgentName = useMemo(() => {
     const session = getAgentSession();
@@ -221,7 +235,7 @@ export default function AgentHome() {
   }, [liveAgent]);
 
   const registeredFarmersValue =
-    farmersSummary?.totalRegisteredFarmers ?? liveStats?.total_registered_farmers ?? 0;
+    liveStats?.total_registered_farmers ?? apiFarmers.length ?? 0;
 
   const registeredFarmersChange = useMemo(() => getChangePct(registeredFarmersValue, 0), [registeredFarmersValue]);
 
@@ -643,7 +657,7 @@ export default function AgentHome() {
                 ))}
                 {recentFarmers.length === 0 && (
                   <div className="flex h-full items-center justify-center rounded-[10px] bg-[#F6F6F6] px-6 text-center text-[13px] text-[#6B7280]">
-                    No recent registrations from the server yet.
+                    No registered farmers yet.
                   </div>
                 )}
               </div>

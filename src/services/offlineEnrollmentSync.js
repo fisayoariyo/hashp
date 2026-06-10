@@ -1,17 +1,13 @@
 import { CropexHttpError } from "./cropexHttp";
 import {
-  draftToEnrollmentCooperativeInfo,
-  draftToEnrollmentFarmInfo,
-  draftToEnrollmentPersonalInfo,
+  draftToFarmerEnrollmentRequest,
+  enrollFarmer,
   getAgentIdFromSession,
-  reviewEnrollmentSession,
+  parseEnrolledFarmerResponse,
   startEnrollmentSession,
   submitEnrollmentBiometric,
-  submitEnrollmentCooperativeInfo,
   submitEnrollmentFace,
-  submitEnrollmentFarmInfo,
   submitEnrollmentFingerprint,
-  submitEnrollmentPersonalInfo,
 } from "./cropexApi";
 
 function readString(...values) {
@@ -30,35 +26,6 @@ function getPayloadRoot(payload) {
 function extractSessionId(response) {
   const root = getPayloadRoot(response);
   return readString(root.session_id, response?.session_id);
-}
-
-function readEnrollmentPhoto(payload) {
-  const root = getPayloadRoot(payload);
-  const biometric =
-    root.biometric_data && typeof root.biometric_data === "object" ? root.biometric_data : {};
-  const farmer =
-    root.farmer && typeof root.farmer === "object"
-      ? root.farmer
-      : root.personal_info && typeof root.personal_info === "object"
-        ? root.personal_info
-        : {};
-
-  return readString(
-    root.profile_photo_url,
-    root.photo_url,
-    root.profile_photo,
-    root.photo,
-    root.face_photo,
-    farmer.profile_photo_url,
-    farmer.photo_url,
-    farmer.profile_photo,
-    farmer.photo,
-    biometric.profile_photo_url,
-    biometric.photo_url,
-    biometric.profile_photo,
-    biometric.photo,
-    biometric.face_photo
-  );
 }
 
 function normalizeEnrollmentDraft(record) {
@@ -167,25 +134,16 @@ async function uploadStoredFingerprints(sessionId, fingerprints) {
   }
 }
 
-function buildSuccessEntry(record, reviewResponse) {
-  const root = getPayloadRoot(reviewResponse);
-  const farmer =
-    (root.farmer && typeof root.farmer === "object" ? root.farmer : null) ||
-    (root.personal_info && typeof root.personal_info === "object" ? root.personal_info : null) ||
-    root;
-  const cooperativeRoot =
-    (root.cooperative && typeof root.cooperative === "object" ? root.cooperative : null) ||
-    (root.cooperative_info && typeof root.cooperative_info === "object"
-      ? root.cooperative_info
-      : null) ||
-    {};
+function buildSuccessEntry(record, createResponse) {
+  const farmer = parseEnrolledFarmerResponse(createResponse);
   const payload = record?.payload || {};
   const draft = normalizeEnrollmentDraft(record) || {};
   const personal = draft.personal || {};
+  const cooperative = draft.cooperative || {};
 
   return {
-    clientId: readString(record?.clientId, payload.client_id),
-    officialFarmerId: readString(farmer.farmer_id, farmer.id, root.farmer_id),
+    clientId: readString(record?.clientId, payload.client_id, farmer.client_id),
+    officialFarmerId: readString(farmer.farmer_id, farmer.id),
     phone: readString(farmer.phone_number, payload.phone_number, personal.phone),
     nin: readString(farmer.nin, payload.nin, personal.nin),
     name: readString(farmer.full_name, farmer.name, personal.fullName, record?.name),
@@ -196,7 +154,7 @@ function buildSuccessEntry(record, reviewResponse) {
       payload.residential_address,
       personal.address
     ),
-    photo: readEnrollmentPhoto(reviewResponse) || record?.photo || "",
+    photo: readString(farmer.profile_photo_url, farmer.photo_url, record?.photo) || "",
     primaryCrop: readString(
       Array.isArray(farmer.primary_crops) ? farmer.primary_crops[0] : "",
       payload.crop_type,
@@ -204,11 +162,7 @@ function buildSuccessEntry(record, reviewResponse) {
     ),
     farmSize: readString(farmer.farm_size, payload.farm_size, draft.farm?.farmSize),
     landOwnership: readString(payload.land_ownership, draft.farm?.landOwnership),
-    cooperative: readString(
-      cooperativeRoot.cooperative_name,
-      record?.cooperative,
-      draft.cooperative?.name
-    ),
+    cooperative: readString(cooperative.name, record?.cooperative),
     gender: readString(farmer.gender, payload.gender, personal.gender),
   };
 }
@@ -225,9 +179,7 @@ export async function replayOfflineEnrollment(record, agentId = "") {
   }
 
   const draft = normalizeEnrollmentDraft(record);
-  const personalInfo = draftToEnrollmentPersonalInfo(draft);
-  const farmInfo = draftToEnrollmentFarmInfo(draft);
-  const cooperativeInfo = draftToEnrollmentCooperativeInfo(draft);
+  const clientId = readString(record?.clientId, record?.payload?.client_id);
   const fingerprints = (draft.biometrics.fingerprints || []).filter(
     (entry) => readString(entry?.position) && readString(entry?.fmr_template)
   );
@@ -240,10 +192,17 @@ export async function replayOfflineEnrollment(record, agentId = "") {
 
   await uploadStoredFacePhoto(sessionId, draft.biometrics.facePhoto);
   await uploadStoredFingerprints(sessionId, fingerprints);
-  await submitEnrollmentPersonalInfo({ session_id: sessionId, personal_info: personalInfo });
-  await submitEnrollmentFarmInfo({ session_id: sessionId, farm_info: farmInfo });
-  await submitEnrollmentCooperativeInfo({ session_id: sessionId, cooperative: cooperativeInfo });
 
-  const reviewResponse = await reviewEnrollmentSession(sessionId);
-  return buildSuccessEntry(record, reviewResponse);
+  const enrollmentBody = draftToFarmerEnrollmentRequest(
+    {
+      personal: draft.personal,
+      farm: draft.farm,
+      cooperative: draft.cooperative,
+      biometrics: draft.biometrics,
+    },
+    ownerAgentId,
+    { clientId }
+  );
+  const createResponse = await enrollFarmer(enrollmentBody);
+  return buildSuccessEntry(record, createResponse);
 }

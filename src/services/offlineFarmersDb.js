@@ -127,7 +127,7 @@ function toUiFarmerRecord(record) {
 
 function filterByOwner(records, ownerAgentId) {
   if (!ownerAgentId) {
-    return records.filter((record) => !record.ownerAgentId);
+    return records;
   }
   return records.filter((record) => !record.ownerAgentId || record.ownerAgentId === ownerAgentId);
 }
