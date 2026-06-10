@@ -1088,10 +1088,10 @@ export function draftToEnrollmentPersonalInfo(draft) {
   return {
     full_name: personal.fullName,
     phone_number: formatPhoneForApi(personal.phone),
-    nin: personal.nin,
-    bvn: personal.bvn,
+    nin: readString(personal.nin).replace(/\D/g, ""),
+    bvn: readString(personal.bvn).replace(/\D/g, ""),
     gender: mapGenderToFarmerApi(personal.gender),
-    date_of_birth: personal.dob,
+    date_of_birth: formatDateOfBirthForApi(personal.dob),
     state_of_origin: personal.state,
     local_govt_area: personal.lga,
     residential_address: personal.address,
@@ -1132,7 +1132,9 @@ export function draftToEnrollmentCooperativeInfo(draft) {
     cooperative_name: cooperative.name || undefined,
     cooperative_reg_number: cooperative.regNo || undefined,
     membership_role: cooperative.role || undefined,
-    date_joined: cooperative.joinedDate || undefined,
+    date_joined: cooperative.joinedDate
+      ? formatDateOfBirthForApi(cooperative.joinedDate)
+      : undefined,
     lga: cooperative.lga || undefined,
     commodity_focus: splitCommodityFocus(cooperative.commodity),
     cooperative_size: cooperative.size || undefined,
