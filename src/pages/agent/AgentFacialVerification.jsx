@@ -251,6 +251,7 @@ export default function AgentFacialVerification({ onSuccess, onBack, embedded, s
       if (lastError) {
         throw lastError;
       }
+      onOfflineCapture?.(jpegCapture.base64);
       setStatus("success");
     } catch (error) {
       setStatus("error");

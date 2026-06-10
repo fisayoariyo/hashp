@@ -21,6 +21,7 @@ import {
   extractFarmersArray,
   getAgentIdFromSession,
   getEnrollmentSession,
+  getEnrollmentBiometricStatus,
   getAgentSession,
   listFarmers,
   reviewEnrollmentSession,
@@ -36,10 +37,122 @@ const DRAFT_KEY  = "hcx_reg_draft";
 const getDraft   = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
 const setDraft   = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...getDraft(), ...d })); } catch {} };
 const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
-const hasDraft   = () => {
+function getBiometricStatusData(payload) {
+  if (!payload || typeof payload !== "object") return {};
+  return payload.data && typeof payload.data === "object" ? payload.data : payload;
+}
+
+function getLocalBiometricCaptureState(draft) {
+  const biometrics = draft?.biometrics || {};
+  const flags = draft?.biometric || {};
+  const faceDone = Boolean(readString(biometrics.facePhoto)) || flags.face === true;
+  const fingerprints = Array.isArray(biometrics.fingerprints) ? biometrics.fingerprints : [];
+  const fingerDone =
+    fingerprints.some((entry) => readString(entry?.position) && readString(entry?.fmr_template)) ||
+    flags.fingerprint === true;
+  return { faceDone, fingerDone };
+}
+
+function getRemoteBiometricCaptureState(statusPayload) {
+  const data = getBiometricStatusData(statusPayload);
+  const faceDone = data.face_captured === true;
+  const fingerDone =
+    data.fingerprint_captured === true ||
+    (Array.isArray(data.fingers) &&
+      data.fingers.some((row) => String(row?.status || "").toLowerCase() === "success"));
+  return { faceDone, fingerDone };
+}
+
+async function resolveBiometricCaptureState({ draft, sessionId, isOnline }) {
+  const local = getLocalBiometricCaptureState(draft);
+  if (!isOnline || !readString(sessionId)) {
+    return {
+      faceCapture: local.faceDone ? "done" : "idle",
+      fingerCapture: local.fingerDone ? "done" : "idle",
+    };
+  }
+
+  try {
+    const status = await getEnrollmentBiometricStatus(sessionId);
+    const remote = getRemoteBiometricCaptureState(status);
+    return {
+      faceCapture: remote.faceDone || local.faceDone ? "done" : "idle",
+      fingerCapture: remote.fingerDone || local.fingerDone ? "done" : "idle",
+    };
+  } catch {
+    return {
+      faceCapture: local.faceDone ? "done" : "idle",
+      fingerCapture: local.fingerDone ? "done" : "idle",
+    };
+  }
+}
+
+function markBiometricDraftFlag(key, value = true) {
+  const draft = getDraft();
+  const biometric = draft.biometric && typeof draft.biometric === "object" ? draft.biometric : {};
+  setDraft({ biometric: { ...biometric, [key]: value } });
+}
+
+function hasUnfinishedDraft() {
   const d = getDraft();
-  return !!(d.personal?.fullName || d.personal?.nin || d.personal?.phone || d.enrollment?.sessionId);
-};
+  if (!d || typeof d !== "object" || Object.keys(d).length === 0) return false;
+
+  const personal = d.personal || {};
+  if (
+    readString(
+      personal.fullName,
+      personal.nin,
+      personal.phone,
+      personal.bvn,
+      personal.address,
+      personal.dob,
+      personal.state,
+      personal.lga,
+    )
+  ) {
+    return true;
+  }
+
+  const farm = d.farm || {};
+  if (
+    readString(
+      farm.farmSize,
+      farm.cropType,
+      farm.farmLocation,
+      farm.soilType,
+      farm.landOwnership,
+    )
+  ) {
+    return true;
+  }
+
+  const cooperative = d.cooperative || {};
+  if (
+    readString(
+      cooperative.name,
+      cooperative.regNo,
+      cooperative.role,
+      cooperative.commodity,
+      cooperative.landType,
+      cooperative.lga,
+    )
+  ) {
+    return true;
+  }
+
+  const biometrics = d.biometrics || {};
+  if (readString(biometrics.facePhoto)) return true;
+  if (
+    Array.isArray(biometrics.fingerprints) &&
+    biometrics.fingerprints.some((entry) => readString(entry?.fmr_template))
+  ) {
+    return true;
+  }
+
+  if (d.biometric?.face || d.biometric?.fingerprint) return true;
+
+  return false;
+}
 const readString = (...values) => {
   for (const value of values) {
     if (typeof value === "string" && value.trim()) return value.trim();
@@ -1435,8 +1548,6 @@ export default function AgentRegisterFarmer() {
   );
   const [startingEnrollment, setStartingEnrollment] = useState(false);
   const [enrollmentStartError, setEnrollmentStartError] = useState("");
-  const [pendingDraft] = useState(() => hasDraft());
-
   const goHome = () => navigate("/agent/home");
   const agentSession = getAgentSession();
   const agentName =
@@ -1726,9 +1837,20 @@ export default function AgentRegisterFarmer() {
     }
   };
 
-  const handleResumeDraft = () => {
-    const savedSessionId = readString(getDraft()?.enrollment?.sessionId);
+  const hydrateBiometricCaptureState = async (sessionIdOverride = "") => {
+    const draft = getDraft();
+    const sessionId = readString(sessionIdOverride, enrollmentSessionId, draft?.enrollment?.sessionId);
+    const resolved = await resolveBiometricCaptureState({ draft, sessionId, isOnline });
+    setFaceCapture(resolved.faceCapture);
+    setFingerCapture(resolved.fingerCapture);
+    return resolved;
+  };
+
+  const handleResumeDraft = async () => {
+    const draft = getDraft();
+    const savedSessionId = readString(draft?.enrollment?.sessionId);
     if (savedSessionId) setEnrollmentSessionId(savedSessionId);
+    await hydrateBiometricCaptureState(savedSessionId);
     setStep("biometric");
   };
 
@@ -1741,6 +1863,7 @@ export default function AgentRegisterFarmer() {
       setFingerCapture("idle");
       setEnrollmentSessionId("");
     } else if (enrollmentSessionId) {
+      await hydrateBiometricCaptureState(enrollmentSessionId);
       setStep("biometric");
       return;
     }
@@ -1779,7 +1902,11 @@ export default function AgentRegisterFarmer() {
       <>
         <div className="md:hidden">
           <AgentFacialVerification
-            onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
+            onSuccess={() => {
+              markBiometricDraftFlag("face");
+              setFaceCapture("done");
+              setStep("biometric");
+            }}
             onBack={() => setStep("biometric")}
             sessionId={enrollmentSessionId}
             offline={!isOnline}
@@ -1790,7 +1917,11 @@ export default function AgentRegisterFarmer() {
           <div className="w-full max-w-[862.81px]">
             <AgentFacialVerification
               embedded
-              onSuccess={() => { setFaceCapture("done"); setStep("biometric"); }}
+              onSuccess={() => {
+                markBiometricDraftFlag("face");
+                setFaceCapture("done");
+                setStep("biometric");
+              }}
               onBack={() => setStep("biometric")}
               sessionId={enrollmentSessionId}
               offline={!isOnline}
@@ -1807,7 +1938,11 @@ export default function AgentRegisterFarmer() {
       <>
         <div className="md:hidden">
           <AgentFingerprintVerification
-            onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
+            onSuccess={() => {
+              markBiometricDraftFlag("fingerprint");
+              setFingerCapture("done");
+              setStep("biometric");
+            }}
             onBack={() => setStep("biometric")}
             sessionId={enrollmentSessionId}
             offline={!isOnline}
@@ -1818,7 +1953,11 @@ export default function AgentRegisterFarmer() {
           <div className="w-full max-w-[862.81px]">
             <AgentFingerprintVerification
               embedded
-              onSuccess={() => { setFingerCapture("done"); setStep("biometric"); }}
+              onSuccess={() => {
+                markBiometricDraftFlag("fingerprint");
+                setFingerCapture("done");
+                setStep("biometric");
+              }}
               onBack={() => setStep("biometric")}
               sessionId={enrollmentSessionId}
               offline={!isOnline}
@@ -1834,7 +1973,7 @@ export default function AgentRegisterFarmer() {
     const startProps = {
       onStart: () => handleStartEnrollment(true),
       onResume: handleResumeDraft,
-      hasPendingDraft: pendingDraft,
+      hasPendingDraft: hasUnfinishedDraft(),
       onBack: goHome,
     };
     const offlineBanner = !isOnline && (
