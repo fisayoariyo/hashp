@@ -17,6 +17,13 @@ import { getDisplayError } from "../../utils/apiErrors";
 
 const REG_KEY = "hcx_agent_registration";
 
+function hasIdentityDetails(reg) {
+  const nin = String(reg?.nin || "").replace(/\D/g, "");
+  const bvn = String(reg?.bvn || "").replace(/\D/g, "");
+  const photo = String(reg?.profilePhotoBase64 || "").trim();
+  return nin.length === 11 && bvn.length === 11 && Boolean(photo);
+}
+
 function formatPhoneForLocalStore(digits) {
   const normalized = String(digits || "").replace(/\D/g, "");
   if (!normalized) return "";
@@ -39,7 +46,15 @@ export default function AgentSelectLocation() {
 
   useEffect(() => {
     try {
-      if (!sessionStorage.getItem(REG_KEY)) navigate("/agent/create-account", { replace: true });
+      const raw = sessionStorage.getItem(REG_KEY);
+      if (!raw) {
+        navigate("/agent/create-account", { replace: true });
+        return;
+      }
+      const reg = JSON.parse(raw);
+      if (!hasIdentityDetails(reg)) {
+        navigate("/agent/identity-verification", { replace: true });
+      }
     } catch {
       navigate("/agent/create-account", { replace: true });
     }
@@ -124,6 +139,9 @@ export default function AgentSelectLocation() {
       await completeAgentRegistration({
         state: stateName,
         lga,
+        nin: String(reg.nin || "").replace(/\D/g, ""),
+        bvn: String(reg.bvn || "").replace(/\D/g, ""),
+        profile_photo: reg.profilePhotoBase64,
       });
       sessionStorage.removeItem("hcx_agent_review_refresh_count");
       navigate("/agent/account-under-review");
@@ -204,7 +222,7 @@ export default function AgentSelectLocation() {
       </button>
       <button
         type="button"
-        onClick={() => navigate(-1)}
+        onClick={() => navigate("/agent/identity-verification")}
         className="auth-btn-secondary"
       >
         Back
@@ -229,7 +247,7 @@ export default function AgentSelectLocation() {
   return (
     <div className="page-white flex flex-col min-h-dvh">
       <div className="flex-1 px-5 pt-6">
-        <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-2 text-brand-text-secondary mb-6">
+        <button type="button" onClick={() => navigate("/agent/identity-verification")} className="flex items-center gap-2 text-brand-text-secondary mb-6">
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>

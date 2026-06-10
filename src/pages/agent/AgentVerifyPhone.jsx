@@ -7,10 +7,10 @@ import OtpCooldownFeedback from "../../components/agent/OtpCooldownFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useOtpCountdown } from "../../hooks/useOtpCountdown";
 import {
-  agentVerifyOtp,
   getAgentIdFromSession,
   resendAuthOtp,
   setAgentSessionFromAuthResponse,
+  verifyAuthOtp,
   verifyChangePasswordOtp,
 } from "../../services/cropexApi";
 import { getPasswordResetFacingError, getUserFacingError } from "../../utils/apiErrors";
@@ -30,7 +30,6 @@ export default function AgentVerifyPhone() {
   const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [registerPhone, setRegisterPhone] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown, clear: clearCooldown } =
     useOtpCountdown();
@@ -41,13 +40,11 @@ export default function AgentVerifyPhone() {
     try {
       const raw = sessionStorage.getItem(REG_KEY);
       const reg = raw ? JSON.parse(raw) : {};
-      const phone = String(reg.phoneNumber || reg.phone || "").trim();
       const email = String(reg.email || "").trim();
-      if (!phone || !email) {
+      if (!email) {
         if (!cancelled) setError("Missing account details. Go back to create account.");
         return;
       }
-      setRegisterPhone(phone);
       setRegisterEmail(email);
     } catch {
       if (!cancelled) setError("Could not prepare verification code.");
@@ -137,11 +134,11 @@ export default function AgentVerifyPhone() {
         return;
       }
 
-      if (!registerPhone || !registerEmail) {
+      if (!registerEmail) {
         setError("Missing account details.");
         return;
       }
-      const response = await agentVerifyOtp(registerPhone, otp);
+      const response = await verifyAuthOtp({ email: registerEmail, otp });
       setAgentSessionFromAuthResponse(response);
       try {
         const raw = sessionStorage.getItem(REG_KEY);
@@ -153,7 +150,7 @@ export default function AgentVerifyPhone() {
       } catch {
         /* ignore */
       }
-      navigate("/agent/select-location");
+      navigate("/agent/identity-verification");
     } catch (verifyError) {
       const facing =
         mode === "reset-password"
@@ -178,7 +175,7 @@ export default function AgentVerifyPhone() {
         await resendAuthOtp({ email: resetEmail });
       } else {
         if (!registerEmail) return;
-        await resendAuthOtp({ email: registerEmail, phone: registerPhone });
+        await resendAuthOtp({ email: registerEmail });
       }
     } catch (resendError) {
       const facing =

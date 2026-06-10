@@ -27,6 +27,13 @@ import {
 
 const REG_KEY = "hcx_agent_registration";
 
+function hasIdentityDetails(reg) {
+  const nin = String(reg?.nin || "").replace(/\D/g, "");
+  const bvn = String(reg?.bvn || "").replace(/\D/g, "");
+  const photo = String(reg?.profilePhotoBase64 || "").trim();
+  return nin.length === 11 && bvn.length === 11 && Boolean(photo);
+}
+
 export default function AgentAccountUnderReview() {
   const navigate = useNavigate();
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -47,6 +54,11 @@ export default function AgentAccountUnderReview() {
       }
 
       if (!raw) return;
+
+      if (!hasIdentityDetails(reg)) {
+        navigate("/agent/identity-verification", { replace: true });
+        return;
+      }
 
       if (!reg.state || !reg.lga) {
         navigate("/agent/select-location", { replace: true });

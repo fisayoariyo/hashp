@@ -14,6 +14,7 @@ import FarmerComingSoon from "./pages/farmer/FarmerComingSoon";
 import AgentSplash from "./pages/agent/AgentSplash";
 import AgentCreateAccount from "./pages/agent/AgentCreateAccount";
 import AgentVerifyPhone from "./pages/agent/AgentVerifyPhone";
+import AgentIdentityVerification from "./pages/agent/AgentIdentityVerification";
 import AgentSelectLocation from "./pages/agent/AgentSelectLocation";
 import AgentAccountUnderReview from "./pages/agent/AgentAccountUnderReview";
 import AgentAccountVerified from "./pages/agent/AgentAccountVerified";
@@ -102,6 +103,7 @@ export default function App() {
         <Route path="/agent/splash"              element={<AgentSplash />} />
         <Route path="/agent/create-account"      element={<AgentCreateAccount />} />
         <Route path="/agent/verify-phone"        element={<AgentVerifyPhone />} />
+        <Route path="/agent/identity-verification" element={<AgentIdentityVerification />} />
         <Route path="/agent/select-location"     element={<AgentSelectLocation />} />
         <Route path="/agent/account-under-review"  element={<AgentAccountUnderReview />} />
         <Route path="/agent/account-verified"      element={<AgentAccountVerified />} />

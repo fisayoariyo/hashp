@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import FarmerDesktopLayout from "../../components/farmer/FarmerDesktopLayout";
+import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import {
   clearFarmerSession,
   getFarmerDashboard,
@@ -137,6 +138,8 @@ function BecomeAgentForm({
   setEmail,
   bvn,
   setBvn,
+  nin,
+  setNin,
   fileName,
   onChooseFile,
   onSubmit,
@@ -146,7 +149,7 @@ function BecomeAgentForm({
   photoPreview,
   hasPhoto,
 }) {
-  const submitDisabled = submitting || !email.trim() || !bvn.trim() || !hasPhoto;
+  const submitDisabled = submitting || !email.trim() || !bvn.trim() || !nin.trim() || !hasPhoto;
   return (
     <div>
       <button type="button" onClick={onBack} className="mb-6 inline-flex items-center gap-2 text-sm text-brand-text-secondary">
@@ -206,12 +209,24 @@ function BecomeAgentForm({
           </div>
         </label>
         <label className="block">
+          <span className="mb-2 block font-sans text-[22px] font-semibold text-[#030F0F]">National Identification Number (NIN)</span>
+          <div className="flex h-[52px] items-center rounded-[15px] border border-[#E6E6E6] bg-white px-4">
+            <User size={16} className="text-[#9CA3AF]" />
+            <input
+              value={nin}
+              onChange={(event) => setNin(event.target.value.replace(/\D/g, "").slice(0, 11))}
+              placeholder="Enter your 11 digit NIN"
+              className="ml-3 w-full bg-transparent font-sans text-sm text-[#030F0F] outline-none placeholder:text-[#9CA3AF]"
+            />
+          </div>
+        </label>
+        <label className="block md:col-span-2">
           <span className="mb-2 block font-sans text-[22px] font-semibold text-[#030F0F]">Bank Verification Number (BVN)</span>
           <div className="flex h-[52px] items-center rounded-[15px] border border-[#E6E6E6] bg-white px-4">
             <User size={16} className="text-[#9CA3AF]" />
             <input
               value={bvn}
-              onChange={(event) => setBvn(event.target.value)}
+              onChange={(event) => setBvn(event.target.value.replace(/\D/g, "").slice(0, 11))}
               placeholder="Enter your 11 digit BVN for identity verification"
               className="ml-3 w-full bg-transparent font-sans text-sm text-[#030F0F] outline-none placeholder:text-[#9CA3AF]"
             />
@@ -328,98 +343,6 @@ function VerifyEmailStep({ email, onVerified, onBack, onResend }) {
   );
 }
 
-function AmberBadgeIcon() {
-  return (
-    <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Scalloped badge shape */}
-      <path
-        d="M60 8
-           C63 8 65.5 5 68.5 5.5
-           C71.5 6 73 9.5 76 10.5
-           C79 11.5 82 9.5 84.5 11
-           C87 12.5 87 16.5 89 18.5
-           C91 20.5 95 20.5 96.5 23
-           C98 25.5 96.5 29 97.5 31.5
-           C98.5 34 102 35.5 102.5 38.5
-           C103 41.5 100.5 44 100.5 47
-           C100.5 50 103 52.5 102.5 55.5
-           C102 58.5 99 60 98.5 63
-           C98 66 100 69 98.5 71.5
-           C97 74 93.5 74 91.5 76
-           C89.5 78 90 82 87.5 83.5
-           C85 85 81.5 83.5 79 85
-           C76.5 86.5 75.5 90 73 91
-           C70.5 92 67.5 90 65 90.5
-           C62.5 91 61 94.5 58.5 94.5
-           C56 94.5 54.5 91 52 90.5
-           C49.5 90 46.5 92 44 91
-           C41.5 90 40.5 86.5 38 85
-           C35.5 83.5 32 85 29.5 83.5
-           C27 82 27.5 78 25.5 76
-           C23.5 74 20 74 18.5 71.5
-           C17 69 19 66 18.5 63
-           C18 60 15 58.5 14.5 55.5
-           C14 52.5 16.5 50 16.5 47
-           C16.5 44 14 41.5 14.5 38.5
-           C15 35.5 18.5 34 19.5 31.5
-           C20.5 29 19 25.5 20.5 23
-           C22 20.5 26 20.5 28 18.5
-           C30 16.5 30 12.5 32.5 11
-           C35 9.5 38 11.5 41 10.5
-           C44 9.5 45.5 6 48.5 5.5
-           C51.5 5 54 8 57 8
-           C58 8 59 7.5 60 8Z"
-        fill="#D97706"
-      />
-      <path
-        d="M60 12
-           C62.5 12 64.5 9.5 67 10
-           C69.5 10.5 71 13.5 73.5 14.5
-           C76 15.5 78.5 13.5 80.5 15
-           C82.5 16.5 82.5 20 84 22
-           C85.5 24 89 24 90.5 26.5
-           C92 29 90.5 32.5 91.5 35
-           C92.5 37.5 95.5 38.5 96 41.5
-           C96.5 44.5 94.5 46.5 94.5 49.5
-           C94.5 52.5 96.5 55 96 58
-           C95.5 61 92.5 62.5 92 65.5
-           C91.5 68.5 93.5 71 92 73.5
-           C90.5 76 87.5 75.5 85.5 77.5
-           C83.5 79.5 84 83 81.5 84
-           C79 85 76 83.5 73.5 85
-           C71 86.5 70.5 90 68 90.5
-           C65.5 91 63 89 60.5 89
-           C58 89 55.5 91 53 90.5
-           C50.5 90 50 86.5 47.5 85
-           C45 83.5 42 85 39.5 84
-           C37 83 37.5 79.5 35.5 77.5
-           C33.5 75.5 30.5 76 29 73.5
-           C27.5 71 29.5 68.5 29 65.5
-           C28.5 62.5 25.5 61 25 58
-           C24.5 55 26.5 52.5 26.5 49.5
-           C26.5 46.5 24.5 44.5 25 41.5
-           C25.5 38.5 28.5 37.5 29.5 35
-           C30.5 32.5 29 29 30.5 26.5
-           C32 24 35.5 24 37 22
-           C38.5 20 38.5 16.5 40.5 15
-           C42.5 13.5 45 15.5 47.5 14.5
-           C50 13.5 51.5 10.5 54 10
-           C56.5 9.5 58.5 12 60 12Z"
-        fill="#F59E0B"
-      />
-      {/* Checkmark */}
-      <polyline
-        points="40,60 53,73 80,46"
-        stroke="white"
-        strokeWidth="7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
-  );
-}
-
 function UnderReviewView({ onRefresh, onBack }) {
   const [refreshing, setRefreshing] = useState(false);
 
@@ -441,7 +364,7 @@ function UnderReviewView({ onRefresh, onBack }) {
       <div className="mx-auto flex max-w-[500px] flex-col items-center text-center">
 
         <div className="mb-6">
-          <AmberBadgeIcon />
+          <AgentStatusBadge variant="pending" size={200} />
         </div>
 
         <h2 className="font-display text-[40px] font-bold leading-[48px] text-[#030F0F]">
@@ -513,6 +436,7 @@ export default function FarmerSettings() {
   const [screen, setScreen] = useState("settings");
   const [email, setEmail] = useState("");
   const [bvn, setBvn] = useState("");
+  const [nin, setNin] = useState("");
   const [fileName, setFileName] = useState("");
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
@@ -609,9 +533,18 @@ export default function FarmerSettings() {
   const handleFormSubmit = async () => {
     if (submitting) return;
     const normalizedEmail = String(email || "").trim();
-    const normalizedBvn = String(bvn || "").trim();
-    if (!normalizedEmail || !normalizedBvn) {
-      setFormError("Email and BVN are required.");
+    const normalizedBvn = String(bvn || "").replace(/\D/g, "");
+    const normalizedNin = String(nin || "").replace(/\D/g, "");
+    if (!normalizedEmail || !normalizedBvn || !normalizedNin) {
+      setFormError("Email, NIN, and BVN are required.");
+      return;
+    }
+    if (normalizedNin.length !== 11) {
+      setFormError("NIN must be 11 digits.");
+      return;
+    }
+    if (normalizedBvn.length !== 11) {
+      setFormError("BVN must be 11 digits.");
       return;
     }
     if (!photoBase64) {
@@ -634,11 +567,13 @@ export default function FarmerSettings() {
 
   const handleEmailVerified = async () => {
     const normalizedEmail = String(email || "").trim();
-    const normalizedBvn = String(bvn || "").trim();
+    const normalizedBvn = String(bvn || "").replace(/\D/g, "");
+    const normalizedNin = String(nin || "").replace(/\D/g, "");
     try {
       await upgradeFarmerToAgent({
         email: normalizedEmail,
         bvn: normalizedBvn,
+        nin: normalizedNin,
         profilePhotoBase64: photoBase64,
       });
     } catch {
@@ -711,6 +646,8 @@ export default function FarmerSettings() {
           setEmail={setEmail}
           bvn={bvn}
           setBvn={setBvn}
+          nin={nin}
+          setNin={setNin}
           fileName={fileName}
           onChooseFile={handleChooseFile}
           onSubmit={handleFormSubmit}
