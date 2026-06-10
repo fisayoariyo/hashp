@@ -1,5 +1,4 @@
 const DEFAULT_CROPEX_BASE_URL = "https://hashmaramala-production.up.railway.app";
-const API_PROXY_PREFIX = "/api";
 
 // Broadcast a session-expired event so any mounted component can redirect
 function broadcastSessionExpired() {
@@ -10,13 +9,6 @@ function broadcastSessionExpired() {
   }
 }
 
-function resolveProxyBaseUrl() {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin}${API_PROXY_PREFIX}`;
-  }
-  return DEFAULT_CROPEX_BASE_URL;
-}
-
 export function getCropexBaseUrl() {
   const configured =
     typeof import.meta !== "undefined" && import.meta.env?.VITE_CROPEX_API_BASE_URL
@@ -25,7 +17,7 @@ export function getCropexBaseUrl() {
   if (String(configured || "").trim()) {
     return String(configured).replace(/\/+$/, "");
   }
-  return resolveProxyBaseUrl();
+  return DEFAULT_CROPEX_BASE_URL;
 }
 
 function buildCropexUrl(path) {
