@@ -20,6 +20,7 @@ import {
   clearAgentStatusPreview,
   getAgentStatusRoute,
   inferStatusFromLoginFailure,
+  routeAgentByUserStatus,
 } from "../../utils/agentStatus";
 
 export default function AgentLogin() {
@@ -116,32 +117,16 @@ export default function AgentLogin() {
     } catch (loginError) {
       if (loginError instanceof CropexHttpError) {
         const inferred = inferStatusFromLoginFailure(loginError.message, loginError.body);
-        if (inferred === "PENDING") {
-          try {
-            const raw = sessionStorage.getItem("hcx_agent_registration");
-            const reg = raw ? JSON.parse(raw) : {};
-            const regEmail = String(reg.email || "").trim().toLowerCase();
-            const loginEmail = email.trim().toLowerCase();
-            const userId = String(reg.userId || "").trim();
-            if (userId && regEmail && regEmail === loginEmail) {
-              const statusPayload = await getAgentStatus(userId);
-              const statusRoute = getAgentStatusRoute(statusPayload);
-              if (statusRoute === "/agent/account-under-review") {
-                navigate("/agent/account-under-review");
-                return;
-              }
-            }
-          } catch {
-            /* fall through to login message */
+        if (inferred === "PENDING" || inferred === "REJECTED") {
+          const statusRoute = await routeAgentByUserStatus({
+            email: email.trim(),
+            errorBody: loginError.body,
+            getAgentStatus,
+          });
+          if (statusRoute) {
+            navigate(statusRoute);
+            return;
           }
-          setError(
-            "Your account is still under administrator review. Try again after you receive approval.",
-          );
-          return;
-        }
-        if (inferred === "REJECTED") {
-          setError("Your account verification was not approved. Contact support if you need help.");
-          return;
         }
         if (inferred === "SUSPENDED") {
           setError("This account is suspended. Contact support for assistance.");

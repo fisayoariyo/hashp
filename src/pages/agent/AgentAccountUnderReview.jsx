@@ -4,13 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { CropexHttpError } from "../../services/cropexHttp";
-import {
-  getAgentAccessToken,
-  getAgentDashboard,
-  getAgentIdFromSession,
-  getAgentStatus,
-} from "../../services/cropexApi";
+import { getAgentIdFromSession, getAgentStatus } from "../../services/cropexApi";
 
 function readString(...values) {
   for (const value of values) {
@@ -20,9 +14,9 @@ function readString(...values) {
 }
 import {
   clearAgentStatusPreview,
-  extractAgentStatus,
-  getAgentStatusRoute,
-  isAgentStatusApproved,
+  getAgentStatusOutcomeRoute,
+  getAgentUserIdForEmail,
+  resolveAgentUserId,
 } from "../../utils/agentStatus";
 
 const REG_KEY = "hcx_agent_registration";
@@ -39,16 +33,15 @@ export default function AgentAccountUnderReview() {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState("");
-  const hasAgentSession = () => Boolean(getAgentAccessToken());
-  const sessionActive = hasAgentSession();
 
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(REG_KEY);
       const reg = raw ? JSON.parse(raw) : {};
-      const savedUserId = readString(reg.userId);
+      const savedUserId =
+        readString(reg.userId) || getAgentUserIdForEmail(reg.email);
 
-      if (!hasAgentSession() && !savedUserId) {
+      if (!savedUserId) {
         navigate("/agent/login", { replace: true });
         return;
       }
@@ -73,50 +66,26 @@ export default function AgentAccountUnderReview() {
     try {
       const raw = sessionStorage.getItem(REG_KEY);
       const reg = raw ? JSON.parse(raw) : {};
-      return readString(reg.userId);
+      return resolveAgentUserId({ email: reg.email }) || readString(reg.userId);
     } catch {
       return "";
     }
   };
 
   const handleRefresh = async () => {
-    const userId = getAgentIdFromSession() || readRegistrationUserId();
-    if (!userId && !hasAgentSession()) {
-      navigate("/agent/login", {
-        replace: true,
-        state: { sessionExpired: true, from: "under-review" },
-      });
+    const userId = readRegistrationUserId() || getAgentIdFromSession();
+    if (!userId) {
+      navigate("/agent/login", { replace: true });
       return;
     }
 
     setLoading(true);
     setToast("");
     try {
-      let payload = null;
-      if (userId) {
-        try {
-          payload = await getAgentStatus(userId);
-        } catch (statusError) {
-          if (hasAgentSession() && (!(statusError instanceof CropexHttpError) || statusError.status !== 404)) {
-            payload = await getAgentDashboard();
-          } else {
-            throw statusError;
-          }
-        }
-      } else if (hasAgentSession()) {
-        payload = await getAgentDashboard();
-      } else {
-        throw new Error("Could not find your account ID. Log in again and retry.");
-      }
+      const payload = await getAgentStatus(userId);
       clearAgentStatusPreview();
 
-      const status = extractAgentStatus(payload);
-      if (isAgentStatusApproved(status)) {
-        navigate("/agent/account-verified");
-        return;
-      }
-
-      const statusRoute = getAgentStatusRoute(payload);
+      const statusRoute = getAgentStatusOutcomeRoute(payload);
       if (statusRoute && statusRoute !== "/agent/account-under-review") {
         navigate(statusRoute);
         return;
@@ -124,13 +93,6 @@ export default function AgentAccountUnderReview() {
 
       setToast("Still under review. An administrator must verify your account before you can use the app.");
     } catch (refreshError) {
-      if (refreshError instanceof CropexHttpError && refreshError.status === 401) {
-        navigate("/agent/login", {
-          replace: true,
-          state: { sessionExpired: true, from: "under-review" },
-        });
-        return;
-      }
       setToast(refreshError instanceof Error ? refreshError.message : "Could not refresh your review status.");
     } finally {
       setLoading(false);

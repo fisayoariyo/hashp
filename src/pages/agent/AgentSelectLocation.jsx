@@ -7,6 +7,7 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import {
   clearAgentOnboardingProfilePhoto,
   extractGeoArray,
+  getAgentIdFromSession,
   getAgentOnboardingProfilePhoto,
   getGeoLgas,
   getGeoStates,
@@ -14,6 +15,7 @@ import {
   mapGeoStateOption,
   submitAgentOnboarding,
 } from "../../services/cropexApi";
+import { ensureRegistrationUserId, saveAgentUserIdForEmail } from "../../utils/agentStatus";
 import { PASSWORD_ERROR, validateStrongPassword } from "../../utils/password";
 import { getDisplayError } from "../../utils/apiErrors";
 
@@ -127,10 +129,12 @@ export default function AgentSelectLocation() {
         return;
       }
 
+      const userId = getAgentIdFromSession() || String(reg.userId || "").trim();
       sessionStorage.setItem(
         REG_KEY,
         JSON.stringify({
           ...reg,
+          userId: userId || reg.userId,
           stateId,
           state: stateName,
           lga,
@@ -146,6 +150,10 @@ export default function AgentSelectLocation() {
         profilePhoto: getAgentOnboardingProfilePhoto(),
         profilePhotoBase64: reg.profilePhotoBase64,
       });
+      if (userId) {
+        saveAgentUserIdForEmail(reg.email, userId);
+        ensureRegistrationUserId({ email: reg.email, userId });
+      }
       clearAgentOnboardingProfilePhoto();
       sessionStorage.removeItem("hcx_agent_review_refresh_count");
       navigate("/agent/account-under-review");

@@ -4,7 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { getAgentSession } from "../../services/cropexApi";
+import { getAgentAccessToken } from "../../services/cropexApi";
+import { getAgentUserIdForEmail } from "../../utils/agentStatus";
 
 const REG_KEY = "hcx_agent_registration";
 
@@ -14,7 +15,10 @@ export default function AgentAccountVerified() {
 
   useEffect(() => {
     try {
-      if (!sessionStorage.getItem(REG_KEY) || !getAgentSession()?.accessToken) {
+      const raw = sessionStorage.getItem(REG_KEY);
+      const reg = raw ? JSON.parse(raw) : {};
+      const hasUserId = Boolean(reg.userId || getAgentUserIdForEmail(reg.email));
+      if (!hasUserId) {
         navigate("/agent/login", { replace: true });
       }
     } catch {
@@ -23,6 +27,18 @@ export default function AgentAccountVerified() {
   }, [navigate]);
 
   const goDashboard = () => {
+    if (!getAgentAccessToken()) {
+      try {
+        sessionStorage.setItem(
+          "hcx_agent_login_message",
+          "Your account is verified. Log in to continue.",
+        );
+      } catch {
+        /* ignore */
+      }
+      navigate("/agent/login");
+      return;
+    }
     try {
       sessionStorage.removeItem(REG_KEY);
     } catch {

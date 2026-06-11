@@ -1,4 +1,6 @@
 const STATUS_PREVIEW_KEY = "hcx_agent_status_preview";
+const USER_ID_MAP_KEY = "hcx_agent_user_id_map";
+const REG_KEY = "hcx_agent_registration";
 
 function readString(...values) {
   for (const value of values) {
@@ -61,7 +63,96 @@ export function extractAgentStatus(payload) {
 
 export function isAgentStatusApproved(status) {
   const normalized = String(status || "").trim().toUpperCase();
-  return normalized === "ACTIVE" || normalized === "VERIFIED" || normalized === "APPROVED";
+  return (
+    normalized === "ACTIVE" ||
+    normalized === "VERIFIED" ||
+    normalized === "APPROVED" ||
+    normalized === "SUCCESS"
+  );
+}
+
+export function extractAgentUserId(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  const root = extractDataRoot(payload);
+  const agent = root?.agent && typeof root.agent === "object" ? root.agent : root;
+  return readString(
+    agent?.id,
+    agent?.user_id,
+    agent?.agent_id,
+    root?.id,
+    root?.user_id,
+    root?.agent_id,
+    payload?.id,
+    payload?.user_id,
+    payload?.agent_id,
+  );
+}
+
+export function saveAgentUserIdForEmail(email, userId) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedUserId = readString(userId);
+  if (!normalizedEmail || !normalizedUserId) return;
+  try {
+    const raw = sessionStorage.getItem(USER_ID_MAP_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[normalizedEmail] = normalizedUserId;
+    sessionStorage.setItem(USER_ID_MAP_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getAgentUserIdForEmail(email) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail) return "";
+  try {
+    const raw = sessionStorage.getItem(USER_ID_MAP_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    return readString(map?.[normalizedEmail]);
+  } catch {
+    return "";
+  }
+}
+
+export function ensureRegistrationUserId({ email, userId } = {}) {
+  const normalizedUserId = readString(userId);
+  if (!normalizedUserId) return;
+  try {
+    const raw = sessionStorage.getItem(REG_KEY);
+    const reg = raw ? JSON.parse(raw) : {};
+    sessionStorage.setItem(
+      REG_KEY,
+      JSON.stringify({
+        ...reg,
+        email: readString(email, reg.email),
+        userId: normalizedUserId,
+      }),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+export function resolveAgentUserId({ email, errorBody } = {}) {
+  const fromError = extractAgentUserId(errorBody);
+  if (fromError) return fromError;
+
+  const fromEmail = getAgentUserIdForEmail(email);
+  if (fromEmail) return fromEmail;
+
+  try {
+    const raw = sessionStorage.getItem(REG_KEY);
+    const reg = raw ? JSON.parse(raw) : {};
+    const regEmail = String(reg.email || "").trim().toLowerCase();
+    const loginEmail = String(email || "").trim().toLowerCase();
+    if (loginEmail && regEmail === loginEmail) {
+      return readString(reg.userId);
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return "";
 }
 
 export function getRouteForAgentStatus(status) {
@@ -107,6 +198,40 @@ export function getAgentStatusRoute(payload) {
   }
 
   return getRouteForAgentStatus(status);
+}
+
+/** Status polling / login-blocked flows: pending, success, failed outcome screens. */
+export function getAgentStatusOutcomeRoute(payload) {
+  const status = extractAgentStatus(payload);
+  if (!status) return null;
+
+  if (isAgentStatusApproved(status)) {
+    clearAgentStatusPreview();
+    return "/agent/account-verified";
+  }
+
+  return getRouteForAgentStatus(status);
+}
+
+export async function routeAgentByUserStatus({ email, errorBody, getAgentStatus }) {
+  const loginEmail = String(email || "").trim();
+  const userId = resolveAgentUserId({ email: loginEmail, errorBody });
+  if (userId) {
+    saveAgentUserIdForEmail(loginEmail, userId);
+    ensureRegistrationUserId({ email: loginEmail, userId });
+    try {
+      const payload = await getAgentStatus(userId);
+      const route = getAgentStatusOutcomeRoute(payload);
+      if (route) return route;
+    } catch {
+      /* fall through to inferred route */
+    }
+  }
+
+  const inferred = inferStatusFromLoginFailure("", errorBody);
+  if (inferred === "PENDING") return "/agent/account-under-review";
+  if (inferred === "REJECTED") return "/agent/verification-failed";
+  return null;
 }
 
 function collectStatusHints(value, depth = 0, bucket = []) {

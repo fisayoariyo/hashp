@@ -15,6 +15,7 @@ import {
   verifyChangePasswordOtp,
 } from "../../services/cropexApi";
 import { getPasswordResetFacingError, getUserFacingError } from "../../utils/apiErrors";
+import { ensureRegistrationUserId, saveAgentUserIdForEmail } from "../../utils/agentStatus";
 
 const REG_KEY = "hcx_agent_registration";
 const RESET_FLAG = "hcx_agent_reset_otp_ok";
@@ -147,6 +148,8 @@ export default function AgentVerifyPhone() {
         const userId = getAgentIdFromSession();
         if (userId) {
           sessionStorage.setItem(REG_KEY, JSON.stringify({ ...reg, userId }));
+          saveAgentUserIdForEmail(registerEmail, userId);
+          ensureRegistrationUserId({ email: registerEmail, userId });
         }
       } catch {
         /* ignore */
