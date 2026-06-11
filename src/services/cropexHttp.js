@@ -1,14 +1,5 @@
 const DEFAULT_CROPEX_BASE_URL = "https://hashmaramala-production.up.railway.app";
 
-// Broadcast a session-expired event so any mounted component can redirect
-function broadcastSessionExpired() {
-  try {
-    window.dispatchEvent(new CustomEvent("cropex:session-expired"));
-  } catch {
-    /* ignore in non-browser environments */
-  }
-}
-
 export function getCropexBaseUrl() {
   const configured =
     typeof import.meta !== "undefined" && import.meta.env?.VITE_CROPEX_API_BASE_URL
@@ -167,9 +158,6 @@ export async function cropexFetch(path, opts = {}) {
 
   const parsedBody = await parseCropexBody(response);
   if (!response.ok) {
-    if (response.status === 401) {
-      broadcastSessionExpired();
-    }
     throw new CropexHttpError(getErrorMessage(response.status, parsedBody), response.status, parsedBody);
   }
 

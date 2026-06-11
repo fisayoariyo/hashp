@@ -46,11 +46,14 @@ function extractTokens(data) {
     accessToken: readString(
       tokenSource?.access_token,
       tokenSource?.accessToken,
+      tokenSource?.jwt,
       root?.access_token,
       root?.accessToken,
+      root?.jwt,
       root?.token,
       data?.access_token,
       data?.accessToken,
+      data?.jwt,
       data?.token
     ),
     refreshToken: readString(
@@ -190,6 +193,7 @@ function mergeTokensIntoSession(storageKey, data) {
 function setSessionFromAuthResponse(storageKey, data, opts = {}) {
   const previous = readStoredSession(storageKey) || {};
   const tokens = extractTokens(data);
+  const root = extractDataRoot(data);
   const user = extractAuthUser(data);
   const idField = opts.idField || "userId";
 
@@ -197,7 +201,15 @@ function setSessionFromAuthResponse(storageKey, data, opts = {}) {
     ...previous,
     accessToken: tokens.accessToken || previous.accessToken || "",
     refreshToken: tokens.refreshToken || previous.refreshToken || "",
-    [idField]: readString(user?.id, previous[idField]),
+    [idField]: readString(
+      user?.id,
+      user?.user_id,
+      user?.agent_id,
+      root?.id,
+      root?.user_id,
+      root?.agent_id,
+      previous[idField],
+    ),
     email: readString(user?.email, data?.email, previous.email),
     fullName: readString(user?.full_name, user?.name, previous.fullName),
     phone: readString(user?.phone_number, user?.phone, previous.phone),
@@ -239,6 +251,13 @@ async function cropexSessionFetch(storageKey, path, opts = {}, retryOnRefresh = 
 function clearStoredSession(storageKey) {
   try {
     sessionStorage.removeItem(storageKey);
+    if (storageKey === AGENT_AUTH_KEY || storageKey === FARMER_AUTH_KEY) {
+      try {
+        window.dispatchEvent(new CustomEvent("cropex:session-expired"));
+      } catch {
+        /* ignore */
+      }
+    }
   } catch {
     /* ignore */
   }

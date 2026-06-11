@@ -18,9 +18,12 @@ import {
 import { getDisplayError } from "../../utils/apiErrors";
 import {
   clearAgentStatusPreview,
+  ensureRegistrationEmail,
+  ensureRegistrationUserId,
   getAgentStatusRoute,
   inferStatusFromLoginFailure,
   routeAgentByUserStatus,
+  saveAgentUserIdForEmail,
 } from "../../utils/agentStatus";
 
 export default function AgentLogin() {
@@ -85,9 +88,12 @@ export default function AgentLogin() {
         return;
       }
 
+      const loginEmail = email.trim();
       let statusPayload = response;
       const userId = getAgentIdFromSession();
       if (userId) {
+        saveAgentUserIdForEmail(loginEmail, userId);
+        ensureRegistrationUserId({ email: loginEmail, userId });
         try {
           statusPayload = await getAgentStatus(userId);
         } catch {
@@ -109,6 +115,7 @@ export default function AgentLogin() {
 
       const statusRoute = getAgentStatusRoute(statusPayload);
       if (statusRoute) {
+        ensureRegistrationEmail(loginEmail);
         navigate(statusRoute);
         return;
       }

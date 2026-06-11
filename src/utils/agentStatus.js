@@ -133,6 +133,24 @@ export function ensureRegistrationUserId({ email, userId } = {}) {
   }
 }
 
+export function ensureRegistrationEmail(email) {
+  const normalizedEmail = readString(email);
+  if (!normalizedEmail) return;
+  try {
+    const raw = sessionStorage.getItem(REG_KEY);
+    const reg = raw ? JSON.parse(raw) : {};
+    sessionStorage.setItem(
+      REG_KEY,
+      JSON.stringify({
+        ...reg,
+        email: normalizedEmail,
+      }),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
 export function resolveAgentUserId({ email, errorBody } = {}) {
   const fromError = extractAgentUserId(errorBody);
   if (fromError) return fromError;
@@ -222,15 +240,24 @@ export async function routeAgentByUserStatus({ email, errorBody, getAgentStatus 
     try {
       const payload = await getAgentStatus(userId);
       const route = getAgentStatusOutcomeRoute(payload);
-      if (route) return route;
+      if (route) {
+        ensureRegistrationEmail(loginEmail);
+        return route;
+      }
     } catch {
       /* fall through to inferred route */
     }
   }
 
   const inferred = inferStatusFromLoginFailure("", errorBody);
-  if (inferred === "PENDING") return "/agent/account-under-review";
-  if (inferred === "REJECTED") return "/agent/verification-failed";
+  if (inferred === "PENDING") {
+    ensureRegistrationEmail(loginEmail);
+    return "/agent/account-under-review";
+  }
+  if (inferred === "REJECTED") {
+    ensureRegistrationEmail(loginEmail);
+    return "/agent/verification-failed";
+  }
   return null;
 }
 
