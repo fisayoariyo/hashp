@@ -1,7 +1,9 @@
-import { CropexHttpError, cropexFetch } from "./cropexHttp";
+import { CropexHttpError, cropexFetch, getCropexBaseUrl } from "./cropexHttp";
 
 const AGENT_AUTH_KEY = "hcx_agent_auth";
 const FARMER_AUTH_KEY = "hcx_farmer_auth";
+const DEFAULT_FARMER_PHOTO =
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=320&q=80&fit=crop";
 
 function readStoredSession(storageKey) {
   try {
@@ -391,14 +393,54 @@ export function verifyAuthOtp({ email, phone, otp }) {
   });
 }
 
-export function agentVerifyOtp(phone, code) {
+/** Agent signup: POST /agents/verify-otp → JWT */
+export function agentVerifyOtp({ email, phone, otp } = {}) {
+  const body = { otp: String(otp || "").trim() };
+  const normalizedEmail = readString(email);
+  if (normalizedEmail) body.email = normalizedEmail;
+  const normalizedPhone = readString(phone);
+  if (normalizedPhone) body.phone_number = formatPhoneForApi(normalizedPhone);
   return cropexFetch("/agents/verify-otp", {
     method: "POST",
-    body: {
-      phone_number: formatPhoneForApi(phone),
-      otp: String(code || "").trim(),
-    },
+    body,
   });
+}
+
+/** Agent signup: POST /agents/resend-otp */
+export function agentResendOtp({ email } = {}) {
+  return cropexFetch("/agents/resend-otp", {
+    method: "POST",
+    body: { email: String(email || "").trim() },
+  });
+}
+
+let agentOnboardingProfilePhoto = null;
+
+export function setAgentOnboardingProfilePhoto(file) {
+  agentOnboardingProfilePhoto = file instanceof File ? file : null;
+}
+
+export function getAgentOnboardingProfilePhoto() {
+  return agentOnboardingProfilePhoto;
+}
+
+export function clearAgentOnboardingProfilePhoto() {
+  agentOnboardingProfilePhoto = null;
+}
+
+function base64ToProfilePhotoFile(base64, mimeType = "image/jpeg", filename = "profile.jpg") {
+  const normalized = String(base64 || "").trim();
+  if (!normalized) return null;
+  try {
+    const binary = atob(normalized);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return new File([bytes], filename, { type: mimeType });
+  } catch {
+    return null;
+  }
 }
 
 /** Forgot-password final step (Bearer from OTP verify; new password only). */
@@ -447,11 +489,35 @@ export function agentRegister(body) {
   });
 }
 
-export function completeAgentRegistration(body) {
-  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/complete-registration", {
+/** Agent onboarding: POST /agents/me/onboarding (multipart form-data). */
+export function submitAgentOnboarding({ state, lga, nin, bvn, profilePhoto, profilePhotoBase64 } = {}) {
+  const formData = new FormData();
+  formData.append("state", readString(state));
+  formData.append("lga", readString(lga));
+  formData.append("nin", readString(nin).replace(/\D/g, ""));
+  formData.append("bvn", readString(bvn).replace(/\D/g, ""));
+
+  const cachedPhoto = profilePhoto || getAgentOnboardingProfilePhoto();
+  if (cachedPhoto instanceof File) {
+    formData.append("profile_photo", cachedPhoto, cachedPhoto.name || "profile.jpg");
+  } else if (cachedPhoto instanceof Blob) {
+    formData.append("profile_photo", cachedPhoto, "profile.jpg");
+  } else {
+    const fileFromBase64 = base64ToProfilePhotoFile(profilePhotoBase64);
+    if (fileFromBase64) {
+      formData.append("profile_photo", fileFromBase64, fileFromBase64.name);
+    }
+  }
+
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/onboarding", {
     method: "POST",
-    body,
+    body: formData,
   });
+}
+
+/** @deprecated Use submitAgentOnboarding */
+export function completeAgentRegistration(body) {
+  return submitAgentOnboarding(body);
 }
 
 export function agentLogin(body) {
@@ -791,6 +857,71 @@ export function extractFarmersArray(payload) {
   return findArrayInPayload(payload, ["data", "farmers", "items", "results", "records", "rows"]);
 }
 
+export function readFarmerProfilePhoto(row) {
+  if (!row || typeof row !== "object") return "";
+  const biometrics = row.biometrics && typeof row.biometrics === "object" ? row.biometrics : {};
+  const biometricData =
+    row.biometric_data && typeof row.biometric_data === "object" ? row.biometric_data : {};
+
+  return readString(
+    row.profile_photo_url,
+    row.photo_url,
+    row.profile_photo,
+    row.photo,
+    row.face_photo,
+    biometrics.profile_photo_url,
+    biometrics.photo_url,
+    biometrics.profile_photo,
+    biometrics.photo,
+    biometrics.face_photo,
+    biometricData.profile_photo_url,
+    biometricData.photo_url,
+    biometricData.profile_photo,
+    biometricData.photo,
+    biometricData.face_photo
+  );
+}
+
+export function normalizeProfilePhotoUrl(url) {
+  const value = readString(url);
+  if (!value) return "";
+  if (value.startsWith("data:") || /^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("//")) return `https:${value}`;
+  if (value.startsWith("/")) return `${getCropexBaseUrl()}${value}`;
+  return value;
+}
+
+export function isPlaceholderFarmerPhoto(url) {
+  const value = readString(url);
+  if (!value) return true;
+  return value.includes("unsplash.com") || value.includes("placeholder");
+}
+
+export function buildFarmerPhotoLookup(...farmerLists) {
+  const lookup = {};
+  farmerLists.flat().forEach((farmer) => {
+    if (!farmer || typeof farmer !== "object") return;
+    const photo = normalizeProfilePhotoUrl(
+      readFarmerProfilePhoto(farmer) || readString(farmer.photo)
+    );
+    if (!photo || isPlaceholderFarmerPhoto(photo)) return;
+    [farmer.id, farmer.officialFarmerId, farmer.clientId].filter(Boolean).forEach((key) => {
+      lookup[key] = photo;
+    });
+  });
+  return lookup;
+}
+
+export function applyFarmerPhotoLookup(farmer, lookup = {}) {
+  if (!farmer || typeof farmer !== "object") return farmer;
+  if (!isPlaceholderFarmerPhoto(farmer.photo)) return farmer;
+  const matchKey = [farmer.id, farmer.officialFarmerId, farmer.clientId].find(
+    (key) => key && lookup[key]
+  );
+  if (!matchKey) return farmer;
+  return { ...farmer, photo: lookup[matchKey] };
+}
+
 export function mapApiFarmerToUi(row) {
   if (!row || typeof row !== "object") return null;
 
@@ -803,15 +934,14 @@ export function mapApiFarmerToUi(row) {
     createdAt && createdAt.includes("T")
       ? createdAt.slice(0, 10).split("-").reverse().join("/")
       : createdAt || "-";
+  const resolvedPhoto = normalizeProfilePhotoUrl(readFarmerProfilePhoto(row));
 
   return {
     id: readString(row.farmer_id, row.id, row.uuid, row.farmerId, row.hsh_id, row.client_id),
     officialFarmerId: readString(row.farmer_id, row.farmerId, row.id),
     clientId: readString(row.client_id, row.clientId),
     name: readString(row.full_name, row.name, row.fullName) || "Farmer",
-    photo:
-      readString(row.profile_photo_url, row.photo_url, row.profile_photo, row.photo) ||
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=320&q=80&fit=crop",
+    photo: resolvedPhoto || DEFAULT_FARMER_PHOTO,
     regDate,
     status: "synced",
     primaryCrop,

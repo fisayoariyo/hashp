@@ -4,7 +4,7 @@ import { ArrowLeft, Upload, User } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { getAgentAccessToken } from "../../services/cropexApi";
+import { getAgentAccessToken, setAgentOnboardingProfilePhoto } from "../../services/cropexApi";
 
 const REG_KEY = "hcx_agent_registration";
 
@@ -66,6 +66,7 @@ export default function AgentIdentityVerification() {
     setFileName(file.name || "");
     setError("");
     setPhotoFile(file);
+    setAgentOnboardingProfilePhoto(file);
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result;

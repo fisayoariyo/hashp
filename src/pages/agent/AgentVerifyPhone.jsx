@@ -7,10 +7,11 @@ import OtpCooldownFeedback from "../../components/agent/OtpCooldownFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useOtpCountdown } from "../../hooks/useOtpCountdown";
 import {
+  agentResendOtp,
+  agentVerifyOtp,
   getAgentIdFromSession,
   resendAuthOtp,
   setAgentSessionFromAuthResponse,
-  verifyAuthOtp,
   verifyChangePasswordOtp,
 } from "../../services/cropexApi";
 import { getPasswordResetFacingError, getUserFacingError } from "../../utils/apiErrors";
@@ -138,7 +139,7 @@ export default function AgentVerifyPhone() {
         setError("Missing account details.");
         return;
       }
-      const response = await verifyAuthOtp({ email: registerEmail, otp });
+      const response = await agentVerifyOtp({ email: registerEmail, otp });
       setAgentSessionFromAuthResponse(response);
       try {
         const raw = sessionStorage.getItem(REG_KEY);
@@ -175,7 +176,7 @@ export default function AgentVerifyPhone() {
         await resendAuthOtp({ email: resetEmail });
       } else {
         if (!registerEmail) return;
-        await resendAuthOtp({ email: registerEmail });
+        await agentResendOtp({ email: registerEmail });
       }
     } catch (resendError) {
       const facing =

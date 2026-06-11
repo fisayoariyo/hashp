@@ -8,12 +8,16 @@ import {
   syncAllPendingFarmersStorage,
 } from "../../hooks/useAgentFarmersSync";
 import {
+  applyFarmerPhotoLookup,
+  buildFarmerPhotoLookup,
   extractFarmersArray,
   getAgentDashboard,
+  getAgentIdFromSession,
   getAgentSession,
   listFarmers,
   mapApiFarmerToUi,
 } from "../../services/cropexApi";
+import { listOfflineFarmers } from "../../services/offlineFarmersDb";
 import { getAgentStatusRoute } from "../../utils/agentStatus";
 import { getDisplayError } from "../../utils/apiErrors";
 import { preloadDigitalPersonaSdk } from "../../services/digitalPersonaFingerprint";
@@ -124,6 +128,7 @@ export default function AgentHome() {
   const [isOnline,   setIsOnline]   = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [dashboard,  setDashboard]  = useState(null);
   const [apiFarmers, setApiFarmers] = useState([]);
+  const [photoLookup, setPhotoLookup] = useState({});
 
   useEffect(() => {
     void preloadDigitalPersonaSdk();
@@ -169,10 +174,11 @@ export default function AgentHome() {
     let active = true;
 
     const refreshDashboard = async () => {
-      const [dashboardResult, farmersResult] = await Promise.allSettled([
-        getAgentDashboard(),
-        listFarmers(),
+      const [results, offlineFarmers] = await Promise.all([
+        Promise.allSettled([getAgentDashboard(), listFarmers()]),
+        listOfflineFarmers(getAgentIdFromSession()).catch(() => []),
       ]);
+      const [dashboardResult, farmersResult] = results;
 
       if (!active) return;
 
@@ -193,8 +199,10 @@ export default function AgentHome() {
           .map(mapApiFarmerToUi)
           .filter(Boolean);
         setApiFarmers(farmers);
+        setPhotoLookup(buildFarmerPhotoLookup(farmers, offlineFarmers));
       } else {
         setApiFarmers([]);
+        setPhotoLookup(buildFarmerPhotoLookup(offlineFarmers));
       }
     };
 
@@ -224,9 +232,11 @@ export default function AgentHome() {
     const fromDashboard = Array.isArray(dashboard?.recent_farmers)
       ? dashboard.recent_farmers.map(mapApiFarmerToUi).filter(Boolean)
       : [];
-    if (fromDashboard.length > 0) return fromDashboard.slice(0, 4);
-    return apiFarmers.slice(0, 4);
-  }, [dashboard, apiFarmers]);
+    const source = fromDashboard.length > 0 ? fromDashboard : apiFarmers;
+    return source
+      .slice(0, 4)
+      .map((farmer) => applyFarmerPhotoLookup(farmer, photoLookup));
+  }, [dashboard, apiFarmers, photoLookup]);
 
   const displayAgentName = useMemo(() => {
     const session = getAgentSession();

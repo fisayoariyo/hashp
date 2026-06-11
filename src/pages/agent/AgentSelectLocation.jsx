@@ -5,12 +5,14 @@ import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayou
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import {
-  completeAgentRegistration,
+  clearAgentOnboardingProfilePhoto,
   extractGeoArray,
+  getAgentOnboardingProfilePhoto,
   getGeoLgas,
   getGeoStates,
   mapGeoLgaOption,
   mapGeoStateOption,
+  submitAgentOnboarding,
 } from "../../services/cropexApi";
 import { PASSWORD_ERROR, validateStrongPassword } from "../../utils/password";
 import { getDisplayError } from "../../utils/apiErrors";
@@ -136,13 +138,15 @@ export default function AgentSelectLocation() {
           submittedAt: new Date().toISOString(),
         })
       );
-      await completeAgentRegistration({
+      await submitAgentOnboarding({
         state: stateName,
         lga,
         nin: String(reg.nin || "").replace(/\D/g, ""),
         bvn: String(reg.bvn || "").replace(/\D/g, ""),
-        profile_photo: reg.profilePhotoBase64,
+        profilePhoto: getAgentOnboardingProfilePhoto(),
+        profilePhotoBase64: reg.profilePhotoBase64,
       });
+      clearAgentOnboardingProfilePhoto();
       sessionStorage.removeItem("hcx_agent_review_refresh_count");
       navigate("/agent/account-under-review");
     } catch (submitError) {
