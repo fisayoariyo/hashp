@@ -41,23 +41,26 @@ export default function AgentAccountUnderReview() {
       const savedUserId =
         readString(reg.userId) ||
         getAgentUserIdForEmail(reg.email) ||
-        getAgentIdFromSession();
-      const hasEmail = readString(reg.email);
-      const isMidOnboarding = Boolean(raw) && !reg.submittedAt;
+        resolveAgentUserId({ email: reg.email });
 
-      if (isMidOnboarding) {
-        if (!hasIdentityDetails(reg)) {
-          navigate("/agent/identity-verification", { replace: true });
-          return;
-        }
-        if (!reg.state || !reg.lga) {
-          navigate("/agent/select-location", { replace: true });
-          return;
-        }
+      if (!savedUserId) {
+        navigate("/agent/login", { replace: true });
+        return;
       }
 
-      if (!savedUserId && !hasEmail && !reg.submittedAt) {
-        navigate("/agent/login", { replace: true });
+      if (!raw) return;
+
+      const isMidRegistration = Boolean(reg.registeredAt || reg.password) && !reg.submittedAt;
+      if (!isMidRegistration) return;
+
+      if (!hasIdentityDetails(reg)) {
+        navigate("/agent/identity-verification", { replace: true });
+        return;
+      }
+
+      if (!reg.state || !reg.lga) {
+        navigate("/agent/select-location", { replace: true });
+        return;
       }
     } catch {
       navigate("/agent/login", { replace: true });

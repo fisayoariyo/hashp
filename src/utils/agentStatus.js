@@ -15,6 +15,13 @@ function extractDataRoot(payload) {
   return payload.data && typeof payload.data === "object" ? payload.data : payload;
 }
 
+function resolveAgentRecord(root) {
+  if (!root || typeof root !== "object") return root;
+  if (root.agent && typeof root.agent === "object") return root.agent;
+  if (root.user && typeof root.user === "object") return root.user;
+  return root;
+}
+
 export function clearAgentStatusPreview() {
   try {
     sessionStorage.removeItem(STATUS_PREVIEW_KEY);
@@ -44,13 +51,13 @@ export function extractAgentStatus(payload) {
   if (!payload || typeof payload !== "object") return "";
 
   const root = extractDataRoot(payload);
-  const agent = root?.agent && typeof root.agent === "object" ? root.agent : root;
+  const agent = resolveAgentRecord(root);
 
   const status = readString(
-    agent?.status,
-    agent?.account_status,
     root?.status,
     root?.account_status,
+    agent?.status,
+    agent?.account_status,
     payload?.status,
     payload?.account_status
   ).toUpperCase();
@@ -74,8 +81,12 @@ export function isAgentStatusApproved(status) {
 export function extractAgentUserId(payload) {
   if (!payload || typeof payload !== "object") return "";
   const root = extractDataRoot(payload);
-  const agent = root?.agent && typeof root.agent === "object" ? root.agent : root;
+  const agent = resolveAgentRecord(root);
+  const user = root?.user && typeof root.user === "object" ? root.user : null;
   return readString(
+    user?.id,
+    user?.user_id,
+    user?.agent_id,
     agent?.id,
     agent?.user_id,
     agent?.agent_id,
@@ -126,24 +137,6 @@ export function ensureRegistrationUserId({ email, userId } = {}) {
         ...reg,
         email: readString(email, reg.email),
         userId: normalizedUserId,
-      }),
-    );
-  } catch {
-    /* ignore */
-  }
-}
-
-export function ensureRegistrationEmail(email) {
-  const normalizedEmail = readString(email);
-  if (!normalizedEmail) return;
-  try {
-    const raw = sessionStorage.getItem(REG_KEY);
-    const reg = raw ? JSON.parse(raw) : {};
-    sessionStorage.setItem(
-      REG_KEY,
-      JSON.stringify({
-        ...reg,
-        email: normalizedEmail,
       }),
     );
   } catch {
@@ -231,6 +224,27 @@ export function getAgentStatusOutcomeRoute(payload) {
   return getRouteForAgentStatus(status);
 }
 
+/** Login blocked response (e.g. 403): read status + user id, persist id, return outcome route. */
+export function getAgentLoginBlockedRoute(errorBody, email) {
+  const root = extractDataRoot(errorBody);
+  const loginEmail = readString(email, root?.user?.email);
+  const userId = extractAgentUserId(errorBody);
+
+  if (userId) {
+    if (loginEmail) saveAgentUserIdForEmail(loginEmail, userId);
+    ensureRegistrationUserId({ email: loginEmail, userId });
+  }
+
+  const route = getAgentStatusOutcomeRoute(errorBody);
+  if (route) return route;
+
+  const inferred = inferStatusFromLoginFailure("", errorBody);
+  if (inferred === "PENDING") return "/agent/account-under-review";
+  if (inferred === "REJECTED") return "/agent/verification-failed";
+  if (inferred === "SUSPENDED") return "/agent/contact-support";
+  return null;
+}
+
 export async function routeAgentByUserStatus({ email, errorBody, getAgentStatus }) {
   const loginEmail = String(email || "").trim();
   const userId = resolveAgentUserId({ email: loginEmail, errorBody });
@@ -240,24 +254,15 @@ export async function routeAgentByUserStatus({ email, errorBody, getAgentStatus 
     try {
       const payload = await getAgentStatus(userId);
       const route = getAgentStatusOutcomeRoute(payload);
-      if (route) {
-        ensureRegistrationEmail(loginEmail);
-        return route;
-      }
+      if (route) return route;
     } catch {
       /* fall through to inferred route */
     }
   }
 
   const inferred = inferStatusFromLoginFailure("", errorBody);
-  if (inferred === "PENDING") {
-    ensureRegistrationEmail(loginEmail);
-    return "/agent/account-under-review";
-  }
-  if (inferred === "REJECTED") {
-    ensureRegistrationEmail(loginEmail);
-    return "/agent/verification-failed";
-  }
+  if (inferred === "PENDING") return "/agent/account-under-review";
+  if (inferred === "REJECTED") return "/agent/verification-failed";
   return null;
 }
 

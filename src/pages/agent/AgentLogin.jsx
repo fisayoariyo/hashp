@@ -18,12 +18,8 @@ import {
 import { getDisplayError } from "../../utils/apiErrors";
 import {
   clearAgentStatusPreview,
-  ensureRegistrationEmail,
-  ensureRegistrationUserId,
+  getAgentLoginBlockedRoute,
   getAgentStatusRoute,
-  inferStatusFromLoginFailure,
-  routeAgentByUserStatus,
-  saveAgentUserIdForEmail,
 } from "../../utils/agentStatus";
 
 export default function AgentLogin() {
@@ -88,12 +84,9 @@ export default function AgentLogin() {
         return;
       }
 
-      const loginEmail = email.trim();
       let statusPayload = response;
       const userId = getAgentIdFromSession();
       if (userId) {
-        saveAgentUserIdForEmail(loginEmail, userId);
-        ensureRegistrationUserId({ email: loginEmail, userId });
         try {
           statusPayload = await getAgentStatus(userId);
         } catch {
@@ -115,7 +108,6 @@ export default function AgentLogin() {
 
       const statusRoute = getAgentStatusRoute(statusPayload);
       if (statusRoute) {
-        ensureRegistrationEmail(loginEmail);
         navigate(statusRoute);
         return;
       }
@@ -123,20 +115,13 @@ export default function AgentLogin() {
       navigate("/agent/home");
     } catch (loginError) {
       if (loginError instanceof CropexHttpError) {
-        const inferred = inferStatusFromLoginFailure(loginError.message, loginError.body);
-        if (inferred === "PENDING" || inferred === "REJECTED") {
-          const statusRoute = await routeAgentByUserStatus({
-            email: email.trim(),
-            errorBody: loginError.body,
-            getAgentStatus,
-          });
-          if (statusRoute) {
-            navigate(statusRoute);
-            return;
+        const blockedRoute = getAgentLoginBlockedRoute(loginError.body, email.trim());
+        if (blockedRoute) {
+          if (blockedRoute === "/agent/contact-support") {
+            navigate(blockedRoute, { state: { preAuth: true, from: "login-suspended" } });
+          } else {
+            navigate(blockedRoute);
           }
-        }
-        if (inferred === "SUSPENDED") {
-          setError("This account is suspended. Contact support for assistance.");
           return;
         }
       }
