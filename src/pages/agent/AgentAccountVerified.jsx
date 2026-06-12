@@ -47,15 +47,21 @@ export default function AgentAccountVerified() {
     navigate("/agent/home");
   };
 
-  const iconBlock = <AgentStatusBadge variant="verified" className="mb-6" />;
+  const iconBlock = <AgentStatusBadge variant="verified" size={200} />;
 
-  const body = (
-    <>
-      {iconBlock}
-      <p className="font-sans text-sm text-brand-text-primary max-w-md">
+  const bodyText = (
+    <div className="w-full max-w-[360px] text-center">
+      <p className="font-sans text-xl font-semibold leading-snug text-brand-text-primary">
         You can now start registering farmers and using all features of the app.
       </p>
-    </>
+    </div>
+  );
+
+  const body = (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-8">
+      {iconBlock}
+      {bodyText}
+    </div>
   );
 
   const actions = (
@@ -66,27 +72,37 @@ export default function AgentAccountVerified() {
 
   if (isDesktop) {
     return (
-      <AgentAuthDesktopLayout
-        centerTitle
-        title="You're Verified"
-        subtitle="Your account has been successfully verified."
-        actions={actions}
-      >
-        <div className="flex flex-col items-center">{body}</div>
-      </AgentAuthDesktopLayout>
+      <div className="h-dvh overflow-hidden">
+        <AgentAuthDesktopLayout
+          centerTitle
+          title="You're Verified"
+          subtitle="Your account has been successfully verified."
+          subtitleClassName="block w-full max-w-[360px] text-center !text-[18px] !leading-snug mb-8"
+          contentClassName="!justify-between h-full py-2 lg:py-3"
+          actions={actions}
+        >
+          <div className="flex h-full w-full max-w-sm flex-col items-center">{body}</div>
+        </AgentAuthDesktopLayout>
+      </div>
     );
   }
 
   return (
     <div className="page-white flex flex-col min-h-dvh">
-      <div className="flex-1 px-5 pt-6 flex flex-col items-center text-center">
-        <button type="button" onClick={() => navigate("/agent/account-under-review")} className="self-start flex items-center gap-2 text-brand-text-secondary mb-6">
+      <div className="flex-1 px-5 pt-6 flex flex-col">
+        <button
+          type="button"
+          onClick={() => navigate("/agent/account-under-review")}
+          className="self-start flex items-center gap-2 text-brand-text-secondary mb-6"
+        >
           <ArrowLeft size={18} />
           <span className="font-sans text-sm">Go back</span>
         </button>
-        <h1 className="auth-title">You&apos;re Verified</h1>
-        <p className="auth-subtitle mb-6">Your account has been successfully verified.</p>
-        {body}
+        <h1 className="auth-title text-center">You&apos;re Verified</h1>
+        <p className="auth-subtitle mb-6 text-center">
+          Your account has been successfully verified.
+        </p>
+        <div className="flex w-full flex-col items-center">{body}</div>
       </div>
       <div className="px-5 pb-8 flex justify-center">{actions}</div>
     </div>
