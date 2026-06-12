@@ -205,7 +205,7 @@ export default function AgentVerifyPhone() {
   };
 
   const otpDestinationEmail = mode === "register" ? registerEmail : resetEmail;
-  const otpDestinationHint = otpDestinationEmail ? (
+  const otpDestinationHint = otpDestinationEmail && !error ? (
     <p
       className={`mt-5 font-sans text-[13px] text-brand-text-muted ${
         isDesktop ? "mx-auto mb-4 max-w-[360px] text-center" : "mb-4"
