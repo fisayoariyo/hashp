@@ -57,33 +57,30 @@ export default function AgentAccountVerified() {
     </div>
   );
 
-  const body = (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-8">
-      {iconBlock}
-      {bodyText}
-    </div>
-  );
-
-  const actions = (
+  const dashboardButton = (
     <button type="button" onClick={goDashboard} className="btn-primary w-full max-w-sm">
       Go to Dashboard
     </button>
   );
 
+  const body = (
+    <div className="flex w-full max-w-sm flex-col items-center gap-4">
+      {iconBlock}
+      {bodyText}
+      <div className="mt-4 w-full">{dashboardButton}</div>
+    </div>
+  );
+
   if (isDesktop) {
     return (
-      <div className="h-dvh overflow-hidden">
-        <AgentAuthDesktopLayout
-          centerTitle
-          title="You're Verified"
-          subtitle="Your account has been successfully verified."
-          subtitleClassName="block w-full max-w-[360px] text-center !text-[18px] !leading-snug mb-8"
-          contentClassName="!justify-between h-full py-2 lg:py-3"
-          actions={actions}
-        >
-          <div className="flex h-full w-full max-w-sm flex-col items-center">{body}</div>
-        </AgentAuthDesktopLayout>
-      </div>
+      <AgentAuthDesktopLayout
+        centerTitle
+        title="You're Verified"
+        subtitle="Your account has been successfully verified."
+        subtitleClassName="block w-full max-w-[360px] text-center !text-[18px] !leading-snug !mb-4"
+      >
+        {body}
+      </AgentAuthDesktopLayout>
     );
   }
 
@@ -99,12 +96,11 @@ export default function AgentAccountVerified() {
           <span className="font-sans text-sm">Go back</span>
         </button>
         <h1 className="auth-title text-center">You&apos;re Verified</h1>
-        <p className="auth-subtitle mb-6 text-center">
+        <p className="auth-subtitle mb-4 text-center">
           Your account has been successfully verified.
         </p>
         <div className="flex w-full flex-col items-center">{body}</div>
       </div>
-      <div className="px-5 pb-8 flex justify-center">{actions}</div>
     </div>
   );
 }
