@@ -31,6 +31,7 @@ export default function AgentVerifyPhone() {
   const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resendSuccess, setResendSuccess] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
   const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown, clear: clearCooldown } =
@@ -84,6 +85,7 @@ export default function AgentVerifyPhone() {
     next[index] = value;
     setDigits(next);
     setError("");
+    setResendSuccess("");
     if (value && index < OTP_LENGTH - 1) setTimeout(() => refs[index + 1].current?.focus(), 0);
   };
 
@@ -108,6 +110,7 @@ export default function AgentVerifyPhone() {
       next[index] = character;
     });
     setDigits(next);
+    setResendSuccess("");
     const last = Math.min(pasted.length, OTP_LENGTH) - 1;
     setTimeout(() => refs[last].current?.focus(), 0);
   };
@@ -126,6 +129,7 @@ export default function AgentVerifyPhone() {
 
     setLoading(true);
     setError("");
+    setResendSuccess("");
     clearCooldown();
     try {
       if (mode === "reset-password") {
@@ -172,7 +176,7 @@ export default function AgentVerifyPhone() {
     if (isCooldownActive) return;
 
     setError("");
-    clearCooldown();
+    setResendSuccess("");
     setLoading(true);
     try {
       if (mode === "reset-password") {
@@ -182,6 +186,8 @@ export default function AgentVerifyPhone() {
         if (!registerEmail) return;
         await agentResendOtp({ email: registerEmail, phone: registerPhone });
       }
+      setResendSuccess("Code resent — check your email.");
+      startCooldown(60);
     } catch (resendError) {
       const facing =
         mode === "reset-password"
@@ -242,6 +248,13 @@ export default function AgentVerifyPhone() {
         <div className={`mb-4 ${isDesktop ? "flex justify-center" : ""}`}>
           <AgentFormFeedback variant="error" className={isDesktop ? "text-[13px]" : ""}>
             {error}
+          </AgentFormFeedback>
+        </div>
+      ) : null}
+      {resendSuccess ? (
+        <div className={`mb-4 ${isDesktop ? "flex justify-center" : ""}`}>
+          <AgentFormFeedback variant="success" className={isDesktop ? "text-[13px]" : ""}>
+            {resendSuccess}
           </AgentFormFeedback>
         </div>
       ) : null}
