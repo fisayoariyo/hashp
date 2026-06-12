@@ -33,6 +33,7 @@ export default function AgentVerifyPhone() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
   const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown, clear: clearCooldown } =
     useOtpCountdown();
 
@@ -48,6 +49,7 @@ export default function AgentVerifyPhone() {
         return;
       }
       setRegisterEmail(email);
+      setRegisterPhone(String(reg.phoneNumber || reg.phone || "").trim());
     } catch {
       if (!cancelled) setError("Could not prepare verification code.");
     }
@@ -179,7 +181,7 @@ export default function AgentVerifyPhone() {
         await resendAuthOtp({ email: resetEmail });
       } else {
         if (!registerEmail) return;
-        await agentResendOtp({ email: registerEmail });
+        await agentResendOtp({ email: registerEmail, phone: registerPhone });
       }
     } catch (resendError) {
       const facing =

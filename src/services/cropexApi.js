@@ -406,11 +406,16 @@ export function agentVerifyOtp({ email, phone, otp } = {}) {
   });
 }
 
-/** Agent signup: POST /agents/resend-otp */
-export function agentResendOtp({ email } = {}) {
-  return cropexFetch("/agents/resend-otp", {
+/** Agent signup: POST /auth/resend-otp */
+export function agentResendOtp({ email, phone } = {}) {
+  const body = { role: "AGENT" };
+  const normalizedEmail = readString(email);
+  if (normalizedEmail) body.email = normalizedEmail;
+  const normalizedPhone = readString(phone);
+  if (normalizedPhone) body.phone_number = formatPhoneForApi(normalizedPhone);
+  return cropexFetch("/auth/resend-otp", {
     method: "POST",
-    body: { email: String(email || "").trim() },
+    body,
   });
 }
 
