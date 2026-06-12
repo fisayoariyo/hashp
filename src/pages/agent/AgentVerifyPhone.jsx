@@ -31,7 +31,7 @@ export default function AgentVerifyPhone() {
   const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [resendSuccess, setResendSuccess] = useState("");
+  const [codeResent, setCodeResent] = useState(false);
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
   const { seconds: cooldownSeconds, isActive: isCooldownActive, start: startCooldown, clear: clearCooldown } =
@@ -85,7 +85,6 @@ export default function AgentVerifyPhone() {
     next[index] = value;
     setDigits(next);
     setError("");
-    setResendSuccess("");
     if (value && index < OTP_LENGTH - 1) setTimeout(() => refs[index + 1].current?.focus(), 0);
   };
 
@@ -110,7 +109,6 @@ export default function AgentVerifyPhone() {
       next[index] = character;
     });
     setDigits(next);
-    setResendSuccess("");
     const last = Math.min(pasted.length, OTP_LENGTH) - 1;
     setTimeout(() => refs[last].current?.focus(), 0);
   };
@@ -129,7 +127,6 @@ export default function AgentVerifyPhone() {
 
     setLoading(true);
     setError("");
-    setResendSuccess("");
     clearCooldown();
     try {
       if (mode === "reset-password") {
@@ -176,7 +173,6 @@ export default function AgentVerifyPhone() {
     if (isCooldownActive) return;
 
     setError("");
-    setResendSuccess("");
     setLoading(true);
     try {
       if (mode === "reset-password") {
@@ -186,7 +182,7 @@ export default function AgentVerifyPhone() {
         if (!registerEmail) return;
         await agentResendOtp({ email: registerEmail, phone: registerPhone });
       }
-      setResendSuccess("Code resent — check your email.");
+      setCodeResent(true);
       startCooldown(60);
     } catch (resendError) {
       const facing =
@@ -211,11 +207,11 @@ export default function AgentVerifyPhone() {
   const otpDestinationEmail = mode === "register" ? registerEmail : resetEmail;
   const otpDestinationHint = otpDestinationEmail ? (
     <p
-      className={`font-sans text-xs text-brand-text-muted ${
+      className={`mt-5 font-sans text-[13px] text-brand-text-muted ${
         isDesktop ? "mx-auto mb-4 max-w-[360px] text-center" : "mb-4"
       }`}
     >
-      Code sent to{" "}
+      Code {codeResent ? "resent" : "sent"} to{" "}
       <span className="font-medium text-brand-text-secondary">{otpDestinationEmail}</span>
     </p>
   ) : null;
@@ -248,13 +244,6 @@ export default function AgentVerifyPhone() {
         <div className={`mb-4 ${isDesktop ? "flex justify-center" : ""}`}>
           <AgentFormFeedback variant="error" className={isDesktop ? "text-[13px]" : ""}>
             {error}
-          </AgentFormFeedback>
-        </div>
-      ) : null}
-      {resendSuccess ? (
-        <div className={`mb-4 ${isDesktop ? "flex justify-center" : ""}`}>
-          <AgentFormFeedback variant="success" className={isDesktop ? "text-[13px]" : ""}>
-            {resendSuccess}
           </AgentFormFeedback>
         </div>
       ) : null}
