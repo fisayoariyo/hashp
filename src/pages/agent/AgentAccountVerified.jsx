@@ -64,23 +64,29 @@ export default function AgentAccountVerified() {
   );
 
   const body = (
-    <div className="flex w-full max-w-sm flex-col items-center gap-4">
+    <div className="flex w-full max-w-sm flex-col items-center gap-6">
       {iconBlock}
       {bodyText}
-      <div className="mt-4 w-full">{dashboardButton}</div>
     </div>
   );
 
   if (isDesktop) {
     return (
-      <AgentAuthDesktopLayout
-        centerTitle
-        title="You're Verified"
-        subtitle="Your account has been successfully verified."
-        subtitleClassName="block w-full max-w-[360px] text-center !text-[18px] !leading-snug !mb-4"
-      >
-        {body}
-      </AgentAuthDesktopLayout>
+      <div className="h-dvh overflow-hidden">
+        <AgentAuthDesktopLayout
+          centerTitle
+          title="You're Verified"
+          subtitle="Your account has been successfully verified."
+          subtitleClassName="block w-full max-w-[360px] text-center !text-[18px] !leading-snug !mb-0"
+          contentClassName="!justify-between h-full min-h-0 py-6 lg:py-10"
+          actions={<div className="w-full max-w-sm">{dashboardButton}</div>}
+          actionsClassName="!pt-0"
+        >
+          <div className="flex flex-1 w-full max-w-sm flex-col items-center justify-center min-h-0 py-6">
+            {body}
+          </div>
+        </AgentAuthDesktopLayout>
+      </div>
     );
   }
 
@@ -99,7 +105,8 @@ export default function AgentAccountVerified() {
         <p className="auth-subtitle mb-4 text-center">
           Your account has been successfully verified.
         </p>
-        <div className="flex w-full flex-col items-center">{body}</div>
+        <div className="flex flex-1 w-full flex-col items-center justify-center">{body}</div>
+        <div className="mt-8 w-full flex justify-center pb-2">{dashboardButton}</div>
       </div>
     </div>
   );
