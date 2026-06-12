@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 
+const MAX_COOLDOWN_SECONDS = 60;
+
+function normalizeCooldownSeconds(value) {
+  const next = Number.parseInt(String(value || ""), 10);
+  if (!Number.isFinite(next) || next <= 0) return 0;
+  return Math.min(next, MAX_COOLDOWN_SECONDS);
+}
+
 export function useOtpCountdown(initialSeconds = 0) {
-  const [seconds, setSeconds] = useState(() =>
-    Number.isFinite(initialSeconds) && initialSeconds > 0 ? Math.floor(initialSeconds) : 0,
-  );
+  const [seconds, setSeconds] = useState(() => normalizeCooldownSeconds(initialSeconds));
 
   useEffect(() => {
     if (seconds <= 0) return undefined;
@@ -14,8 +20,8 @@ export function useOtpCountdown(initialSeconds = 0) {
   }, [seconds]);
 
   const start = useCallback((value) => {
-    const next = Number.parseInt(String(value || ""), 10);
-    if (Number.isFinite(next) && next > 0) setSeconds(next);
+    const next = normalizeCooldownSeconds(value);
+    if (next > 0) setSeconds(next);
   }, []);
 
   const clear = useCallback(() => setSeconds(0), []);

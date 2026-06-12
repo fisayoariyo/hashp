@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
 import AgentFormFeedback from "../../components/agent/AgentFormFeedback";
-import OtpCooldownFeedback from "../../components/agent/OtpCooldownFeedback";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useOtpCountdown } from "../../hooks/useOtpCountdown";
 import {
@@ -246,7 +245,6 @@ export default function AgentVerifyPhone() {
           </AgentFormFeedback>
         </div>
       ) : null}
-      <OtpCooldownFeedback seconds={cooldownSeconds} className={isDesktop ? "mx-auto mb-4" : "mb-4"} />
       <p className={`font-sans text-brand-text-secondary ${isDesktop ? "text-center text-[14px]" : "text-sm"}`}>
         I did not receive a code,{" "}
         <button
