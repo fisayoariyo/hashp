@@ -173,6 +173,7 @@ export default function AgentVerifyPhone() {
     if (isCooldownActive) return;
 
     setError("");
+    setCodeResent(true);
     setLoading(true);
     try {
       if (mode === "reset-password") {
@@ -182,7 +183,6 @@ export default function AgentVerifyPhone() {
         if (!registerEmail) return;
         await agentResendOtp({ email: registerEmail, phone: registerPhone });
       }
-      setCodeResent(true);
       startCooldown(60);
     } catch (resendError) {
       const facing =
