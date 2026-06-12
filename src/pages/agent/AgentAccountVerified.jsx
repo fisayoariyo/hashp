@@ -78,11 +78,11 @@ export default function AgentAccountVerified() {
           title="You're Verified"
           subtitle="Your account has been successfully verified."
           subtitleClassName="block w-full max-w-[360px] text-center !text-[18px] !leading-snug !mb-0"
-          contentClassName="!justify-between h-full min-h-0 py-6 lg:py-10"
+          contentClassName="!justify-center h-full min-h-0 !gap-8 py-4 [&>div.flex-1]:!flex-none"
           actions={<div className="w-full max-w-sm">{dashboardButton}</div>}
           actionsClassName="!pt-0"
         >
-          <div className="flex flex-1 w-full max-w-sm flex-col items-center justify-center min-h-0 py-6">
+          <div className="flex w-full max-w-sm flex-col items-center">
             {body}
           </div>
         </AgentAuthDesktopLayout>
