@@ -1,4 +1,4 @@
-import { createRef, useEffect, useMemo, useState } from "react";
+import { createRef, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -392,8 +392,69 @@ function VerifyEmailStep({ email, onVerify, onVerified, onBack, onResend }) {
   );
 }
 
+const UNDER_REVIEW_BADGE_SIZE = 200;
+
+function measureBadgeOffsetUnderTitleWord(titleEl, word = "Under", badgeSize = UNDER_REVIEW_BADGE_SIZE) {
+  if (!titleEl || typeof document === "undefined") return 0;
+
+  const fullText = titleEl.textContent || "";
+  const wordIndex = fullText.indexOf(word);
+  if (wordIndex === -1) return 0;
+
+  let charCount = 0;
+  let targetNode = null;
+  let startInNode = 0;
+  const walker = document.createTreeWalker(titleEl, NodeFilter.SHOW_TEXT);
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const length = node.textContent?.length || 0;
+    if (charCount + length > wordIndex) {
+      targetNode = node;
+      startInNode = wordIndex - charCount;
+      break;
+    }
+    charCount += length;
+  }
+
+  if (!targetNode) return 0;
+
+  const range = document.createRange();
+  range.setStart(targetNode, startInNode);
+  range.setEnd(targetNode, startInNode + word.length);
+  const wordRect = range.getBoundingClientRect();
+  const titleRect = titleEl.getBoundingClientRect();
+  const wordCenter = wordRect.left + wordRect.width / 2 - titleRect.left;
+
+  return Math.max(0, wordCenter - badgeSize / 2);
+}
+
 function UnderReviewView({ onRefresh, onBack }) {
   const [refreshing, setRefreshing] = useState(false);
+  const titleRef = useRef(null);
+  const [badgeOffset, setBadgeOffset] = useState(null);
+
+  useLayoutEffect(() => {
+    const updateOffset = () => {
+      const titleEl = titleRef.current;
+      if (!titleEl) return;
+      setBadgeOffset(measureBadgeOffsetUnderTitleWord(titleEl));
+    };
+
+    updateOffset();
+    window.addEventListener("resize", updateOffset);
+
+    let observer;
+    if (typeof ResizeObserver !== "undefined" && titleRef.current) {
+      observer = new ResizeObserver(updateOffset);
+      observer.observe(titleRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateOffset);
+      observer?.disconnect();
+    };
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -413,7 +474,10 @@ function UnderReviewView({ onRefresh, onBack }) {
 
       <div className="space-y-8">
         <div className="space-y-2">
-          <h2 className="font-display text-[36px] font-bold leading-[44px] text-[#030F0F]">
+          <h2
+            ref={titleRef}
+            className="font-display text-[36px] font-bold leading-[44px] text-[#030F0F]"
+          >
             Account Under Review
           </h2>
           <p className="font-sans text-[20px] leading-[28px] text-[#030F0F]/75">
@@ -421,8 +485,11 @@ function UnderReviewView({ onRefresh, onBack }) {
           </p>
         </div>
 
-        <div className="flex justify-center">
-          <AgentStatusBadge variant="pending" size={200} />
+        <div
+          className="w-fit"
+          style={badgeOffset != null ? { marginLeft: badgeOffset } : undefined}
+        >
+          <AgentStatusBadge variant="pending" size={UNDER_REVIEW_BADGE_SIZE} />
         </div>
 
         <div className="max-w-[560px] rounded-[18px] border border-[#E0EDE9] bg-[#F6F9F8] px-6 py-5">
