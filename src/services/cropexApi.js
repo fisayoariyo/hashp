@@ -544,6 +544,33 @@ export function agentLogin(body) {
   });
 }
 
+/** Farmer login: POST /auth/login with farmer_id + password (no OTP). */
+export function farmerLogin({ farmerId, password } = {}) {
+  return cropexFetch("/auth/login", {
+    method: "POST",
+    body: {
+      farmer_id: readString(farmerId),
+      password: String(password || ""),
+      role: "FARMER",
+    },
+  });
+}
+
+export function extractFarmerEnrollmentCredentials(payload) {
+  const root = extractDataRoot(payload);
+  const credentials =
+    root?.credentials && typeof root.credentials === "object" ? root.credentials : {};
+  const loginId = readString(
+    credentials.login_id,
+    credentials.loginId,
+    root?.farmer?.farmer_id,
+    root?.farmer_id
+  );
+  const tempPassword = readString(credentials.password);
+  if (!loginId && !tempPassword) return null;
+  return { loginId, password: tempPassword };
+}
+
 export function agentRefresh(refreshToken) {
   return cropexFetch("/agents/refresh", {
     method: "POST",
@@ -849,6 +876,16 @@ export function createSupportTicket(body) {
     method: "POST",
     body,
   });
+}
+
+export function listSupportTickets() {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/support/tickets");
+}
+
+export function extractSupportTicketsArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  return findArrayInPayload(payload, ["data", "tickets", "items", "results", "records"]);
 }
 
 export function extractFarmerRecord(payload) {

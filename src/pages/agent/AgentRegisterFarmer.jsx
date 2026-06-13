@@ -16,6 +16,7 @@ import {
   draftToEnrollmentPayload,
   draftToFarmerEnrollmentRequest,
   enrollFarmer,
+  extractFarmerEnrollmentCredentials,
   extractFarmersArray,
   getAgentIdFromSession,
   getAgentSession,
@@ -1395,6 +1396,33 @@ function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
           {description}
         </p>
 
+        {isOnlineSubmission && idCard.credentials?.loginId && idCard.credentials?.password ? (
+          <div className="mb-5 w-full max-w-[284px] self-start rounded-[20px] border border-brand-border bg-[#F7FAF8] px-4 py-4">
+            <p className="font-sans text-sm font-semibold text-brand-text-primary mb-3">
+              Login details for farmer
+            </p>
+            <div className="space-y-2 text-left">
+              <div>
+                <p className="font-sans text-[11px] uppercase tracking-wide text-brand-text-muted">Farmer ID</p>
+                <p className="font-sans text-sm font-semibold text-brand-text-primary break-all">
+                  {idCard.credentials.loginId}
+                </p>
+              </div>
+              <div>
+                <p className="font-sans text-[11px] uppercase tracking-wide text-brand-text-muted">
+                  Temporary password
+                </p>
+                <p className="font-sans text-sm font-semibold text-brand-text-primary break-all">
+                  {idCard.credentials.password || "—"}
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 font-sans text-xs text-brand-text-secondary">
+              Share these with the farmer so they can log in.
+            </p>
+          </div>
+        ) : null}
+
         <div className="w-full max-w-[284px] self-start bg-brand-green rounded-[22px] px-4 py-4 flex flex-col items-center text-white shadow-md">
           <div className="self-start mb-3">
             <img
@@ -1726,6 +1754,7 @@ export default function AgentRegisterFarmer() {
         biometric: { face: true, fingerprint: true },
       });
 
+      const enrollmentCredentials = extractFarmerEnrollmentCredentials(createResponse);
       setIdCard({
         mode: "online",
         clientId: resolvedClientId,
@@ -1735,6 +1764,7 @@ export default function AgentRegisterFarmer() {
         cooperative: readString(farmerRoot.cooperative_name, queuedPayload.cooperative),
         savedAt,
         agentName,
+        credentials: enrollmentCredentials,
       });
       requestFarmersRefresh();
 

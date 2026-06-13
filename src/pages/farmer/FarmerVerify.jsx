@@ -1,19 +1,16 @@
-import { createRef, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Smartphone, ArrowLeft } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Lock } from "lucide-react";
 import FarmerAuthDesktopLayout from "../../components/farmer/FarmerAuthDesktopLayout";
+import PasswordField from "../../components/PasswordField";
 import { farmerLoginHero } from "../../mockData/farmer";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import {
-  sendOtp,
+  farmerLogin,
+  getFarmerAccessToken,
   setFarmerSessionFromAuthResponse,
-  verifyOtp,
 } from "../../services/cropexApi";
-import { formatPhoneForDisplay } from "../../utils/helpers";
 import { getDisplayError } from "../../utils/apiErrors";
-
-const OTP_LENGTH = 6;
-const RESEND_SECONDS = 60;
 
 const FARMER_LOGIN_LAYOUT_PROPS = {
   fixedImage: farmerLoginHero.image,
@@ -22,56 +19,37 @@ const FARMER_LOGIN_LAYOUT_PROPS = {
   heroSubtitle: farmerLoginHero.sub,
 };
 
-function PhoneStep({ onSubmit }) {
+export default function FarmerVerify() {
   const navigate = useNavigate();
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [phone, setPhone] = useState("");
+  const [farmerId, setFarmerId] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handle = async () => {
-    if (phone.trim().length < 10) {
-      setError("Please enter a valid phone number.");
+  const handleLogin = async () => {
+    if (!farmerId.trim() || !password) {
+      setError("Please enter your Farmer ID and password.");
       return;
     }
 
     setError("");
     setLoading(true);
     try {
-      await sendOtp(phone.trim());
-      onSubmit(phone.trim());
-    } catch (submitError) {
-      setError(getDisplayError(submitError, "Could not send the verification code."));
+      const response = await farmerLogin({ farmerId: farmerId.trim(), password });
+      setFarmerSessionFromAuthResponse(response);
+      if (!getFarmerAccessToken()) {
+        setError("Sign-in succeeded but no session was returned. Contact your agent.");
+        return;
+      }
+      navigate("/farmer/home");
+    } catch (loginError) {
+      setError(getDisplayError(loginError, "Invalid Farmer ID or password."));
     } finally {
       setLoading(false);
     }
   };
-
-  const phoneField = (
-    <div className={`mb-6 flex w-full flex-col gap-1.5 text-left ${isDesktop ? "max-w-[560px] self-start" : ""}`}>
-      <label className="font-sans text-sm font-medium text-brand-text-primary">Phone Number</label>
-      <div
-        className={`flex w-full items-center bg-white border rounded-2xl px-4 py-3.5 gap-3 focus-within:ring-2 focus-within:ring-brand-green focus-within:border-transparent transition-all ${
-          error ? "border-red-400" : "border-brand-border"
-        }`}
-      >
-        <Smartphone size={18} className="text-brand-text-muted shrink-0" />
-        <div className="w-px h-5 bg-brand-border shrink-0" />
-        <span className="text-sm text-brand-text-secondary shrink-0">+234</span>
-        <input
-          type="tel"
-          inputMode="numeric"
-          autoComplete="tel-national"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-          onKeyDown={(e) => e.key === "Enter" && void handle()}
-          placeholder="Input your phone number here"
-          className="min-w-0 flex-1 bg-transparent text-left text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
-        />
-      </div>
-      {error && <p className="mt-1 text-left text-xs text-red-500">{error}</p>}
-    </div>
-  );
 
   const goBackButton = (
     <button
@@ -84,22 +62,62 @@ function PhoneStep({ onSubmit }) {
     </button>
   );
 
-  const noAccountLink = (
-    <button
-      type="button"
-      onClick={() => navigate("/farmer/get-started")}
-      className="auth-btn-secondary"
-    >
-      I do not have an account
-    </button>
+  const formFields = (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-2">
+        <label className="font-sans text-sm font-medium text-brand-text-primary">Farmer ID</label>
+        <div
+          className={`flex items-center gap-3 rounded-2xl border bg-white px-4 py-4 transition-all focus-within:border-transparent focus-within:ring-2 focus-within:ring-brand-green ${
+            error ? "border-red-400" : "border-brand-border"
+          }`}
+        >
+          <BadgeCheck size={18} className="shrink-0 text-brand-text-muted" />
+          <input
+            type="text"
+            autoComplete="username"
+            value={farmerId}
+            onChange={(event) => {
+              setFarmerId(event.target.value);
+              setError("");
+            }}
+            onKeyDown={(event) => event.key === "Enter" && void handleLogin()}
+            placeholder="Enter your Farmer ID here"
+            className="min-w-0 flex-1 bg-transparent text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="font-sans text-sm font-medium text-brand-text-primary">Password</label>
+        <PasswordField
+          prefix={Lock}
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setError("");
+          }}
+          onKeyDown={(event) => event.key === "Enter" && void handleLogin()}
+          visible={showPass}
+          onToggleVisible={() => setShowPass((value) => !value)}
+          autoComplete="current-password"
+          placeholder="Enter your password"
+          wrapperClassName={`flex items-center gap-3 rounded-2xl border bg-white px-4 py-4 transition-all focus-within:border-transparent focus-within:ring-2 focus-within:ring-brand-green ${
+            error ? "border-red-400" : "border-brand-border"
+          }`}
+        />
+        {error ? <p className="text-xs text-red-500">{error}</p> : null}
+      </div>
+    </div>
   );
 
-  const phoneActions = (
-    <div className="w-full max-w-[560px] space-y-3">
-      <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary w-full">
-        {loading ? "Sending code..." : "Continue"}
+  const actions = (
+    <div className="space-y-3">
+      <button type="button" onClick={() => void handleLogin()} disabled={loading} className="btn-primary">
+        {loading ? "Logging in..." : "Continue"}
       </button>
-      {noAccountLink}
+      <button type="button" onClick={() => navigate("/farmer/get-started")} className="auth-btn-secondary">
+        I do not have an account
+      </button>
     </div>
   );
 
@@ -108,287 +126,22 @@ function PhoneStep({ onSubmit }) {
       <FarmerAuthDesktopLayout
         {...FARMER_LOGIN_LAYOUT_PROPS}
         title="Log in to your profile"
-        centerTitle
         leading={goBackButton}
-        contentClassName="max-w-[620px]"
-        actions={phoneActions}
+        actions={actions}
       >
-        {phoneField}
+        {formFields}
       </FarmerAuthDesktopLayout>
     );
   }
 
   return (
-    <div className="page-white flex flex-col">
-      <div className="flex-1 px-5 pt-5">
+    <div className="flex w-full flex-col bg-white" style={{ minHeight: "100dvh" }}>
+      <div className="mx-auto w-full max-w-[480px] flex-1 overflow-y-auto px-5 pt-5 pb-6">
         {goBackButton}
         <h1 className="auth-title mb-8">Log in to your profile</h1>
-        {phoneField}
-      </div>
-      <div className="px-5 pb-8 space-y-3">
-        <button type="button" onClick={() => void handle()} disabled={loading} className="btn-primary">
-          {loading ? "Sending code..." : "Continue"}
-        </button>
-        {noAccountLink}
+        {formFields}
+        <div className="mt-5 space-y-3 pb-[max(2rem,env(safe-area-inset-bottom))]">{actions}</div>
       </div>
     </div>
   );
-}
-
-function OTPStep({ phone, onSuccess, onBack }) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [resendTimer, setResendTimer] = useState(RESEND_SECONDS);
-  const [canResend, setCanResend] = useState(false);
-  const timerRef = useRef(null);
-
-  const refs = useMemo(() => Array.from({ length: OTP_LENGTH }, () => createRef()), []);
-
-  useEffect(() => {
-    refs[0].current?.focus();
-  }, []);
-
-  const startResendTimer = useCallback(() => {
-    setResendTimer(RESEND_SECONDS);
-    setCanResend(false);
-    clearInterval(timerRef.current);
-    timerRef.current = window.setInterval(() => {
-      setResendTimer((previous) => {
-        if (previous <= 1) {
-          clearInterval(timerRef.current);
-          setCanResend(true);
-          return 0;
-        }
-        return previous - 1;
-      });
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    startResendTimer();
-    return () => {
-      clearInterval(timerRef.current);
-    };
-  }, [startResendTimer]);
-
-  const handleChange = (index, event) => {
-    const raw = event.target.value.replace(/\D/g, "");
-    const value = raw.length > 1 ? raw[raw.length - 1] : raw;
-    const next = [...digits];
-    next[index] = value;
-    setDigits(next);
-    setError("");
-    if (value && index < OTP_LENGTH - 1) {
-      setTimeout(() => refs[index + 1].current?.focus(), 0);
-    }
-  };
-
-  const handleKeyDown = (index, event) => {
-    if (event.key === "Backspace") {
-      if (digits[index]) {
-        const next = [...digits];
-        next[index] = "";
-        setDigits(next);
-      } else if (index > 0) {
-        setTimeout(() => refs[index - 1].current?.focus(), 0);
-      }
-    }
-  };
-
-  const handlePaste = (event) => {
-    event.preventDefault();
-    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
-    if (!pasted) return;
-    const next = Array.from({ length: OTP_LENGTH }, () => "");
-    pasted.split("").forEach((char, index) => {
-      next[index] = char;
-    });
-    setDigits(next);
-    setTimeout(() => refs[Math.min(pasted.length, OTP_LENGTH) - 1].current?.focus(), 0);
-  };
-
-  const handleLogin = async () => {
-    const otp = digits.join("");
-    if (otp.length < OTP_LENGTH) {
-      setError(`Enter the complete ${OTP_LENGTH}-digit code.`);
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    try {
-      const response = await verifyOtp(phone, otp);
-      setFarmerSessionFromAuthResponse(response);
-      onSuccess();
-    } catch (verifyError) {
-      setError(getDisplayError(verifyError, "Verification failed. Try again."));
-      setDigits(Array.from({ length: OTP_LENGTH }, () => ""));
-      setTimeout(() => refs[0].current?.focus(), 0);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResend = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      await sendOtp(phone);
-      startResendTimer();
-    } catch (resendError) {
-      setError(getDisplayError(resendError, "Could not resend the verification code."));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const otpDestinationLabel = formatPhoneForDisplay(phone);
-  const otpSubtitle = otpDestinationLabel
-    ? `Enter the ${OTP_LENGTH}-digit code we sent to ${otpDestinationLabel}`
-    : `Enter the ${OTP_LENGTH}-digit code we sent to your registered phone number`;
-
-  const otpGrid = (
-    <div className={`${isDesktop ? "flex justify-center gap-3" : "grid grid-cols-6 gap-3"}`}>
-      {digits.map((digit, index) => (
-        <input
-          key={index}
-          ref={refs[index]}
-          type="tel"
-          inputMode="numeric"
-          maxLength={1}
-          value={digit}
-          onChange={(event) => handleChange(index, event)}
-          onKeyDown={(event) => handleKeyDown(index, event)}
-          onPaste={index === 0 ? handlePaste : undefined}
-          autoComplete="one-time-code"
-          className={`${isDesktop ? "w-14" : "w-full"} h-16 text-center text-2xl font-bold font-display bg-white border-2 rounded-2xl focus:outline-none transition-colors ${
-            digit ? "border-brand-green text-brand-green" : "border-brand-border"
-          } focus:border-brand-green`}
-        />
-      ))}
-    </div>
-  );
-
-  const otpFooter = (
-    <div className={isDesktop ? "text-center" : ""}>
-      {error && <p className="mb-1 text-xs text-red-500">{error}</p>}
-      <p className="font-sans text-sm text-brand-text-secondary">
-        I did not receive a code,{" "}
-        <button
-          type="button"
-          onClick={() => void handleResend()}
-          disabled={!canResend}
-          className={`font-semibold transition-colors ${
-            canResend ? "text-brand-green active:opacity-70" : "text-brand-text-muted cursor-default"
-          }`}
-        >
-          {canResend ? "Resend Code" : `Resend in ${resendTimer}s`}
-        </button>
-      </p>
-    </div>
-  );
-
-  if (isDesktop) {
-    return (
-      <FarmerAuthDesktopLayout
-        {...FARMER_LOGIN_LAYOUT_PROPS}
-        title={`Enter ${OTP_LENGTH}-Digit code`}
-        subtitle={otpSubtitle}
-        centerTitle
-        contentClassName="max-w-[620px]"
-        actionsClassName="mt-auto pt-7"
-        actions={
-          <div className="w-full max-w-[560px] space-y-3">
-            <button
-              type="button"
-              onClick={() => void handleLogin()}
-              disabled={loading || digits.join("").length < OTP_LENGTH}
-              className="btn-primary w-full"
-            >
-              {loading ? "Verifying..." : "Login"}
-            </button>
-            <button
-              type="button"
-              onClick={onBack}
-              className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium hover:bg-gray-100 transition-colors"
-            >
-              Back
-            </button>
-          </div>
-        }
-      >
-        <div className="mt-1 space-y-3">
-          {otpGrid}
-          {otpFooter}
-        </div>
-      </FarmerAuthDesktopLayout>
-    );
-  }
-
-  return (
-    <div className="page-white flex flex-col">
-      <div className="flex-1 px-5 pt-5">
-        <button type="button" onClick={onBack} className="flex items-center gap-2 text-brand-text-secondary mb-6">
-          <ArrowLeft size={18} />
-          <span className="font-sans text-sm">Go back</span>
-        </button>
-        <h1 className="auth-title mb-2">{`Enter ${OTP_LENGTH}-Digit code`}</h1>
-        <p className="font-sans text-sm text-brand-text-secondary mb-8">
-          {otpSubtitle}
-        </p>
-        <div className="mt-2 space-y-3">
-          {otpGrid}
-          {otpFooter}
-        </div>
-      </div>
-      <div className="px-5 pb-8 space-y-3">
-        <button
-          type="button"
-          onClick={() => void handleLogin()}
-          disabled={loading || digits.join("").length < OTP_LENGTH}
-          className="btn-primary"
-        >
-          {loading ? "Verifying..." : "Login"}
-        </button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="w-full py-3.5 rounded-2xl bg-gray-50 text-brand-text-secondary font-sans text-sm font-medium"
-        >
-          Back
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default function FarmerVerify() {
-  const navigate = useNavigate();
-  const [step, setStep] = useState("phone");
-  const [phone, setPhone] = useState("");
-
-  if (step === "phone") {
-    return (
-      <PhoneStep
-        onSubmit={(nextPhone) => {
-          setPhone(nextPhone);
-          setStep("otp");
-        }}
-      />
-    );
-  }
-
-  if (step === "otp") {
-    return (
-      <OTPStep
-        phone={phone}
-        onSuccess={() => navigate("/farmer/home")}
-        onBack={() => setStep("phone")}
-      />
-    );
-  }
-
-  return null;
 }
