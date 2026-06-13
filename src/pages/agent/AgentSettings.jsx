@@ -618,7 +618,7 @@ export default function AgentSettings() {
     [dashboard, session]
   );
 
-  const handleLogout = (loginMessage) => {
+  const handleLogout = () => {
     try {
       clearAgentSession();
       sessionStorage.removeItem("hcx_agent_registration");
@@ -626,9 +626,6 @@ export default function AgentSettings() {
       sessionStorage.removeItem("hcx_agent_reset_otp_ok");
       sessionStorage.removeItem(CHANGE_PASSWORD_OTP_OK);
       localStorage.removeItem("hcx_agent_farmers_list");
-      if (loginMessage) {
-        sessionStorage.setItem("hcx_agent_login_message", loginMessage);
-      }
     } catch {
       /* ignore */
     }
@@ -640,9 +637,7 @@ export default function AgentSettings() {
       <ChangePasswordScreen
         accountEmail={profile.email}
         onBack={() => setView("main")}
-        onPasswordChangedSuccess={() =>
-          handleLogout("Password changed successfully. Sign in with your new password.")
-        }
+        onPasswordChangedSuccess={handleLogout}
       />
     );
   }
@@ -661,7 +656,10 @@ export default function AgentSettings() {
       />
       {showLogout && (
         <LogoutModal
-          onConfirm={handleLogout}
+          onConfirm={() => {
+            setShowLogout(false);
+            handleLogout();
+          }}
           onCancel={() => setShowLogout(false)}
         />
       )}
