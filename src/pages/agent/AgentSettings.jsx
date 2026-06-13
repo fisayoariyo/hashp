@@ -23,6 +23,7 @@ import {
   clearAgentSession,
   getAgentDashboard,
   getAgentSession,
+  normalizeProfilePhotoUrl,
   requestAgentChangePasswordOtp,
   verifyAgentChangePasswordOtp,
 } from "../../services/cropexApi";
@@ -613,7 +614,15 @@ export default function AgentSettings() {
         "Agent",
       email: dashboard?.agent?.email || session?.email || "",
       phone: dashboard?.agent?.phone_number || session?.phone || "",
-      photo: "",
+      photo: normalizeProfilePhotoUrl(
+        dashboard?.agent?.profile_photo_url ||
+          dashboard?.agent?.photo_url ||
+          dashboard?.agent?.profile_photo ||
+          dashboard?.agent?.photo ||
+          dashboard?.profile_photo_url ||
+          dashboard?.profile_photo ||
+          "",
+      ),
     }),
     [dashboard, session]
   );
