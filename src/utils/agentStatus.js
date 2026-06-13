@@ -17,6 +17,7 @@ function extractDataRoot(payload) {
 
 function resolveAgentRecord(root) {
   if (!root || typeof root !== "object") return root;
+  if (root.field_agent && typeof root.field_agent === "object") return root.field_agent;
   if (root.agent && typeof root.agent === "object") return root.agent;
   if (root.user && typeof root.user === "object") return root.user;
   return root;
@@ -53,9 +54,13 @@ export function extractAgentStatus(payload) {
   const root = extractDataRoot(payload);
   const agent = resolveAgentRecord(root);
 
+  const farmer = root?.farmer && typeof root.farmer === "object" ? root.farmer : null;
+
   const status = readString(
     root?.status,
     root?.account_status,
+    root?.agent_status,
+    farmer?.agent_status,
     agent?.status,
     agent?.account_status,
     payload?.status,

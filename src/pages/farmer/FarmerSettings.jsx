@@ -23,6 +23,7 @@ import {
   verifyFarmerUpgradeOtp,
 } from "../../services/cropexApi";
 import { getDisplayError } from "../../utils/apiErrors";
+import { extractAgentStatus, isAgentStatusApproved } from "../../utils/agentStatus";
 
 const MOCK_AGENT_STATUS_KEY = "hcx_farmer_agent_upgrade_mock_status";
 
@@ -411,8 +412,6 @@ function UnderReviewView({ onRefresh, onBack }) {
       </button>
 
       <div className="space-y-8">
-        <AgentStatusBadge variant="pending" size={200} />
-
         <div className="space-y-2">
           <h2 className="font-display text-[36px] font-bold leading-[44px] text-[#030F0F]">
             Account Under Review
@@ -420,6 +419,10 @@ function UnderReviewView({ onRefresh, onBack }) {
           <p className="font-sans text-[20px] leading-[28px] text-[#030F0F]/75">
             Your details have been submitted successfully and are currently being reviewed.
           </p>
+        </div>
+
+        <div className="flex justify-center">
+          <AgentStatusBadge variant="pending" size={200} />
         </div>
 
         <div className="max-w-[560px] rounded-[18px] border border-[#E0EDE9] bg-[#F6F9F8] px-6 py-5">
@@ -646,19 +649,24 @@ export default function FarmerSettings() {
   const handleRefreshStatus = async () => {
     try {
       const payload = await getFarmerDashboard();
-      const agentStatus = payload?.agent_status || payload?.farmer?.agent_status || "";
-      if (agentStatus === "verified" || agentStatus === "approved") {
+      setDashboard(payload);
+      const status = extractAgentStatus(payload);
+      if (isAgentStatusApproved(status)) {
         setMockStatus("verified");
         writeMockStatus("verified");
         setScreen("verified");
-      } else if (agentStatus === "failed" || agentStatus === "rejected") {
+      } else if (
+        status === "REJECTED" ||
+        status === "DENIED" ||
+        status === "FAILED" ||
+        status === "VERIFICATION_FAILED"
+      ) {
         setMockStatus("failed");
         writeMockStatus("failed");
         setScreen("failed");
       }
-      // still under_review — no change, user sees same screen
     } catch {
-      // silently ignore — user stays on under_review
+      // stay on under_review
     }
   };
 
