@@ -144,19 +144,22 @@ function PasswordChangedModal({ onClose }) {
         >
           Password changed successfully
         </h2>
+        <p className="mt-3 font-sans text-sm leading-relaxed text-brand-text-secondary">
+          Log back in with your new password.
+        </p>
         <button
           type="button"
           onClick={onClose}
-          className="mt-10 inline-flex h-[47px] w-full items-center justify-center rounded-[15px] bg-[#03624D] font-sans text-base font-semibold text-white"
+          className="mt-8 inline-flex h-[47px] w-full items-center justify-center rounded-[15px] bg-[#03624D] font-sans text-base font-semibold text-white"
         >
-          OK
+          Log in
         </button>
       </div>
     </div>
   );
 }
 
-function ChangePasswordScreen({ onBack, accountEmail }) {
+function ChangePasswordScreen({ onBack, onPasswordChangedSuccess, accountEmail }) {
   const normalizedEmail = String(accountEmail || "").trim();
   const [step, setStep] = useState("otp");
   const [digits, setDigits] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
@@ -326,7 +329,7 @@ function ChangePasswordScreen({ onBack, accountEmail }) {
 
   const dismissSuccess = () => {
     setShowSuccessModal(false);
-    onBack();
+    onPasswordChangedSuccess();
   };
 
   const primaryAction =
@@ -615,7 +618,7 @@ export default function AgentSettings() {
     [dashboard, session]
   );
 
-  const handleLogout = () => {
+  const handleLogout = (loginMessage) => {
     try {
       clearAgentSession();
       sessionStorage.removeItem("hcx_agent_registration");
@@ -623,6 +626,9 @@ export default function AgentSettings() {
       sessionStorage.removeItem("hcx_agent_reset_otp_ok");
       sessionStorage.removeItem(CHANGE_PASSWORD_OTP_OK);
       localStorage.removeItem("hcx_agent_farmers_list");
+      if (loginMessage) {
+        sessionStorage.setItem("hcx_agent_login_message", loginMessage);
+      }
     } catch {
       /* ignore */
     }
@@ -634,6 +640,9 @@ export default function AgentSettings() {
       <ChangePasswordScreen
         accountEmail={profile.email}
         onBack={() => setView("main")}
+        onPasswordChangedSuccess={() =>
+          handleLogout("Password changed successfully. Sign in with your new password.")
+        }
       />
     );
   }
