@@ -19,10 +19,8 @@ import AgentStatusBadge from "../../components/agent/AgentStatusBadge";
 import {
   clearFarmerSession,
   getFarmerDashboard,
-  requestAuthOtp,
-  resendAuthOtp,
   upgradeFarmerToAgent,
-  verifyAuthOtp,
+  verifyFarmerUpgradeOtp,
 } from "../../services/cropexApi";
 import { getDisplayError } from "../../utils/apiErrors";
 
@@ -220,7 +218,7 @@ function BecomeAgentForm({
             />
           </div>
         </label>
-        <label className="block md:col-span-2">
+        <label className="block">
           <span className="mb-2 block font-sans text-[22px] font-semibold text-[#030F0F]">Bank Verification Number (BVN)</span>
           <div className="flex h-[52px] items-center rounded-[15px] border border-[#E6E6E6] bg-white px-4">
             <User size={16} className="text-[#9CA3AF]" />
@@ -249,7 +247,7 @@ function BecomeAgentForm({
   );
 }
 
-function VerifyEmailStep({ email, onVerified, onBack, onResend }) {
+function VerifyEmailStep({ email, onVerify, onVerified, onBack, onResend }) {
   const [otp, setOtp] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
@@ -262,10 +260,10 @@ function VerifyEmailStep({ email, onVerified, onBack, onResend }) {
     setVerifying(true);
     setError("");
     try {
-      await verifyAuthOtp({ email, otp: code });
+      await onVerify(code);
       onVerified();
     } catch (err) {
-      setError(err?.message || "Invalid or expired code. Try again.");
+      setError(getDisplayError(err, "Invalid or expired code. Try again."));
     } finally {
       setVerifying(false);
     }
@@ -279,7 +277,7 @@ function VerifyEmailStep({ email, onVerified, onBack, onResend }) {
       await onResend();
       setResendMsg("A new code has been sent to your email.");
     } catch (err) {
-      setError(err?.message || "Could not resend code. Try again.");
+      setError(getDisplayError(err, "Could not resend code. Try again."));
     } finally {
       setResending(false);
     }
@@ -555,30 +553,20 @@ export default function FarmerSettings() {
     setSubmitting(true);
     setFormError("");
     try {
-      // Send OTP to email to verify before upgrading
-      await requestAuthOtp({ email: normalizedEmail, role: "FARMER" });
+      await upgradeFarmerToAgent({
+        email: normalizedEmail,
+        bvn: normalizedBvn,
+        profilePhotoBase64: photoBase64,
+      });
       setScreen("verify_email");
     } catch (error) {
-      setFormError(getDisplayError(error, "Could not send verification code. Try again."));
+      setFormError(getDisplayError(error, "Could not submit upgrade request. Try again."));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleEmailVerified = async () => {
-    const normalizedEmail = String(email || "").trim();
-    const normalizedBvn = String(bvn || "").replace(/\D/g, "");
-    const normalizedNin = String(nin || "").replace(/\D/g, "");
-    try {
-      await upgradeFarmerToAgent({
-        email: normalizedEmail,
-        bvn: normalizedBvn,
-        nin: normalizedNin,
-        profilePhotoBase64: photoBase64,
-      });
-    } catch {
-      // Upgrade call failed but email is verified — still advance to review
-    }
+  const handleEmailVerified = () => {
     setMockStatus("under_review");
     writeMockStatus("under_review");
     setScreen("under_review");
@@ -588,9 +576,21 @@ export default function FarmerSettings() {
     setPhotoFile(null);
   };
 
-  const handleResendOtp = () => {
+  const handleVerifyUpgradeOtp = async (otp) => {
+    await verifyFarmerUpgradeOtp({ otp });
+  };
+
+  const handleResendOtp = async () => {
     const normalizedEmail = String(email || "").trim();
-    return resendAuthOtp({ email: normalizedEmail });
+    const normalizedBvn = String(bvn || "").replace(/\D/g, "");
+    if (!normalizedEmail || !normalizedBvn || !photoBase64) {
+      throw new Error("Upgrade details are missing. Go back and submit the form again.");
+    }
+    await upgradeFarmerToAgent({
+      email: normalizedEmail,
+      bvn: normalizedBvn,
+      profilePhotoBase64: photoBase64,
+    });
   };
 
   const handleRefreshStatus = async () => {
@@ -663,6 +663,7 @@ export default function FarmerSettings() {
       return (
         <VerifyEmailStep
           email={String(email || "").trim()}
+          onVerify={handleVerifyUpgradeOtp}
           onVerified={handleEmailVerified}
           onBack={handleBack}
           onResend={handleResendOtp}
