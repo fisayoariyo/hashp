@@ -23,7 +23,6 @@ import {
   verifyFarmerUpgradeOtp,
 } from "../../services/cropexApi";
 import { getDisplayError } from "../../utils/apiErrors";
-import { extractAgentStatus, isAgentStatusApproved } from "../../utils/agentStatus";
 
 const MOCK_AGENT_STATUS_KEY = "hcx_farmer_agent_upgrade_mock_status";
 
@@ -717,8 +716,8 @@ export default function FarmerSettings() {
     try {
       const payload = await getFarmerDashboard();
       setDashboard(payload);
-      const status = extractAgentStatus(payload);
-      if (isAgentStatusApproved(status)) {
+      const status = String(payload?.farmer?.status || "").trim().toUpperCase();
+      if (status === "VERIFIED" || status === "APPROVED" || status === "ACTIVE") {
         setMockStatus("verified");
         writeMockStatus("verified");
         setScreen("verified");
