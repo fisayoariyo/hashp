@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { createRef, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -247,16 +247,55 @@ function BecomeAgentForm({
   );
 }
 
+const UPGRADE_OTP_LENGTH = 6;
+
 function VerifyEmailStep({ email, onVerify, onVerified, onBack, onResend }) {
-  const [otp, setOtp] = useState("");
+  const [digits, setDigits] = useState(() => Array.from({ length: UPGRADE_OTP_LENGTH }, () => ""));
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
   const [resendMsg, setResendMsg] = useState("");
+  const refs = useMemo(() => Array.from({ length: UPGRADE_OTP_LENGTH }, () => createRef()), []);
+
+  const handleChange = (index, event) => {
+    const value = event.target.value.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[index] = value;
+    setDigits(next);
+    setError("");
+    if (value && index < UPGRADE_OTP_LENGTH - 1) {
+      setTimeout(() => refs[index + 1].current?.focus(), 0);
+    }
+  };
+
+  const handleKeyDown = (index, event) => {
+    if (event.key !== "Backspace") return;
+    if (digits[index]) {
+      const next = [...digits];
+      next[index] = "";
+      setDigits(next);
+      return;
+    }
+    if (index > 0) refs[index - 1].current?.focus();
+  };
+
+  const handlePaste = (event) => {
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, UPGRADE_OTP_LENGTH);
+    if (!pasted) return;
+    event.preventDefault();
+    const next = Array.from({ length: UPGRADE_OTP_LENGTH }, (_, index) => pasted[index] || "");
+    setDigits(next);
+    setError("");
+    const last = Math.min(pasted.length, UPGRADE_OTP_LENGTH) - 1;
+    setTimeout(() => refs[Math.max(last, 0)].current?.focus(), 0);
+  };
 
   const handleVerify = async () => {
-    const code = otp.trim();
-    if (code.length < 4) { setError("Enter the verification code sent to your email."); return; }
+    const code = digits.join("");
+    if (code.length < UPGRADE_OTP_LENGTH) {
+      setError(`Please enter the complete ${UPGRADE_OTP_LENGTH}-digit code.`);
+      return;
+    }
     setVerifying(true);
     setError("");
     try {
@@ -275,6 +314,7 @@ function VerifyEmailStep({ email, onVerify, onVerified, onBack, onResend }) {
     setResendMsg("");
     try {
       await onResend();
+      setDigits(Array.from({ length: UPGRADE_OTP_LENGTH }, () => ""));
       setResendMsg("A new code has been sent to your email.");
     } catch (err) {
       setError(getDisplayError(err, "Could not resend code. Try again."));
@@ -284,48 +324,58 @@ function VerifyEmailStep({ email, onVerify, onVerified, onBack, onResend }) {
   };
 
   return (
-    <div>
+    <div className="max-w-[760px]">
       <button type="button" onClick={onBack} className="mb-6 inline-flex items-center gap-2 text-sm text-brand-text-secondary">
         <ArrowLeft size={16} />
         Go back
       </button>
-      <div className="mx-auto max-w-[480px]">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#03624D]/10">
+
+      <div className="space-y-8">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#03624D]/10">
           <Mail size={36} className="text-[#03624D]" />
         </div>
-        <h2 className="font-display text-[36px] font-bold leading-[44px] text-[#030F0F]">Verify your email</h2>
-        <p className="mt-2 font-sans text-[18px] leading-[26px] text-[#030F0F]/70">
-          We sent a 6-digit verification code to <span className="font-semibold text-[#030F0F]">{email}</span>. Enter it below to continue.
-        </p>
 
-        <div className="mt-8">
-          <label className="block">
-            <span className="mb-2 block font-sans text-[18px] font-semibold text-[#030F0F]">Verification code</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              value={otp}
-              onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
-              placeholder="Enter 6-digit code"
-              className="h-[56px] w-full rounded-[15px] border border-[#E6E6E6] bg-white px-5 font-sans text-[22px] tracking-[0.3em] text-[#030F0F] outline-none placeholder:text-[#9CA3AF] placeholder:tracking-normal focus:border-[#03624D]"
-            />
-          </label>
+        <div className="space-y-2">
+          <h2 className="font-display text-[36px] font-bold leading-[44px] text-[#030F0F]">Verify your email</h2>
+          <p className="font-sans text-[20px] leading-[28px] text-[#030F0F]/75">
+            We sent a 6-digit verification code to{" "}
+            <span className="font-semibold text-[#030F0F]">{email}</span>. Enter it below to continue.
+          </p>
         </div>
 
-        {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
-        {resendMsg ? <p className="mt-3 text-sm font-medium text-[#03624D]">{resendMsg}</p> : null}
+        <div className="grid max-w-[420px] grid-cols-6 gap-3">
+          {digits.map((digit, index) => (
+            <input
+              key={index}
+              ref={refs[index]}
+              type="tel"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              autoComplete="one-time-code"
+              onChange={(event) => handleChange(index, event)}
+              onKeyDown={(event) => handleKeyDown(index, event)}
+              onPaste={index === 0 ? handlePaste : undefined}
+              className={`h-[52px] w-full rounded-[15px] border bg-white text-center font-display text-[22px] font-bold outline-none transition-colors focus:border-[#03624D] ${
+                digit ? "border-[#03624D] text-[#03624D]" : "border-[#E6E6E6] text-[#030F0F]"
+              }`}
+            />
+          ))}
+        </div>
+
+        {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+        {resendMsg ? <p className="text-sm font-medium text-[#03624D]">{resendMsg}</p> : null}
 
         <button
           type="button"
           onClick={handleVerify}
-          disabled={verifying || otp.trim().length < 4}
-          className="btn-primary mt-8 max-w-[460px]"
+          disabled={verifying || digits.join("").length < UPGRADE_OTP_LENGTH}
+          className="btn-primary max-w-[460px]"
         >
           {verifying ? "Verifying..." : "Verify email"}
         </button>
 
-        <p className="mt-5 font-sans text-sm text-[#030F0F]/60 text-center">
+        <p className="font-sans text-sm text-[#030F0F]/60">
           Didn&apos;t receive a code?{" "}
           <button
             type="button"
@@ -354,25 +404,25 @@ function UnderReviewView({ onRefresh, onBack }) {
   };
 
   return (
-    <div>
+    <div className="max-w-[760px]">
       <button type="button" onClick={onBack} className="mb-6 inline-flex items-center gap-2 text-sm text-brand-text-secondary">
         <ArrowLeft size={16} />
         Go back
       </button>
-      <div className="mx-auto flex max-w-[500px] flex-col items-center text-center">
 
-        <div className="mb-6">
-          <AgentStatusBadge variant="pending" size={200} />
+      <div className="space-y-8">
+        <AgentStatusBadge variant="pending" size={200} />
+
+        <div className="space-y-2">
+          <h2 className="font-display text-[36px] font-bold leading-[44px] text-[#030F0F]">
+            Account Under Review
+          </h2>
+          <p className="font-sans text-[20px] leading-[28px] text-[#030F0F]/75">
+            Your details have been submitted successfully and are currently being reviewed.
+          </p>
         </div>
 
-        <h2 className="font-display text-[40px] font-bold leading-[48px] text-[#030F0F]">
-          Account Under Review
-        </h2>
-        <p className="mt-2 font-sans text-[16px] leading-[24px] text-[#030F0F]/55 italic">
-          Your details have been submitted successfully and are currently being reviewed.
-        </p>
-
-        <div className="mt-6 rounded-[18px] bg-[#F6F9F8] border border-[#E0EDE9] px-6 py-5">
+        <div className="max-w-[560px] rounded-[18px] border border-[#E0EDE9] bg-[#F6F9F8] px-6 py-5">
           <p className="font-sans text-[17px] font-semibold leading-[26px] text-[#030F0F]">
             You will be able to log in as an agent and start operating once your account is verified. You will also be assigned to a designated location based on operational needs.
           </p>
@@ -385,7 +435,7 @@ function UnderReviewView({ onRefresh, onBack }) {
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="btn-primary mt-8 max-w-[460px]"
+          className="btn-primary max-w-[460px]"
         >
           {refreshing ? "Checking..." : "Refresh status"}
         </button>
