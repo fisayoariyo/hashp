@@ -87,20 +87,24 @@ function DesktopFarmerGetStarted() {
 
 function MobileFarmerGetStarted() {
   return (
-    <div className="flex min-h-dvh flex-col overflow-y-auto bg-brand-bg-page px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 md:hidden">
-      <GoBackHomeButton />
-      <h1 className="auth-title text-left">{COPY.title}</h1>
-      <p className="auth-subtitle mb-0 mt-3 max-w-none text-left text-brand-text-primary">
-        {COPY.subtitle}
-      </p>
+    <div className="flex min-h-dvh flex-col overflow-y-auto bg-brand-bg-page md:hidden">
+      <FarmerHeroPanel className="mx-5 mt-5 aspect-[4/5] max-h-[300px] shrink-0 rounded-3xl" />
 
-      <div className="mt-8">
-        <StartJourneyLeadForm
-          idPrefix="farmer-get-started-mobile"
-          submitVariant="footer-full"
-          showAlreadyHaveAccount
-          footerClassName="mt-10"
-        />
+      <div className="flex flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6">
+        <GoBackHomeButton />
+        <h1 className="auth-title text-left">{COPY.title}</h1>
+        <p className="auth-subtitle mb-0 mt-3 max-w-none text-left text-brand-text-primary">
+          {COPY.subtitle}
+        </p>
+
+        <div className="mt-8">
+          <StartJourneyLeadForm
+            idPrefix="farmer-get-started-mobile"
+            submitVariant="footer-full"
+            showAlreadyHaveAccount
+            footerClassName="mt-10"
+          />
+        </div>
       </div>
     </div>
   );
