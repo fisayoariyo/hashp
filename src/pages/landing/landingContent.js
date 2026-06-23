@@ -1,0 +1,219 @@
+export const LANDING_NAV_ITEMS = [
+  { label: "About HFEI", href: "#about-hfei" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "FAQs", href: "#faqs" },
+];
+
+export const LANDING_ABOUT_IMAGES = [
+  {
+    src: "/landing/images/about-left-agent.webp",
+    alt: "Farmer carrying produce in the field",
+  },
+  {
+    src: "/landing/images/about-right-farmer.webp",
+    alt: "Farmers standing together outdoors",
+  },
+];
+
+export const LANDING_TABS = {
+  agents: {
+    key: "agents",
+    label: "Agents",
+    title: "Built for Field Agents Working in Rural Communities",
+    description:
+      "The HFEI Agent WebApp gives field officers the tools they need to register and support farmers directly from the field, even in areas with poor internet connectivity.",
+    cards: [
+      {
+        title: "Biometric Capture",
+        description: "Capture fingerprint and face for identity verification",
+        icon: "/landing/icons/finger-access.svg",
+      },
+      {
+        title: "Personal Information Collection",
+        description: "Enter the farmer's basic details and identification number.",
+        icon: "/landing/icons/profile.svg",
+      },
+      {
+        title: "Farm Information Collection",
+        description: "Provide details about the farm and crop type.",
+        icon: "/landing/icons/tractor.svg",
+      },
+      {
+        title: "Cooperative & Association Record",
+        description: "Add cooperative details if the farmer belongs to one",
+        icon: "/landing/icons/user-group.svg",
+      },
+      {
+        title: "Review & Submit Information",
+        description: "Confirm all details and complete registration.",
+        icon: "/landing/icons/tick-double.svg",
+      },
+    ],
+    cta: {
+      title: "Register as an Agent",
+      buttonLabel: "Get started",
+      href: "/agent/create-account",
+      returnState: { returnTo: "/" },
+      image: "/landing/images/agent-card-cta.webp",
+      alt: "Agent registration call to action",
+      position: "center",
+    },
+  },
+  farmers: {
+    key: "farmers",
+    label: "Farmers",
+    title: "Helping Farmers Access More Than Just Farming Tools",
+    description:
+      "The HFEI Farmer WebApp gives farmers visibility, access, and support through a digital platform designed to improve productivity and unlock financial opportunities.",
+    cards: [
+      {
+        title: "Digital Farmer Identity",
+        description:
+          "Every farmer gets a verified digital ID linked to their farm records before loging in to the webapp",
+        icon: "/landing/icons/id-card-lanyard.svg",
+      },
+      {
+        title: "Farm & Yield Tracking",
+        description: "Access your profile, farming support, and opportunities in one place.",
+        icon: "/landing/icons/check-list.svg",
+      },
+      {
+        title: "Training & Advisory Support",
+        description:
+          "Get farming guidance and support for better decisions and productivity.",
+        icon: "/landing/icons/brain-02.svg",
+      },
+      {
+        title: "Financing Opportunities",
+        description: "Verified farmer data helps unlock financing and loan opportunities.",
+        icon: "/landing/icons/money-04.svg",
+      },
+      {
+        title: "Market Access",
+        description:
+          "Connect to markets and storage solutions that improve earnings and reduce losses.",
+        icon: "/landing/icons/store-01.svg",
+      },
+    ],
+    cta: {
+      title: "Get started as a farmer",
+      buttonLabel: "Get started",
+      href: "#start-your-journey",
+      image: "/landing/images/farmer-card-cta.webp",
+      alt: "Farmer get started call to action",
+      position: "62% 48%",
+    },
+  },
+};
+
+export const LANDING_CONTACT = {
+  sectionId: "start-your-journey",
+  sectionLabel: "Become Better, Earn Better",
+  title: "Start Your Journey with HFEI",
+  description:
+    "Do you have questions, inquiries, or need the HFEI services in your community? Reach out to us and let us know how we can support farmers and agricultural activities in your area. Our team is ready to help bring digital farming solutions closer to you.",
+  image: {
+    src: "/landing/images/contact-field.webp",
+    alt: "Farmer working in a green field",
+  },
+  successModal: {
+    title: "Thank you!",
+    message:
+      "Thank you for reaching out. Our support team will contact you shortly.",
+    buttonLabel: "Done",
+  },
+};
+
+export const LANDING_FAQS = [
+  {
+    question: "What is HFEI Farmer Empowerment Initiative (HFEI)?",
+    answer:
+      "HFEI is HFEI's digital agriculture initiative focused on helping farmers and field agents work with verified identities, farm data, and better access to support services.",
+  },
+  {
+    question: "Who can use the HFEI platform?",
+    answer:
+      "The platform is designed for field agents registering and supporting farmers, and for farmers who need a digital identity, visibility into their records, and access to services.",
+  },
+  {
+    question: "What does the Agent App do?",
+    answer:
+      "The Agent App helps field officers capture biometrics, collect personal and farm details, record cooperative information, and submit verified farmer registrations from the field.",
+  },
+  {
+    question: "What does the Farmer App provide?",
+    answer:
+      "The Farmer App gives farmers access to their verified digital identity, farm and yield information, advisory support, market opportunities, and financing pathways.",
+  },
+  {
+    question: "Can the Agent App work without internet access?",
+    answer:
+      "It is designed for rural work environments and supports field workflows in low-connectivity settings, with registration data captured first and synced when connectivity is available.",
+  },
+  {
+    question: "Why is farm mapping important?",
+    answer:
+      "Farm mapping improves visibility into farm activity, supports better planning, and makes it easier to connect verified production data to training, financing, and market access.",
+  },
+  {
+    question: "How does HFEI help farmers access financing?",
+    answer:
+      "By combining verified digital identity and farm data, HFEI creates trusted records that can help unlock more relevant financing and loan opportunities.",
+  },
+  {
+    question: "Is farmer data secure on the platform?",
+    answer:
+      "The platform is built around verified digital identities and structured records so farmer information can be managed more consistently and shared with clearer accountability.",
+  },
+];
+
+export const LANDING_FOOTER_GROUPS = [
+  {
+    title: "Quick Links",
+    links: [
+      { label: "About", href: "#about-hfei" },
+      { label: "How It Works", href: "#how-it-works" },
+      { label: "FAQs", href: "#faqs" },
+    ],
+  },
+  {
+    title: "Get started",
+    links: [
+      { label: "Become an Agent", href: "/agent/create-account", returnState: { returnTo: "/" } },
+      { label: "Login as a farmer", href: "/farmer/verify" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy Policy", href: "/privacy-policy" },
+      { label: "Terms of Use", href: "/terms-of-use" },
+      { label: "Data Protection", href: "/data-protection" },
+    ],
+  },
+  {
+    title: "Contact",
+    links: [
+      { label: "hashmarfarms@gmail.com", href: "mailto:hashmarfarms@gmail.com" },
+      { label: "08153953002", href: "tel:08153953002" },
+    ],
+  },
+];
+
+export const LANDING_SOCIAL_LINKS = [
+  {
+    label: "WhatsApp",
+    href: "https://wa.me/2348133905285",
+    icon: "/landing/icons/whatsapp.svg",
+  },
+  {
+    label: "Facebook",
+    href: "#",
+    icon: "/landing/icons/facebook.svg",
+  },
+  {
+    label: "X",
+    href: "#",
+    icon: "/landing/icons/x.svg",
+  },
+];

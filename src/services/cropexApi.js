@@ -1,0 +1,1350 @@
+import { CropexHttpError, cropexFetch, getCropexBaseUrl } from "./cropexHttp";
+
+const AGENT_AUTH_KEY = "hcx_agent_auth";
+const FARMER_AUTH_KEY = "hcx_farmer_auth";
+const DEFAULT_FARMER_PHOTO =
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=320&q=80&fit=crop";
+
+function readStoredSession(storageKey) {
+  try {
+    const raw = sessionStorage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredSession(storageKey, session) {
+  sessionStorage.setItem(storageKey, JSON.stringify(session));
+}
+
+function readString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return "";
+}
+
+function extractDataRoot(data) {
+  if (!data || typeof data !== "object") return {};
+  return data.data && typeof data.data === "object" ? data.data : data;
+}
+
+function extractTokens(data) {
+  const root = extractDataRoot(data);
+  const tokenSource =
+    root.tokens && typeof root.tokens === "object"
+      ? root.tokens
+      : data?.tokens && typeof data.tokens === "object"
+        ? data.tokens
+        : root;
+
+  return {
+    accessToken: readString(
+      tokenSource?.access_token,
+      tokenSource?.accessToken,
+      root?.access_token,
+      root?.accessToken,
+      root?.token,
+      data?.access_token,
+      data?.accessToken,
+      data?.token
+    ),
+    refreshToken: readString(
+      tokenSource?.refresh_token,
+      tokenSource?.refreshToken,
+      root?.refresh_token,
+      root?.refreshToken,
+      data?.refresh_token,
+      data?.refreshToken
+    ),
+  };
+}
+
+function extractAuthUser(data) {
+  const root = extractDataRoot(data);
+  return root.user ?? data?.user ?? root.agent ?? root.farmer ?? root;
+}
+
+function buildQuery(params = {}) {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value == null) return;
+    if (typeof value === "string" && !value.trim()) return;
+    searchParams.set(key, String(value));
+  });
+  const query = searchParams.toString();
+  return query ? `?${query}` : "";
+}
+
+function collectObjects(value, bucket = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectObjects(item, bucket));
+    return bucket;
+  }
+  if (!value || typeof value !== "object") return bucket;
+  bucket.push(value);
+  Object.values(value).forEach((child) => collectObjects(child, bucket));
+  return bucket;
+}
+
+function findArrayInPayload(payload, keys) {
+  if (!payload || typeof payload !== "object") return [];
+  for (const key of keys) {
+    if (Array.isArray(payload[key])) return payload[key];
+  }
+  for (const key of keys) {
+    const child = payload[key];
+    if (child && typeof child === "object") {
+      const found = findArrayInPayload(child, keys);
+      if (found.length > 0) return found;
+    }
+  }
+  return [];
+}
+
+function findObjectInPayload(payload, keys) {
+  if (!payload || typeof payload !== "object") return payload;
+  for (const key of keys) {
+    const child = payload[key];
+    if (child && typeof child === "object" && !Array.isArray(child)) return child;
+  }
+  return payload;
+}
+
+function isFailureLike(obj) {
+  const status = readString(obj?.status).toLowerCase();
+  if (status === "failed" || status === "error" || status === "rejected") return true;
+  if (readString(obj?.error, obj?.reason, obj?.details) && (obj?.client_id || obj?.phone_number || obj?.nin)) {
+    return true;
+  }
+  return false;
+}
+
+function syncEntryKey(entry) {
+  return (
+    entry.clientId ||
+    entry.officialFarmerId ||
+    entry.phone ||
+    entry.nin ||
+    entry.name ||
+    ""
+  ).toLowerCase();
+}
+
+function dedupeSyncEntries(entries) {
+  const seen = new Set();
+  return entries.filter((entry) => {
+    const key = syncEntryKey(entry);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function normalizeSyncEntry(row) {
+  if (!row || typeof row !== "object") return null;
+  const clientId = readString(row.client_id, row.clientId);
+  const officialFarmerId = readString(row.farmer_id, row.farmerId, row.id);
+  const phone = readString(row.phone_number, row.phone);
+  const nin = readString(row.nin);
+  const name = readString(row.full_name, row.name);
+
+  if (!clientId && !officialFarmerId && !phone && !nin && !name) return null;
+
+  return {
+    clientId,
+    officialFarmerId,
+    phone,
+    nin,
+    name,
+    state: readString(row.state_of_origin, row.state),
+    lga: readString(row.lga, row.local_govt_area),
+    gender: readString(row.gender),
+    address: readString(row.residential_address, row.address),
+    farmSize: readString(row.farm_size),
+    landOwnership: readString(row.land_ownership),
+    primaryCrop: Array.isArray(row.primary_crops)
+      ? readString(row.primary_crops[0])
+      : readString(row.primary_crop, row.crop_type),
+    cooperative: readString(row.cooperative_name, row.cooperative),
+    photo: readString(row.profile_photo_url, row.photo_url, row.profile_photo, row.photo),
+    regDate: readString(row.created_at, row.issue_date, row.updated_at),
+    errorMessage: readString(row.error, row.reason, row.details, row.message),
+  };
+}
+
+function mergeTokensIntoSession(storageKey, data) {
+  const previous = readStoredSession(storageKey) || {};
+  const tokens = extractTokens(data);
+  writeStoredSession(storageKey, {
+    ...previous,
+    accessToken: tokens.accessToken || previous.accessToken || "",
+    refreshToken: tokens.refreshToken || previous.refreshToken || "",
+  });
+}
+
+function setSessionFromAuthResponse(storageKey, data, opts = {}) {
+  const previous = readStoredSession(storageKey) || {};
+  const tokens = extractTokens(data);
+  const user = extractAuthUser(data);
+  const idField = opts.idField || "userId";
+
+  writeStoredSession(storageKey, {
+    ...previous,
+    accessToken: tokens.accessToken || previous.accessToken || "",
+    refreshToken: tokens.refreshToken || previous.refreshToken || "",
+    [idField]: readString(user?.id, previous[idField]),
+    email: readString(user?.email, data?.email, previous.email),
+    fullName: readString(user?.full_name, user?.name, previous.fullName),
+    phone: readString(user?.phone_number, user?.phone, previous.phone),
+    role: readString(user?.role, opts.defaultRole, previous.role),
+  });
+}
+
+async function cropexSessionFetch(storageKey, path, opts = {}, retryOnRefresh = true) {
+  const session = readStoredSession(storageKey) || {};
+  try {
+    return await cropexFetch(path, {
+      ...opts,
+      token: readString(session.accessToken, session.access_token) || undefined,
+    });
+  } catch (error) {
+    const refreshToken = readString(session.refreshToken, session.refresh_token);
+    if (!(error instanceof CropexHttpError) || error.status !== 401 || !retryOnRefresh || !refreshToken) {
+      if (error instanceof CropexHttpError && error.status === 401 && !refreshToken) {
+        clearStoredSession(storageKey);
+      }
+      throw error;
+    }
+
+    try {
+      const refreshed = await cropexFetch("/agents/refresh", {
+        method: "POST",
+        body: { refresh_token: refreshToken },
+      });
+      mergeTokensIntoSession(storageKey, refreshed);
+    } catch (refreshError) {
+      clearStoredSession(storageKey);
+      throw refreshError;
+    }
+
+    return cropexSessionFetch(storageKey, path, opts, false);
+  }
+}
+
+function clearStoredSession(storageKey) {
+  try {
+    sessionStorage.removeItem(storageKey);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getAgentSession() {
+  return readStoredSession(AGENT_AUTH_KEY);
+}
+
+export function getFarmerSession() {
+  return readStoredSession(FARMER_AUTH_KEY);
+}
+
+export function getAgentAccessToken() {
+  const session = getAgentSession();
+  return readString(session?.accessToken, session?.access_token);
+}
+
+export function getFarmerAccessToken() {
+  const session = getFarmerSession();
+  return readString(session?.accessToken, session?.access_token);
+}
+
+export function mergeAgentTokensFromRefreshResponse(data) {
+  mergeTokensIntoSession(AGENT_AUTH_KEY, data);
+}
+
+export function setAgentSessionFromAuthResponse(data) {
+  setSessionFromAuthResponse(AGENT_AUTH_KEY, data, {
+    idField: "agentId",
+    defaultRole: "AGENT",
+  });
+}
+
+export function setFarmerSessionFromAuthResponse(data) {
+  setSessionFromAuthResponse(FARMER_AUTH_KEY, data, {
+    idField: "farmerUserId",
+    defaultRole: "FARMER",
+  });
+}
+
+export function getAgentIdFromSession() {
+  const session = getAgentSession();
+  return readString(session?.agentId, session?.agent_id, session?.userId, session?.user_id);
+}
+
+export function clearAgentSession() {
+  clearStoredSession(AGENT_AUTH_KEY);
+}
+
+export function clearFarmerSession() {
+  clearStoredSession(FARMER_AUTH_KEY);
+}
+
+export function sendOtp(phone) {
+  return requestAuthOtp({ phone, role: "FARMER" });
+}
+
+/** Request OTP via email or phone using unified auth login route. */
+export function requestAuthOtp({ email, phone, role } = {}) {
+  const body = {};
+  if (email?.trim()) body.email = email.trim();
+  if (phone) body.phone_number = formatPhoneForApi(phone);
+  const normalizedRole = readString(role, "FARMER").toUpperCase();
+  if (normalizedRole) body.role = normalizedRole;
+  return cropexFetch("/auth/login", {
+    method: "POST",
+    body,
+  });
+}
+
+/**
+ * Forgot-password / change-password OTP request (Swagger: POST /auth/reset-password).
+ * Body: { email } — sends 6-digit OTP to the registered email.
+ */
+export function requestPasswordResetOtp({ email } = {}) {
+  return cropexFetch("/auth/reset-password", {
+    method: "POST",
+    body: { email: String(email || "").trim() },
+  });
+}
+
+/** Re-request reset OTP (same as initial send). */
+export function resendPasswordResetOtp({ email } = {}) {
+  return requestPasswordResetOtp({ email });
+}
+
+/**
+ * Forgot-password only (unauthenticated):
+ * 1. POST /auth/reset-password { email }
+ * 2. POST /auth/resend-otp { email }
+ * 3. POST /auth/verify { email, otp } → store returned token
+ * 4. POST /auth/change-password { new_password } (Bearer from step 3)
+ */
+export function requestChangePasswordOtp({ email } = {}) {
+  return requestPasswordResetOtp({ email });
+}
+
+export function resendChangePasswordOtp({ email } = {}) {
+  const body = {};
+  const normalizedEmail = String(email || "").trim();
+  if (normalizedEmail) body.email = normalizedEmail;
+  return cropexFetch("/auth/resend-otp", {
+    method: "POST",
+    body,
+  });
+}
+
+export function verifyChangePasswordOtp({ email, otp }) {
+  return verifyAuthOtp({ email, otp });
+}
+
+/** Resend OTP via email or phone. */
+export function resendOtp(identifier) {
+  if (typeof identifier === "object" && identifier !== null) {
+    return resendAuthOtp(identifier);
+  }
+  return resendAuthOtp({ phone: identifier });
+}
+
+export function resendAuthOtp({ email, phone } = {}) {
+  const body = {};
+  if (email?.trim()) body.email = email.trim();
+  if (phone) body.phone_number = formatPhoneForApi(phone);
+  return cropexFetch("/auth/resend-otp", {
+    method: "POST",
+    body,
+  });
+}
+
+/** Backward-compatible alias for signup resend usage. */
+export function resendRegistrationOtp({ email, phone } = {}) {
+  return resendAuthOtp({ email, phone });
+}
+
+export function verifyOtp(identifier, code) {
+  if (typeof identifier === "object" && identifier !== null) {
+    return verifyAuthOtp({ ...identifier, otp: code });
+  }
+  return verifyAuthOtp({ phone: identifier, otp: code });
+}
+
+export function verifyAuthOtp({ email, phone, otp }) {
+  const body = {
+    otp: String(otp || "").trim(),
+  };
+  if (email?.trim()) body.email = email.trim();
+  if (phone) body.phone_number = formatPhoneForApi(phone);
+  return cropexFetch("/auth/verify", {
+    method: "POST",
+    body,
+  });
+}
+
+/** Agent signup: POST /agents/verify-otp → JWT */
+export function agentVerifyOtp({ email, phone, otp } = {}) {
+  const body = { otp: String(otp || "").trim() };
+  const normalizedEmail = readString(email);
+  if (normalizedEmail) body.email = normalizedEmail;
+  const normalizedPhone = readString(phone);
+  if (normalizedPhone) body.phone_number = formatPhoneForApi(normalizedPhone);
+  return cropexFetch("/agents/verify-otp", {
+    method: "POST",
+    body,
+  });
+}
+
+/** Agent signup: POST /auth/resend-otp */
+export function agentResendOtp({ email, phone } = {}) {
+  const body = { role: "AGENT" };
+  const normalizedEmail = readString(email);
+  if (normalizedEmail) body.email = normalizedEmail;
+  const normalizedPhone = readString(phone);
+  if (normalizedPhone) body.phone_number = formatPhoneForApi(normalizedPhone);
+  return cropexFetch("/auth/resend-otp", {
+    method: "POST",
+    body,
+  });
+}
+
+let agentOnboardingProfilePhoto = null;
+
+export function setAgentOnboardingProfilePhoto(file) {
+  agentOnboardingProfilePhoto = file instanceof File ? file : null;
+}
+
+export function getAgentOnboardingProfilePhoto() {
+  return agentOnboardingProfilePhoto;
+}
+
+export function clearAgentOnboardingProfilePhoto() {
+  agentOnboardingProfilePhoto = null;
+}
+
+function base64ToProfilePhotoFile(base64, mimeType = "image/jpeg", filename = "profile.jpg") {
+  const normalized = String(base64 || "").trim();
+  if (!normalized) return null;
+  try {
+    const binary = atob(normalized);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return new File([bytes], filename, { type: mimeType });
+  } catch {
+    return null;
+  }
+}
+
+/** Forgot-password final step (Bearer from OTP verify; new password only). */
+export function submitPasswordReset({ newPassword }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/auth/change-password", {
+    method: "POST",
+    body: { new_password: String(newPassword || "") },
+  });
+}
+
+/** @deprecated Use submitPasswordReset (forgot-password flow). */
+export function submitChangePassword({ newPassword }) {
+  return submitPasswordReset({ newPassword });
+}
+
+/** Settings: send OTP to the logged-in agent's email (Bearer). */
+export function requestAgentChangePasswordOtp() {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/change-password/request-otp", {
+    method: "POST",
+  });
+}
+
+/** Settings: verify email OTP before password change (Bearer). */
+export function verifyAgentChangePasswordOtp({ otp }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/change-password/verify-otp", {
+    method: "POST",
+    body: { otp: String(otp || "").trim() },
+  });
+}
+
+/** Settings: change password after OTP verified (Bearer). */
+export function changeAgentPassword({ oldPassword, newPassword }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/change-password", {
+    method: "POST",
+    body: {
+      old_password: String(oldPassword || ""),
+      new_password: String(newPassword || ""),
+    },
+  });
+}
+
+export function agentRegister(body) {
+  return cropexFetch("/agents/register", {
+    method: "POST",
+    body,
+  });
+}
+
+/** Agent onboarding: POST /agents/me/onboarding (multipart form-data). */
+export function submitAgentOnboarding({ state, lga, nin, bvn, profilePhoto, profilePhotoBase64 } = {}) {
+  const formData = new FormData();
+  formData.append("state", readString(state));
+  formData.append("lga", readString(lga));
+  formData.append("nin", readString(nin).replace(/\D/g, ""));
+  formData.append("bvn", readString(bvn).replace(/\D/g, ""));
+
+  const cachedPhoto = profilePhoto || getAgentOnboardingProfilePhoto();
+  if (cachedPhoto instanceof File) {
+    formData.append("profile_photo", cachedPhoto, cachedPhoto.name || "profile.jpg");
+  } else if (cachedPhoto instanceof Blob) {
+    formData.append("profile_photo", cachedPhoto, "profile.jpg");
+  } else {
+    const fileFromBase64 = base64ToProfilePhotoFile(profilePhotoBase64);
+    if (fileFromBase64) {
+      formData.append("profile_photo", fileFromBase64, fileFromBase64.name);
+    }
+  }
+
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/onboarding", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+/** @deprecated Use submitAgentOnboarding */
+export function completeAgentRegistration(body) {
+  return submitAgentOnboarding(body);
+}
+
+export function agentLogin(body) {
+  const payload = {};
+  const normalizedEmail = readString(body?.email);
+  if (normalizedEmail) payload.email = normalizedEmail;
+
+  const normalizedPassword = readString(body?.password);
+  if (normalizedPassword) payload.password = normalizedPassword;
+
+  const normalizedPhone = readString(body?.phone_number, body?.phone);
+  if (normalizedPhone) payload.phone_number = formatPhoneForApi(normalizedPhone);
+
+  payload.role = readString(body?.role, "AGENT").toUpperCase();
+
+  return cropexFetch("/auth/login", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+/** Farmer login: POST /auth/login with farmer_id + password (no OTP). */
+export function farmerLogin({ farmerId, password } = {}) {
+  return cropexFetch("/auth/login", {
+    method: "POST",
+    body: {
+      farmer_id: readString(farmerId),
+      password: String(password || ""),
+      role: "FARMER",
+    },
+  });
+}
+
+export function extractFarmerEnrollmentCredentials(payload) {
+  const root = extractDataRoot(payload);
+  const credentials =
+    root?.credentials && typeof root.credentials === "object" ? root.credentials : {};
+  const loginId = readString(
+    credentials.login_id,
+    credentials.loginId,
+    root?.farmer?.farmer_id,
+    root?.farmer_id
+  );
+  const tempPassword = readString(credentials.password);
+  if (!loginId && !tempPassword) return null;
+  return { loginId, password: tempPassword };
+}
+
+export function agentRefresh(refreshToken) {
+  return cropexFetch("/agents/refresh", {
+    method: "POST",
+    body: { refresh_token: refreshToken },
+  });
+}
+
+export function listFarmers({ page = 1, page_size = 200, search, status, agent_id } = {}) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me/farmers").catch((error) => {
+    if (!(error instanceof CropexHttpError) || (error.status !== 404 && error.status !== 405)) {
+      throw error;
+    }
+
+    return cropexSessionFetch(
+      AGENT_AUTH_KEY,
+      `/farmers${buildQuery({
+        page,
+        page_size,
+        search,
+        status,
+        agent_id,
+      })}`
+    );
+  });
+}
+
+export function searchFarmers(query) {
+  return cropexSessionFetch(
+    AGENT_AUTH_KEY,
+    `/farmers/search${buildQuery({
+      q: query,
+    })}`
+  );
+}
+
+export function getFarmerById(id) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, `/farmers/${encodeURIComponent(id)}`);
+}
+
+export function enrollFarmer(body) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/farmers", {
+    method: "POST",
+    body,
+  });
+}
+
+export function parseEnrolledFarmerResponse(payload) {
+  const farmer = extractFarmerRecord(payload);
+  if (farmer && typeof farmer === "object") return farmer;
+  const root = extractDataRoot(payload);
+  return root && typeof root === "object" ? root : {};
+}
+
+export function startEnrollmentSession({ agent_id, lat, long } = {}) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/start", {
+    method: "POST",
+    body: {
+      ...(agent_id ? { agent_id } : {}),
+      ...(typeof lat === "number" ? { lat } : {}),
+      ...(typeof long === "number" ? { long } : {}),
+    },
+  });
+}
+
+export function submitEnrollmentFace({ session_id, face_photo }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/face", {
+    method: "POST",
+    body: { session_id, face_photo },
+  });
+}
+
+export function submitEnrollmentBiometric({ session_id, biometric_data }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/biometric", {
+    method: "POST",
+    body: { session_id, biometric_data },
+  });
+}
+
+export function getEnrollmentBiometricStatus(sessionId) {
+  return cropexSessionFetch(
+    AGENT_AUTH_KEY,
+    `/enrollment/biometric-status/${encodeURIComponent(String(sessionId || ""))}`
+  );
+}
+
+export function submitEnrollmentFingerprint({ session_id, finger_position, fmr_template }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/fingerprint", {
+    method: "POST",
+    body: { session_id, finger_position, fmr_template },
+  });
+}
+
+export function submitEnrollmentPersonalInfo({ session_id, personal_info }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/personal", {
+    method: "POST",
+    body: { session_id, personal_info },
+  });
+}
+
+export function submitEnrollmentFarmInfo({ session_id, farm_info }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/farm", {
+    method: "POST",
+    body: { session_id, farm_info },
+  });
+}
+
+export function submitEnrollmentCooperativeInfo({ session_id, cooperative }) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/enrollment/cooperative", {
+    method: "POST",
+    body: { session_id, cooperative },
+  });
+}
+
+export function reviewEnrollmentSession(sessionId) {
+  return cropexSessionFetch(
+    AGENT_AUTH_KEY,
+    `/enrollment/review/${encodeURIComponent(String(sessionId || ""))}`,
+    { method: "POST" }
+  );
+}
+
+export function getEnrollmentSession(sessionId) {
+  return cropexSessionFetch(
+    AGENT_AUTH_KEY,
+    `/enrollment/session/${encodeURIComponent(String(sessionId || ""))}`
+  );
+}
+
+export async function syncFarmers(records) {
+  const ownerAgentId = getAgentIdFromSession();
+  const normalizedRecords = (Array.isArray(records) ? records : []).map((record) =>
+    record?.payload && typeof record.payload === "object"
+      ? buildFarmerSyncPayload(record, ownerAgentId)
+      : record
+  );
+
+  for (const syncPayload of normalizedRecords) {
+    const validationError = validateFarmerSyncPayload(syncPayload);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+  }
+
+  if (normalizedRecords.length === 0) {
+    return {
+      raw: null,
+      successes: [],
+      failures: [],
+      assumeAllSucceeded: true,
+    };
+  }
+
+  const payload = await cropexSessionFetch(AGENT_AUTH_KEY, "/farmers/sync", {
+    method: "POST",
+    body: normalizedRecords,
+  });
+
+  const objects = collectObjects(payload);
+  const failures = dedupeSyncEntries(
+    objects.filter(isFailureLike).map(normalizeSyncEntry).filter(Boolean)
+  );
+  const failureKeys = new Set(failures.map(syncEntryKey).filter(Boolean));
+  const successes = dedupeSyncEntries(
+    objects
+      .filter((obj) => !isFailureLike(obj))
+      .map(normalizeSyncEntry)
+      .filter(Boolean)
+      .filter((entry) => !failureKeys.has(syncEntryKey(entry)))
+  );
+
+  return {
+    raw: payload,
+    successes,
+    failures,
+    assumeAllSucceeded: successes.length === 0 && failures.length === 0,
+  };
+}
+
+export function getGeoStates() {
+  return cropexFetch("/geo/states");
+}
+
+export function getGeoLgas(stateId) {
+  return cropexFetch(`/geo/states/${encodeURIComponent(stateId)}/lgas`);
+}
+
+export function submitFarmerInterest({
+  fullName,
+  location,
+  phone,
+  email,
+  stateId,
+  stateName,
+  localGovtId,
+  localGovtName,
+} = {}) {
+  const body = {
+    full_name: readString(fullName),
+    location: readString(location),
+    phone_number: normalizeFarmerInterestPhone(phone),
+  };
+
+  const normalizedStateId = readString(stateId);
+  if (normalizedStateId) {
+    body.state_id = normalizedStateId;
+  }
+
+  const normalizedStateName = readString(stateName);
+  if (normalizedStateName) {
+    body.state = normalizedStateName;
+  }
+
+  const normalizedLocalGovtId = readString(localGovtId);
+  if (normalizedLocalGovtId) {
+    body.local_govt_id = normalizedLocalGovtId;
+  }
+
+  const normalizedLocalGovtName = readString(localGovtName);
+  if (normalizedLocalGovtName) {
+    body.local_govt = normalizedLocalGovtName;
+  }
+
+  const normalizedEmail = readString(email);
+  if (normalizedEmail) body.email = normalizedEmail;
+
+  return cropexFetch("/farmers/interest", {
+    method: "POST",
+    body,
+  });
+}
+
+export function upgradeFarmerToAgent({ email, bvn, profilePhotoBase64 } = {}) {
+  const body = {};
+  const normalizedEmail = readString(email);
+  if (normalizedEmail) body.email = normalizedEmail;
+  const normalizedBvn = readString(bvn).replace(/\D/g, "");
+  if (normalizedBvn) body.bvn = normalizedBvn;
+  const normalizedPhoto = readString(profilePhotoBase64);
+  if (normalizedPhoto) body.profile_photo = normalizedPhoto;
+
+  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/me/upgrade-to-agent", {
+    method: "POST",
+    body,
+  });
+}
+
+export function verifyFarmerUpgradeOtp({ otp } = {}) {
+  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/me/verify-upgrade-otp", {
+    method: "POST",
+    body: { otp: readString(otp) },
+  });
+}
+
+export function extractGeoArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  return findArrayInPayload(payload, ["data", "states", "lgas", "items", "results", "records"]);
+}
+
+export function mapGeoStateOption(row) {
+  if (!row || typeof row !== "object") return null;
+  const id = row.id ?? row.state_id ?? row.code ?? row.name;
+  const name = readString(row.name, row.state);
+  if (!id || !name) return null;
+  return { id: String(id), name };
+}
+
+export function mapGeoLgaOption(row) {
+  if (!row || typeof row !== "object") return null;
+  const id = row.id ?? row.lga_id ?? row.name;
+  const name = readString(row.name, row.lga);
+  if (!id || !name) return null;
+  return { id: String(id), name };
+}
+
+export function getFarmerDashboard() {
+  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/me").then((payload) => extractDataRoot(payload));
+}
+
+export function getFarmerIdCard() {
+  return cropexSessionFetch(FARMER_AUTH_KEY, "/farmers/id-card").then((payload) => extractDataRoot(payload));
+}
+
+export function getAgentStatus(userId) {
+  const id = readString(userId);
+  if (!id) {
+    return Promise.reject(new Error("Agent user ID is missing."));
+  }
+  return cropexFetch(`/agents/status/${encodeURIComponent(id)}`).then((payload) =>
+    extractDataRoot(payload)
+  );
+}
+
+export async function getAgentStatusForSession() {
+  const userId = getAgentIdFromSession();
+  if (!userId) {
+    throw new Error("Agent user ID is missing from session.");
+  }
+  return getAgentStatus(userId);
+}
+
+export function getAgentDashboard() {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/me").then((payload) => extractDataRoot(payload));
+}
+
+export function createSupportTicket(body) {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/support/tickets", {
+    method: "POST",
+    body,
+  });
+}
+
+export function listSupportTickets() {
+  return cropexSessionFetch(AGENT_AUTH_KEY, "/agents/support/tickets");
+}
+
+export function extractSupportTicketsArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  return findArrayInPayload(payload, ["data", "tickets", "items", "results", "records"]);
+}
+
+export function extractFarmerRecord(payload) {
+  if (payload == null || typeof payload !== "object") return payload;
+  return findObjectInPayload(payload, ["data", "farmer", "item", "record"]);
+}
+
+export function extractFarmersArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  return findArrayInPayload(payload, ["data", "farmers", "items", "results", "records", "rows"]);
+}
+
+export function readFarmerProfilePhoto(row) {
+  if (!row || typeof row !== "object") return "";
+  const biometrics = row.biometrics && typeof row.biometrics === "object" ? row.biometrics : {};
+  const biometricData =
+    row.biometric_data && typeof row.biometric_data === "object" ? row.biometric_data : {};
+
+  return readString(
+    row.profile_photo_url,
+    row.photo_url,
+    row.profile_photo,
+    row.photo,
+    row.face_photo,
+    biometrics.profile_photo_url,
+    biometrics.photo_url,
+    biometrics.profile_photo,
+    biometrics.photo,
+    biometrics.face_photo,
+    biometricData.profile_photo_url,
+    biometricData.photo_url,
+    biometricData.profile_photo,
+    biometricData.photo,
+    biometricData.face_photo
+  );
+}
+
+export function normalizeProfilePhotoUrl(url) {
+  const value = readString(url);
+  if (!value) return "";
+  if (value.startsWith("data:") || /^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("//")) return `https:${value}`;
+  if (value.startsWith("/")) return `${getCropexBaseUrl()}${value}`;
+  return value;
+}
+
+export function isPlaceholderFarmerPhoto(url) {
+  const value = readString(url);
+  if (!value) return true;
+  return value.includes("unsplash.com") || value.includes("placeholder");
+}
+
+export function buildFarmerPhotoLookup(...farmerLists) {
+  const lookup = {};
+  farmerLists.flat().forEach((farmer) => {
+    if (!farmer || typeof farmer !== "object") return;
+    const photo = normalizeProfilePhotoUrl(
+      readFarmerProfilePhoto(farmer) || readString(farmer.photo)
+    );
+    if (!photo || isPlaceholderFarmerPhoto(photo)) return;
+    [farmer.id, farmer.officialFarmerId, farmer.clientId].filter(Boolean).forEach((key) => {
+      lookup[key] = photo;
+    });
+  });
+  return lookup;
+}
+
+export function applyFarmerPhotoLookup(farmer, lookup = {}) {
+  if (!farmer || typeof farmer !== "object") return farmer;
+  if (!isPlaceholderFarmerPhoto(farmer.photo)) return farmer;
+  const matchKey = [farmer.id, farmer.officialFarmerId, farmer.clientId].find(
+    (key) => key && lookup[key]
+  );
+  if (!matchKey) return farmer;
+  return { ...farmer, photo: lookup[matchKey] };
+}
+
+export function mapApiFarmerToUi(row) {
+  if (!row || typeof row !== "object") return null;
+
+  const primaryCrop =
+    Array.isArray(row.primary_crops) && row.primary_crops.length > 0
+      ? row.primary_crops[0]
+      : row.primary_crop || row.crop_type || row.primaryCrop || "-";
+  const createdAt = readString(row.created_at, row.enrolled_at, row.reg_date, row.updated_at);
+  const regDate =
+    createdAt && createdAt.includes("T")
+      ? createdAt.slice(0, 10).split("-").reverse().join("/")
+      : createdAt || "-";
+  const resolvedPhoto = normalizeProfilePhotoUrl(readFarmerProfilePhoto(row));
+
+  return {
+    id: readString(row.farmer_id, row.id, row.uuid, row.farmerId, row.hsh_id, row.client_id),
+    officialFarmerId: readString(row.farmer_id, row.farmerId, row.id),
+    clientId: readString(row.client_id, row.clientId),
+    name: readString(row.full_name, row.name, row.fullName) || "Farmer",
+    photo: resolvedPhoto || DEFAULT_FARMER_PHOTO,
+    regDate,
+    status: "synced",
+    primaryCrop,
+    state: readString(row.state_of_origin, row.state) || "-",
+    lga: readString(row.lga, row.local_govt_area) || "-",
+    phone: readString(row.phone_number, row.phone) || "-",
+    cooperative: readString(row.cooperative_name, row.cooperative) || "-",
+    farmSize: readString(row.farm_size) || "-",
+    landOwnership: readString(row.land_ownership) || "-",
+    gender:
+      row.gender === "M" ? "Male" : row.gender === "F" ? "Female" : readString(row.gender) || "-",
+    dob: readString(row.date_of_birth, row.dob) || "-",
+    nin: readString(row.nin) || "-",
+    address: readString(row.residential_address, row.address, row.farm_location) || "-",
+    offline: false,
+    hasOfficialId: true,
+    biometric: { face: true, fingerprint: true },
+  };
+}
+
+export function formatPhoneForApi(digits) {
+  const normalized = String(digits || "").replace(/\D/g, "");
+  if (!normalized) return "";
+  if (normalized.startsWith("234")) return `+${normalized}`;
+  if (normalized.startsWith("0")) return `+234${normalized.slice(1)}`;
+  return `+234${normalized}`;
+}
+
+export function normalizeFarmerInterestPhone(digits) {
+  const normalized = String(digits || "").replace(/\D/g, "");
+  if (!normalized) return "";
+  if (normalized.startsWith("234") && normalized.length > 3) {
+    return `0${normalized.slice(3)}`;
+  }
+  if (normalized.startsWith("+234")) {
+    const stripped = normalized.replace(/^\+/, "");
+    return `0${stripped.slice(3)}`;
+  }
+  if (normalized.startsWith("0") && normalized.length === 11) return normalized;
+  return normalized.length === 10 ? `0${normalized}` : normalized;
+}
+
+export function mapGenderToFarmerApi(gender) {
+  if (gender === "Male") return "M";
+  if (gender === "Female") return "F";
+  return "Other";
+}
+
+export function mapYearsExperienceToInt(label) {
+  const values = {
+    "Less than 1 year": 0,
+    "1-3 years": 2,
+    "4-7 years": 5,
+    "8-15 years": 10,
+    "15+ years": 18,
+  };
+  return values[label] ?? 0;
+}
+
+const FARMER_SYNC_REQUIRED_FIELDS = [
+  "full_name",
+  "phone_number",
+  "nin",
+  "bvn",
+  "gender",
+  "date_of_birth",
+  "state_of_origin",
+  "lga",
+  "residential_address",
+  "client_id",
+  "enrolled_by_agent_id",
+];
+
+const FARMER_SYNC_FIELD_LABELS = {
+  full_name: "Full name",
+  phone_number: "Phone number",
+  nin: "NIN",
+  bvn: "BVN",
+  gender: "Gender",
+  date_of_birth: "Date of birth",
+  state_of_origin: "State",
+  lga: "LGA",
+  residential_address: "Residential address",
+  client_id: "Client ID",
+  enrolled_by_agent_id: "Agent ID",
+};
+
+export function formatDateOfBirthForApi(value) {
+  const text = readString(value);
+  if (!text) return "";
+
+  const slashMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (slashMatch) {
+    const [, dd, mm, yyyy] = slashMatch;
+    return `${yyyy}-${mm}-${dd}T00:00:00Z`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return `${text}T00:00:00Z`;
+  }
+
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return text;
+
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T00:00:00Z`;
+}
+
+function normalizeFarmerSyncGender(value) {
+  const gender = readString(value);
+  if (gender === "Male") return "M";
+  if (gender === "Female") return "F";
+  if (["M", "F", "Other"].includes(gender)) return gender;
+  return mapGenderToFarmerApi(gender);
+}
+
+export function validateFarmerSyncPayload(payload) {
+  for (const key of FARMER_SYNC_REQUIRED_FIELDS) {
+    if (!readString(payload?.[key])) {
+      return `${FARMER_SYNC_FIELD_LABELS[key] || key} is missing. Log in again or re-register the farmer, then retry sync.`;
+    }
+  }
+
+  const gender = readString(payload?.gender);
+  if (!["M", "F", "Other"].includes(gender)) {
+    return "Gender value is invalid for sync.";
+  }
+
+  const phoneDigits = readString(payload?.phone_number).replace(/\D/g, "");
+  if (phoneDigits.length < 10) {
+    return "Phone number is invalid for sync.";
+  }
+
+  const ninDigits = readString(payload?.nin).replace(/\D/g, "");
+  if (ninDigits.length !== 11) {
+    return "NIN must be 11 digits before sync.";
+  }
+
+  const bvnDigits = readString(payload?.bvn).replace(/\D/g, "");
+  if (bvnDigits.length !== 11) {
+    return "BVN must be 11 digits before sync.";
+  }
+
+  return "";
+}
+
+export function buildFarmerSyncPayload(record, enrolledByAgentId = "") {
+  const payloadSource =
+    record?.payload && typeof record.payload === "object" && !Array.isArray(record.payload)
+      ? record.payload
+      : {};
+  const clientId = readString(record?.clientId, payloadSource.client_id);
+  const agentId = readString(
+    payloadSource.enrolled_by_agent_id,
+    record?.ownerAgentId,
+    enrolledByAgentId
+  );
+
+  const syncPayload = {
+    client_id: clientId,
+    enrolled_by_agent_id: agentId,
+    full_name: readString(payloadSource.full_name, record?.name),
+    phone_number: normalizeFarmerInterestPhone(
+      readString(payloadSource.phone_number, record?.phone)
+    ),
+    nin: readString(payloadSource.nin, record?.nin).replace(/\D/g, ""),
+    bvn: readString(payloadSource.bvn).replace(/\D/g, ""),
+    gender: normalizeFarmerSyncGender(readString(payloadSource.gender, record?.gender)),
+    date_of_birth: formatDateOfBirthForApi(
+      readString(payloadSource.date_of_birth, payloadSource.dob, record?.dob)
+    ),
+    state_of_origin: readString(payloadSource.state_of_origin, payloadSource.state, record?.state),
+    lga: readString(payloadSource.lga, payloadSource.local_govt_area, record?.lga),
+    residential_address: readString(
+      payloadSource.residential_address,
+      payloadSource.address,
+      record?.address
+    ),
+  };
+
+  const optionalStringFields = [
+    ["marital_status", payloadSource.marital_status],
+    ["education_level", payloadSource.education_level],
+    ["next_of_kin_name", payloadSource.next_of_kin_name],
+    ["next_of_kin_relation", payloadSource.next_of_kin_relation],
+    ["crop_type", payloadSource.crop_type],
+    ["farm_location", payloadSource.farm_location],
+    ["farm_size", payloadSource.farm_size],
+    ["soil_type", payloadSource.soil_type],
+    ["profile_photo_url", payloadSource.profile_photo_url],
+  ];
+
+  optionalStringFields.forEach(([key, value]) => {
+    const normalized = readString(value);
+    if (normalized) syncPayload[key] = normalized;
+  });
+
+  const nextOfKinPhone = readString(payloadSource.next_of_kin_phone);
+  if (nextOfKinPhone) {
+    syncPayload.next_of_kin_phone = normalizeFarmerInterestPhone(nextOfKinPhone);
+  }
+
+  const primaryCrops = Array.isArray(payloadSource.primary_crops)
+    ? payloadSource.primary_crops.map((crop) => readString(crop)).filter(Boolean)
+    : [];
+  if (primaryCrops.length > 0) {
+    syncPayload.primary_crops = primaryCrops;
+  } else {
+    const cropType = readString(payloadSource.crop_type, record?.primaryCrop);
+    if (cropType) syncPayload.primary_crops = [cropType];
+  }
+
+  if (Array.isArray(payloadSource.secondary_crops) && payloadSource.secondary_crops.length > 0) {
+    syncPayload.secondary_crops = payloadSource.secondary_crops
+      .map((crop) => readString(crop))
+      .filter(Boolean);
+  }
+
+  const farmingExperience =
+    payloadSource.farming_experience ?? mapYearsExperienceToInt(payloadSource.years_of_experience);
+  if (Number.isFinite(Number(farmingExperience))) {
+    syncPayload.farming_experience = Math.max(0, Math.floor(Number(farmingExperience)));
+  }
+
+  return syncPayload;
+}
+
+export function draftToFarmerEnrollmentRequest(draft, enrolledByAgentId, { clientId } = {}) {
+  const personal = draft?.personal || {};
+  const biometrics = draft?.biometrics || {};
+  const body = draftToEnrollmentPayload(draft, enrolledByAgentId);
+
+  const facePhoto = readString(biometrics.facePhoto);
+  const profile_photo_url = facePhoto
+    ? facePhoto.startsWith("data:")
+      ? facePhoto
+      : `data:image/jpeg;base64,${facePhoto}`
+    : undefined;
+
+  return {
+    ...body,
+    phone_number: formatPhoneForApi(personal.phone) || body.phone_number,
+    nin: readString(body.nin).replace(/\D/g, ""),
+    bvn: readString(body.bvn).replace(/\D/g, ""),
+    ...(clientId ? { client_id: readString(clientId) } : {}),
+    ...(profile_photo_url ? { profile_photo_url } : {}),
+  };
+}
+
+export function draftToEnrollmentPayload(draft, enrolledByAgentId) {
+  const personal = draft.personal || {};
+  const farm = draft.farm || {};
+  const phone_number = normalizeFarmerInterestPhone(personal.phone);
+  const primaryCrops =
+    Array.isArray(personal.primaryCrops) && personal.primaryCrops.length > 0
+      ? personal.primaryCrops
+      : farm.cropType
+        ? [farm.cropType]
+        : [];
+
+  const body = {
+    full_name: personal.fullName,
+    phone_number,
+    nin: personal.nin,
+    bvn: personal.bvn,
+    gender: mapGenderToFarmerApi(personal.gender),
+    date_of_birth: formatDateOfBirthForApi(personal.dob),
+    state_of_origin: personal.state,
+    lga: personal.lga,
+    residential_address: personal.address,
+    enrolled_by_agent_id: readString(enrolledByAgentId) || undefined,
+    marital_status: personal.maritalStatus || undefined,
+    education_level: personal.educationLevel || undefined,
+    farming_experience: mapYearsExperienceToInt(personal.yearsExperience),
+    primary_crops: primaryCrops,
+    secondary_crops: [],
+    next_of_kin_name: personal.nextKinName || undefined,
+    next_of_kin_phone: personal.nextKinPhone
+      ? normalizeFarmerInterestPhone(personal.nextKinPhone)
+      : undefined,
+    next_of_kin_relation: personal.nextKinRelationship || undefined,
+    crop_type: farm.cropType || undefined,
+    farm_location: farm.farmLocation || undefined,
+    farm_size: farm.farmSize || undefined,
+    soil_type: farm.soilType || undefined,
+  };
+
+  return body;
+}
+
+export function draftToEnrollmentPersonalInfo(draft) {
+  const personal = draft.personal || {};
+  const farm = draft.farm || {};
+  const primaryCrops =
+    Array.isArray(personal.primaryCrops) && personal.primaryCrops.length > 0
+      ? personal.primaryCrops
+      : farm.cropType
+        ? [farm.cropType]
+        : [];
+
+  return {
+    full_name: personal.fullName,
+    phone_number: formatPhoneForApi(personal.phone),
+    nin: readString(personal.nin).replace(/\D/g, ""),
+    bvn: readString(personal.bvn).replace(/\D/g, ""),
+    gender: mapGenderToFarmerApi(personal.gender),
+    date_of_birth: formatDateOfBirthForApi(personal.dob),
+    state_of_origin: personal.state,
+    local_govt_area: personal.lga,
+    residential_address: personal.address,
+    marital_status: personal.maritalStatus || undefined,
+    education_level: personal.educationLevel || undefined,
+    years_of_experience: personal.yearsExperience || undefined,
+    primary_crops: primaryCrops,
+    next_of_kin_name: personal.nextKinName || undefined,
+    next_of_kin_phone: personal.nextKinPhone
+      ? formatPhoneForApi(personal.nextKinPhone)
+      : undefined,
+    next_of_kin_relation: personal.nextKinRelationship || undefined,
+  };
+}
+
+export function draftToEnrollmentFarmInfo(draft) {
+  const farm = draft.farm || {};
+  return {
+    farm_size: farm.farmSize,
+    farm_location: farm.farmLocation,
+    crop_type: farm.cropType,
+    soil_type: farm.soilType,
+    land_ownership: farm.landOwnership || undefined,
+  };
+}
+
+function splitCommodityFocus(value) {
+  if (Array.isArray(value)) return value.map((item) => readString(item)).filter(Boolean);
+  return readString(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function draftToEnrollmentCooperativeInfo(draft) {
+  const cooperative = draft.cooperative || {};
+  return {
+    cooperative_name: cooperative.name || undefined,
+    cooperative_reg_number: cooperative.regNo || undefined,
+    membership_role: cooperative.role || undefined,
+    date_joined: cooperative.joinedDate
+      ? formatDateOfBirthForApi(cooperative.joinedDate)
+      : undefined,
+    lga: cooperative.lga || undefined,
+    commodity_focus: splitCommodityFocus(cooperative.commodity),
+    cooperative_size: cooperative.size || undefined,
+    land_ownership_type: cooperative.landType || undefined,
+    input_supplier_name: cooperative.supplier || undefined,
+  };
+}

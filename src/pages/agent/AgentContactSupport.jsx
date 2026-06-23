@@ -1,0 +1,398 @@
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, Mail, Phone, User, ChevronDown, Plus } from "lucide-react";
+import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
+import AgentAuthDesktopLayout from "../../components/agent/AgentAuthDesktopLayout";
+import { AgentBottomNav } from "./AgentHome";
+import { agentSupportContact } from "../../mockData/agent";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
+import {
+  createSupportTicket,
+  extractSupportTicketsArray,
+  getAgentSession,
+  listSupportTickets,
+} from "../../services/cropexApi";
+import { getDisplayError } from "../../utils/apiErrors";
+
+function readString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function formatTicketDate(value) {
+  const text = readString(value);
+  if (!text) return "";
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return text;
+  return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+function SupportContactCard({ className = "" }) {
+  return (
+    <div className={`rounded-[20px] bg-[#FFFFFF] p-5 ${className}`}>
+      <p className="text-[14px] leading-6 text-[#030F0F]">
+        If you experience network issues, contact HFEI support directly.
+      </p>
+      <div className="mt-4 space-y-3 text-[14px] leading-5 text-[#030F0F]">
+        <p className="flex items-center gap-2">
+          <Phone size={14} className="text-[#030F0F]" />
+          <span>Support Phone: {agentSupportContact.phoneDisplay || "Unavailable"}</span>
+        </p>
+        <p className="flex items-center gap-2">
+          <Mail size={14} className="text-[#030F0F]" />
+          <span>Support Email: {agentSupportContact.email || "Unavailable"}</span>
+        </p>
+        {agentSupportContact.phoneHref ? (
+          <a
+            href={agentSupportContact.phoneHref}
+            className="inline-flex items-center gap-2 text-[#03624D] underline-offset-2 hover:underline"
+          >
+            <Phone size={14} />
+            Call support now
+          </a>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export default function AgentContactSupport() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const session = getAgentSession();
+  const hasAuthSession = Boolean(session);
+  const isPreAuthSupport = Boolean(location.state?.preAuth) || !hasAuthSession;
+
+  const [view, setView] = useState("list");
+  const [tickets, setTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [ticketsError, setTicketsError] = useState("");
+
+  const [issueType, setIssueType] = useState("Profile Update");
+  const [farmerId, setFarmerId] = useState("");
+  const [issueDescription, setIssueDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
+
+  const goBackPath =
+    location.state?.from === "under-review"
+      ? "/agent/account-under-review"
+      : location.state?.from === "verification-failed"
+        ? "/agent/verification-failed"
+        : location.state?.from === "login-suspended"
+          ? "/agent/login"
+          : "/agent/login";
+
+  const loadTickets = useCallback(async () => {
+    if (isPreAuthSupport) return;
+    setTicketsLoading(true);
+    setTicketsError("");
+    try {
+      const payload = await listSupportTickets();
+      setTickets(extractSupportTicketsArray(payload));
+    } catch (loadError) {
+      setTickets([]);
+      setTicketsError(getDisplayError(loadError, "Could not load your support tickets."));
+    } finally {
+      setTicketsLoading(false);
+    }
+  }, [isPreAuthSupport]);
+
+  useEffect(() => {
+    if (!isPreAuthSupport) {
+      void loadTickets();
+    }
+  }, [isPreAuthSupport, loadTickets]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!issueDescription.trim()) {
+      setFeedback({ type: "error", message: "Please describe the issue." });
+      return;
+    }
+
+    setSubmitting(true);
+    setFeedback({ type: "", message: "" });
+    try {
+      await createSupportTicket({
+        issue_type: issueType,
+        description: issueDescription.trim(),
+        farmer_id: farmerId.trim() || undefined,
+      });
+      setIssueDescription("");
+      setFarmerId("");
+      setView("list");
+      await loadTickets();
+    } catch (submitError) {
+      setFeedback({
+        type: "error",
+        message: getDisplayError(submitError, "Could not submit support ticket."),
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const ticketList = (
+    <>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="font-display text-[40px] font-bold leading-[48px] text-[#030F0F]">
+            Help &amp; Support
+          </h1>
+          <p className="mt-2 max-w-[760px] text-[14px] leading-[20px] text-[#030F0F]/80">
+            View your support tickets or open a new one for help with registration, your profile, or
+            field issues.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setFeedback({ type: "", message: "" });
+            setView("form");
+          }}
+          className="inline-flex h-[47px] shrink-0 items-center justify-center gap-2 rounded-[15px] bg-[#03624D] px-5 text-[16px] font-medium text-white"
+        >
+          <Plus size={18} />
+          Open new ticket
+        </button>
+      </div>
+
+      {ticketsError ? (
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {ticketsError}
+        </div>
+      ) : null}
+
+      <div className="mt-8 max-w-[760px] space-y-3">
+        {ticketsLoading ? (
+          <p className="font-sans text-sm text-brand-text-secondary">Loading tickets...</p>
+        ) : tickets.length === 0 ? (
+          <div className="rounded-[15px] border border-[#E6E6E6] bg-white px-4 py-8 text-center">
+            <p className="font-sans text-sm text-brand-text-secondary">No support tickets yet.</p>
+          </div>
+        ) : (
+          tickets.map((ticket) => {
+            const id = readString(ticket?.id) || `ticket-${ticket?.created_at}`;
+            const issue = readString(ticket?.issue_type, "Support request");
+            const status = readString(ticket?.status, "Open");
+            const description = readString(ticket?.description);
+            const linkedFarmerId = readString(ticket?.farmer_id);
+            const createdAt = formatTicketDate(ticket?.created_at);
+
+            return (
+              <article
+                key={id}
+                className="rounded-[15px] border border-[#E6E6E6] bg-white px-4 py-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-sans text-base font-semibold text-[#030F0F]">{issue}</p>
+                    {createdAt ? (
+                      <p className="mt-1 font-sans text-xs text-brand-text-muted">{createdAt}</p>
+                    ) : null}
+                  </div>
+                  <span className="rounded-full bg-[#E8F5F1] px-3 py-1 font-sans text-xs font-semibold text-[#03624D]">
+                    {status}
+                  </span>
+                </div>
+                {description ? (
+                  <p className="mt-3 font-sans text-sm leading-relaxed text-brand-text-secondary line-clamp-3">
+                    {description}
+                  </p>
+                ) : null}
+                {linkedFarmerId ? (
+                  <p className="mt-2 font-sans text-xs text-brand-text-muted">
+                    Farmer ID: <span className="font-medium text-brand-text-secondary">{linkedFarmerId}</span>
+                  </p>
+                ) : null}
+              </article>
+            );
+          })
+        )}
+      </div>
+
+      <SupportContactCard className="mt-8 w-full max-w-[520px]" />
+    </>
+  );
+
+  const ticketForm = (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setFeedback({ type: "", message: "" });
+          setView("list");
+        }}
+        className="mb-4 inline-flex items-center gap-2 text-sm text-brand-text-secondary"
+      >
+        <ArrowLeft size={16} />
+        Back to tickets
+      </button>
+
+      <h1 className="font-display text-[40px] font-bold leading-[48px] text-[#030F0F]">
+        Open new ticket
+      </h1>
+      <p className="mt-2 max-w-[760px] text-[14px] leading-[20px] text-[#030F0F]/80">
+        Describe your issue and our support team will follow up.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-8 max-w-[760px]">
+        {feedback.message ? (
+          <div
+            className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+              feedback.type === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-green-200 bg-green-50 text-green-700"
+            }`}
+          >
+            {feedback.message}
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+          <label className="block">
+            <span className="mb-2 block text-[20px] font-bold leading-6 text-[#030F0F] md:text-[20px]">
+              Type of issue
+            </span>
+            <div className="relative">
+              <select
+                value={issueType}
+                onChange={(event) => setIssueType(event.target.value)}
+                className="dropdown-field h-[52px] w-full rounded-[15px] px-4 pr-10 text-[14px] font-semibold text-[#030F0F]"
+              >
+                <option>Profile Update</option>
+                <option>Farmer Sync Issue</option>
+                <option>Registration Issue</option>
+                <option>Login Issue</option>
+              </select>
+              <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#030F0F]/60" />
+            </div>
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-[20px] font-bold leading-6 text-[#030F0F] md:text-[20px]">
+              Farmer ID
+            </span>
+            <div className="relative">
+              <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#030F0F]/55" />
+              <input
+                value={farmerId}
+                onChange={(event) => setFarmerId(event.target.value)}
+                placeholder="Enter farmer ID"
+                className="h-[52px] w-full rounded-[15px] border border-[#E6E6E6] bg-white pl-10 pr-4 text-[14px] text-[#030F0F] outline-none placeholder:text-[#030F0F]/40 focus:border-[#03624D]"
+              />
+            </div>
+          </label>
+        </div>
+
+        <label className="mt-5 block">
+          <span className="mb-2 block text-[20px] font-bold leading-6 text-[#030F0F]">
+            Issue description
+          </span>
+          <textarea
+            value={issueDescription}
+            onChange={(event) => setIssueDescription(event.target.value)}
+            placeholder="Description of the issue"
+            className="h-[153px] w-full resize-none rounded-[15px] border border-[#E6E6E6] bg-white px-4 py-3 text-[14px] text-[#030F0F] outline-none placeholder:text-[#030F0F]/40 focus:border-[#03624D]"
+          />
+        </label>
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-5 inline-flex h-[47px] w-[187px] items-center justify-center rounded-[15px] bg-[#03624D] text-[20px] font-medium leading-6 text-white disabled:opacity-50"
+        >
+          {submitting ? "Submitting..." : "Submit"}
+        </button>
+      </form>
+    </>
+  );
+
+  const authContent = (
+    <div className="w-full md:max-w-[862.81px]">{view === "form" ? ticketForm : ticketList}</div>
+  );
+
+  const preAuthContent = (
+    <div className="w-full max-w-[36rem] text-left">
+      <h1 className="auth-title">Need Help?</h1>
+      <p className="auth-subtitle mb-6">
+        We&apos;re here to support you. Reach out to us if you&apos;re having any issues with registration,
+        verification, or syncing data.
+      </p>
+
+      <div className="rounded-2xl border border-brand-border bg-white p-4">
+        <p className="font-sans text-sm font-semibold text-brand-text-primary">Customer Support</p>
+        <p className="mt-1 font-sans text-xs text-brand-text-secondary">Get help from our support team</p>
+
+        <div className="mt-4 space-y-3">
+          <p className="flex items-center gap-2.5 font-sans text-sm text-brand-text-primary">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-green text-white">
+              <Phone size={14} />
+            </span>
+            <span>{agentSupportContact.phoneDisplay}</span>
+          </p>
+          <p className="flex items-center gap-2.5 font-sans text-sm text-brand-text-primary">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-green text-white">
+              <Mail size={14} />
+            </span>
+            <span>{agentSupportContact.email}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className={`md:hidden min-h-dvh ${isPreAuthSupport ? "page-white" : "bg-brand-bg-page"}`}>
+        <div className={`flex flex-col ${isPreAuthSupport ? "min-h-dvh" : ""}`}>
+          <div className={`flex-1 px-5 pt-6 ${isPreAuthSupport ? "" : "pb-28"}`}>
+            {isPreAuthSupport ? (
+              <button
+                type="button"
+                onClick={() => navigate(goBackPath)}
+                className="mb-6 flex items-center gap-2 self-start text-brand-text-secondary"
+              >
+                <ArrowLeft size={18} />
+                <span className="font-sans text-sm">Back</span>
+              </button>
+            ) : view === "list" ? (
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="mb-6 flex items-center gap-2 text-brand-text-secondary"
+              >
+                <span className="font-sans text-sm">Back</span>
+              </button>
+            ) : null}
+            {isPreAuthSupport ? preAuthContent : authContent}
+          </div>
+          {!isPreAuthSupport && <AgentBottomNav />}
+        </div>
+      </div>
+
+      {isDesktop &&
+        (isPreAuthSupport ? (
+          <AgentAuthDesktopLayout title="" subtitle="" leading={null} actions={null}>
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={() => navigate(goBackPath)}
+                className="mb-4 inline-flex items-center gap-2 text-sm text-brand-text-secondary"
+              >
+                <ArrowLeft size={16} />
+                Back
+              </button>
+              {preAuthContent}
+            </div>
+          </AgentAuthDesktopLayout>
+        ) : (
+          <AgentDesktopShell active="support">{authContent}</AgentDesktopShell>
+        ))}
+    </>
+  );
+}

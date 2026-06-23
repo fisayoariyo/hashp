@@ -1,0 +1,2095 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft, ChevronRight,
+  ChevronDown, X, Plus, FileDown,
+} from "lucide-react";
+import AgentDesktopShell from "../../components/agent/AgentDesktopShell";
+import AgentFacialVerification from "./AgentFacialVerification";
+import AgentFingerprintVerification from "./AgentFingerprintVerification";
+import { buildWhatsAppShareURL } from "../../utils/helpers";
+import { getDisplayError } from "../../utils/apiErrors";
+import { preloadDigitalPersonaSdk } from "../../services/digitalPersonaFingerprint";
+import { loadGeoLgas, loadGeoStates } from "../../services/geoCache";
+import { OFFLINE_FARMER_STATUS, createOfflineFarmerRecord } from "../../services/offlineFarmersDb";
+import {
+  draftToEnrollmentPayload,
+  draftToFarmerEnrollmentRequest,
+  enrollFarmer,
+  extractFarmerEnrollmentCredentials,
+  extractFarmersArray,
+  getAgentIdFromSession,
+  getAgentSession,
+  getEnrollmentBiometricStatus,
+  listFarmers,
+  parseEnrolledFarmerResponse,
+  startEnrollmentSession,
+} from "../../services/cropexApi";
+
+const DEMO_FARMER_PHOTO = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop";
+
+const DRAFT_KEY  = "hcx_reg_draft";
+const getDraft   = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
+const setDraft   = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...getDraft(), ...d })); } catch {} };
+const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} };
+function getBiometricStatusData(payload) {
+  if (!payload || typeof payload !== "object") return {};
+  return payload.data && typeof payload.data === "object" ? payload.data : payload;
+}
+
+function getLocalBiometricCaptureState(draft) {
+  const biometrics = draft?.biometrics || {};
+  const flags = draft?.biometric || {};
+  const faceDone = Boolean(readString(biometrics.facePhoto)) || flags.face === true;
+  const fingerprints = Array.isArray(biometrics.fingerprints) ? biometrics.fingerprints : [];
+  const fingerDone =
+    fingerprints.some((entry) => readString(entry?.position) && readString(entry?.fmr_template)) ||
+    flags.fingerprint === true;
+  return { faceDone, fingerDone };
+}
+
+function getRemoteBiometricCaptureState(statusPayload) {
+  const data = getBiometricStatusData(statusPayload);
+  const faceDone = data.face_captured === true;
+  const fingerDone =
+    data.fingerprint_captured === true ||
+    (Array.isArray(data.fingers) &&
+      data.fingers.some((row) => String(row?.status || "").toLowerCase() === "success"));
+  return { faceDone, fingerDone };
+}
+
+async function resolveBiometricCaptureState({ draft, sessionId, isOnline }) {
+  const local = getLocalBiometricCaptureState(draft);
+  if (!isOnline || !readString(sessionId)) {
+    return {
+      faceCapture: local.faceDone ? "done" : "idle",
+      fingerCapture: local.fingerDone ? "done" : "idle",
+    };
+  }
+
+  try {
+    const status = await getEnrollmentBiometricStatus(sessionId);
+    const remote = getRemoteBiometricCaptureState(status);
+    return {
+      faceCapture: remote.faceDone || local.faceDone ? "done" : "idle",
+      fingerCapture: remote.fingerDone || local.fingerDone ? "done" : "idle",
+    };
+  } catch {
+    return {
+      faceCapture: local.faceDone ? "done" : "idle",
+      fingerCapture: local.fingerDone ? "done" : "idle",
+    };
+  }
+}
+
+function markBiometricDraftFlag(key, value = true) {
+  const draft = getDraft();
+  const biometric = draft.biometric && typeof draft.biometric === "object" ? draft.biometric : {};
+  setDraft({ biometric: { ...biometric, [key]: value } });
+}
+
+function hasUnfinishedDraft() {
+  const d = getDraft();
+  if (!d || typeof d !== "object" || Object.keys(d).length === 0) return false;
+
+  const personal = d.personal || {};
+  if (
+    readString(
+      personal.fullName,
+      personal.nin,
+      personal.phone,
+      personal.bvn,
+      personal.address,
+      personal.dob,
+      personal.state,
+      personal.lga,
+    )
+  ) {
+    return true;
+  }
+
+  const farm = d.farm || {};
+  if (
+    readString(
+      farm.farmSize,
+      farm.cropType,
+      farm.farmLocation,
+      farm.soilType,
+      farm.landOwnership,
+    )
+  ) {
+    return true;
+  }
+
+  const cooperative = d.cooperative || {};
+  if (
+    readString(
+      cooperative.name,
+      cooperative.regNo,
+      cooperative.role,
+      cooperative.commodity,
+      cooperative.landType,
+      cooperative.lga,
+    )
+  ) {
+    return true;
+  }
+
+  const biometrics = d.biometrics || {};
+  if (readString(biometrics.facePhoto)) return true;
+  if (
+    Array.isArray(biometrics.fingerprints) &&
+    biometrics.fingerprints.some((entry) => readString(entry?.fmr_template))
+  ) {
+    return true;
+  }
+
+  if (d.biometric?.face || d.biometric?.fingerprint) return true;
+
+  return false;
+}
+const readString = (...values) => {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return "";
+};
+const formatToday = () => {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
+const addOneYear = (dateValue) => {
+  const value = readString(dateValue);
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return "";
+  const [, dd, mm, yyyy] = match;
+  return `${dd}/${mm}/${Number(yyyy) + 1}`;
+};
+const toSelectOptions = (options = []) =>
+  options.map((option) =>
+    typeof option === "object" && option !== null
+      ? {
+          value: String(option.value ?? option.id ?? option.name ?? ""),
+          label: readString(option.label, option.name, option.value, option.id),
+        }
+      : { value: String(option ?? ""), label: String(option ?? "") }
+  );
+const buildQueuedFarmerRecord = (draft, agentId) => ({
+  ownerAgentId: agentId,
+  payload: draftToEnrollmentPayload(draft, agentId),
+  name: draft.personal?.fullName || "New Farmer",
+  photo: DEMO_FARMER_PHOTO,
+  regDate: formatToday(),
+  status: "pending",
+  primaryCrop: draft.farm?.cropType || draft.personal?.primaryCrops?.[0] || "-",
+  state: draft.personal?.state || "-",
+  lga: draft.personal?.lga || "-",
+  phone: draft.personal?.phone || "-",
+  cooperative: draft.cooperative?.name || "-",
+  farmSize: draft.farm?.farmSize || "-",
+  landOwnership: draft.farm?.landOwnership || "-",
+  gender: draft.personal?.gender || "-",
+  dob: draft.personal?.dob || "-",
+  nin: draft.personal?.nin || "-",
+  address: draft.personal?.address || "-",
+  biometric: { face: true, fingerprint: true },
+});
+
+function buildEnrollmentDraftSnapshot(draft) {
+  return {
+    personal: draft.personal || {},
+    farm: draft.farm || {},
+    cooperative: draft.cooperative || {},
+    biometrics: draft.biometrics || {},
+  };
+}
+
+function buildOfflinePhotoUrl(draft) {
+  const facePhoto = readString(draft?.biometrics?.facePhoto);
+  if (!facePhoto) return DEMO_FARMER_PHOTO;
+  if (facePhoto.startsWith("data:")) return facePhoto;
+  return `data:image/jpeg;base64,${facePhoto}`;
+}
+
+function saveOfflineFaceCapture(facePhoto) {
+  const draft = getDraft();
+  const biometrics = draft.biometrics && typeof draft.biometrics === "object" ? draft.biometrics : {};
+  setDraft({ biometrics: { ...biometrics, facePhoto } });
+}
+
+function saveOfflineFingerprintCapture({ position, fmr_template }) {
+  const draft = getDraft();
+  const biometrics = draft.biometrics && typeof draft.biometrics === "object" ? draft.biometrics : {};
+  const fingerprints = Array.isArray(biometrics.fingerprints) ? [...biometrics.fingerprints] : [];
+  const index = fingerprints.findIndex((entry) => entry.position === position);
+  const nextEntry = { position, fmr_template };
+  if (index >= 0) fingerprints[index] = nextEntry;
+  else fingerprints.push(nextEntry);
+  setDraft({ biometrics: { ...biometrics, fingerprints } });
+}
+
+function validateOfflineBiometricsForSubmit(draft) {
+  const biometrics = draft?.biometrics || {};
+  if (!readString(biometrics.facePhoto)) {
+    return "Face photo was not saved. Capture face verification again before saving.";
+  }
+  const fingerprints = Array.isArray(biometrics.fingerprints) ? biometrics.fingerprints : [];
+  if (!fingerprints.some((entry) => readString(entry?.position) && readString(entry?.fmr_template))) {
+    return "Fingerprint data was not saved. Capture fingerprint verification again before saving.";
+  }
+  return "";
+}
+
+function validateDraftForSubmit(draft) {
+  const personal = draft?.personal || {};
+  const farm = draft?.farm || {};
+
+  const fullName = readString(personal.fullName);
+  if (!fullName) return "Full name is required.";
+
+  const dobText = readString(personal.dob);
+  if (!dobText) return "Date of birth is required.";
+  const dob = new Date(dobText);
+  if (Number.isNaN(dob.getTime())) return "Date of birth is invalid.";
+  const today = new Date();
+  if (dob > today) return "Date of birth cannot be in the future.";
+
+  const phoneDigits = readString(personal.phone).replace(/\D/g, "");
+  if (!phoneDigits || phoneDigits.length < 10) return "Phone number must be valid.";
+
+  const ninDigits = readString(personal.nin).replace(/\D/g, "");
+  if (ninDigits.length !== 11) return "NIN must be 11 digits.";
+
+  const bvnDigits = readString(personal.bvn).replace(/\D/g, "");
+  if (bvnDigits.length !== 11) return "BVN must be 11 digits.";
+
+  if (!readString(personal.state, personal.stateId)) return "State is required.";
+  if (!readString(personal.lga, personal.lgaId)) return "LGA is required.";
+  if (!readString(personal.address)) return "Residential address is required.";
+  if (!readString(personal.nextKinName)) return "Next of kin name is required.";
+  if (!readString(personal.nextKinPhone).replace(/\D/g, "")) return "Next of kin phone number is required.";
+  if (!readString(personal.nextKinRelationship)) return "Next of kin relationship is required.";
+
+  if (!readString(farm.farmSize)) return "Farm size is required.";
+  if (!readString(farm.cropType)) return "Crop type is required.";
+  if (!readString(farm.farmLocation)) return "Farm location is required.";
+  if (!readString(farm.soilType)) return "Soil type is required.";
+
+  return "";
+}
+
+function isValidPastDate(value) {
+  const text = readString(value);
+  if (!text) return false;
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return false;
+  return date <= new Date();
+}
+
+function validateEnrollmentPayloadAgainstContract(payload) {
+  const personal = payload?.personal_info || payload || {};
+  const required = [
+    ["full_name", "Full name"],
+    ["phone_number", "Phone number"],
+    ["nin", "NIN"],
+    ["bvn", "BVN"],
+    ["gender", "Gender"],
+    ["date_of_birth", "Date of birth"],
+    ["state_of_origin", "State"],
+    ["lga", "LGA"],
+    ["residential_address", "Residential address"],
+  ];
+  for (const [key, label] of required) {
+    const fallback =
+      key === "lga" ? readString(personal?.local_govt_area) : "";
+    if (!readString(personal?.[key], fallback)) {
+      return `${label} is missing in submit payload.`;
+    }
+  }
+  const gender = readString(personal?.gender);
+  if (!["M", "F", "Other"].includes(gender)) {
+    return "Gender payload value is invalid.";
+  }
+  return "";
+}
+
+function formatEnrollmentError(error, payload) {
+  if (readString(error?.message).toLowerCase().includes("invalid request body")) {
+    const payloadCheck = validateEnrollmentPayloadAgainstContract(payload);
+    if (payloadCheck) return payloadCheck;
+  }
+  return getDisplayError(error, "Enrollment failed. Check required fields and try again.");
+}
+
+function requestFarmersRefresh() {
+  if (typeof window === "undefined") return;
+
+  const emit = () => {
+    window.dispatchEvent(new CustomEvent("hcx-farmers-sync"));
+    window.dispatchEvent(new CustomEvent("hcx-farmers-refresh"));
+  };
+
+  emit();
+  window.setTimeout(emit, 1800);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function pickCreatedFarmer(rows, personalInfo) {
+  const candidates = Array.isArray(rows) ? rows : [];
+  if (candidates.length === 0) return null;
+
+  const expectedPhone = readString(personalInfo?.phone_number);
+  const expectedNin = readString(personalInfo?.nin);
+  const expectedName = readString(personalInfo?.full_name).toLowerCase();
+
+  return (
+    candidates.find((row) => readString(row?.phone_number, row?.phone) === expectedPhone) ||
+    candidates.find((row) => readString(row?.nin) === expectedNin) ||
+    candidates.find((row) => readString(row?.full_name, row?.name).toLowerCase() === expectedName) ||
+    candidates[0] ||
+    null
+  );
+}
+
+async function resolveCreatedFarmerFromBackend({ personalInfo }) {
+  const searchText = readString(personalInfo?.full_name, personalInfo?.phone_number, personalInfo?.nin);
+  if (!searchText) return null;
+
+  const runLookup = async () => {
+    const payload = await listFarmers();
+    return pickCreatedFarmer(extractFarmersArray(payload), personalInfo);
+  };
+
+  const firstMatch = await runLookup().catch(() => null);
+  if (firstMatch) return firstMatch;
+
+  await wait(1200);
+  return runLookup().catch(() => null);
+}
+
+// ── Step indicator ─────────────────────────────────────────
+function Steps({ current }) {
+  return (
+    <div className="flex items-center mb-8">
+      {[1, 2, 3, 4].map((s, i) => (
+        <div key={s} className="flex items-center flex-1">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0 transition-all border-2 ${
+            s < current
+              ? "bg-brand-green border-brand-green text-white"
+              : s === current
+              ? "bg-brand-green border-brand-green text-white"
+              : "bg-white border-brand-border text-brand-text-muted"
+          }`}>{s}</div>
+          {i < 3 && (
+            <div className={`flex-1 h-0.5 transition-all ${s < current ? "bg-brand-green" : "bg-brand-border"}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Shared form helpers ────────────────────────────────────
+const Input = ({ value, onChange, placeholder, type = "text", icon, className = "" }) => (
+  <div className="flex items-center input-field gap-3">
+    {icon && <span className="text-brand-text-muted shrink-0">{icon}</span>}
+    <input type={type} value={value} onChange={onChange} placeholder={placeholder}
+      className={`flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted ${className}`} />
+  </div>
+);
+const Sel = ({ value, onChange, options, placeholder }) => (
+  <div className="relative">
+    <select value={value} onChange={onChange} className="dropdown-field pr-10">
+      <option value="">{placeholder || "Select"}</option>
+      {toSelectOptions(options).map((option) => (
+        <option key={`${option.value}-${option.label}`} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+    <ChevronDown size={18} strokeWidth={3} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-muted pointer-events-none" />
+  </div>
+);
+const F = ({ label, required = false, children }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="font-sans text-sm font-medium text-brand-text-primary">
+      {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+    </label>
+    {children}
+  </div>
+);
+const NavRow = ({ onBack, onNext, nextLabel = "Continue", disabled = false, layout = "fixed" }) => {
+  const isFixed = layout === "fixed";
+  return (
+    <div
+      className={
+        isFixed
+          ? "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex gap-3 border-t border-brand-border z-10"
+          : "flex gap-3 w-full mt-auto pt-4 border-t border-brand-border shrink-0 justify-center flex-wrap"
+      }
+    >
+      <button
+        type="button"
+        onClick={onBack}
+        className={`flex items-center justify-center gap-1.5 py-3.5 rounded-3xl border-2 border-brand-green text-brand-green font-display font-semibold text-sm ${
+          isFixed ? "flex-1" : "min-w-[150px] px-8"
+        }`}
+      >
+        <ArrowLeft size={14} /> Go back
+      </button>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={disabled}
+        className={`flex items-center justify-center gap-1.5 py-3.5 px-8 rounded-3xl bg-brand-green text-white font-display font-semibold text-sm disabled:opacity-40 ${
+          isFixed ? "flex-[1.35]" : "min-w-[160px]"
+        }`}
+      >
+        {nextLabel} <ChevronRight size={14} />
+      </button>
+    </div>
+  );
+};
+
+// ── Fingerprint swirl icon (for biometric rows) ────────────
+function FPIcon({ color = "#9ca3af", size = 20 }) {
+  const cx = size / 2, cy = size / 2, s = size / 20;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={size / 2 - 1} fill={`${color}18`} stroke={color} strokeWidth="1.5" />
+      <path d={`M${cx - 3 * s},${cy + 2 * s} Q${cx - 3 * s},${cy - 4 * s} ${cx},${cy - 4 * s} Q${cx + 3 * s},${cy - 4 * s} ${cx + 3 * s},${cy + 2 * s}`}
+        stroke={color} strokeWidth="1" fill="none" strokeLinecap="round" />
+      <path d={`M${cx - 5.5 * s},${cy + 2 * s} Q${cx - 5.5 * s},${cy - 6.5 * s} ${cx},${cy - 6.5 * s} Q${cx + 5.5 * s},${cy - 6.5 * s} ${cx + 5.5 * s},${cy + 2 * s}`}
+        stroke={color} strokeWidth="1" fill="none" strokeLinecap="round" />
+      <circle cx={cx} cy={cy} r={0.8 * s} fill={color} />
+    </svg>
+  );
+}
+
+// ── RF01: Start screen ─────────────────────────────────────
+// Icons: green rounded-square with white SVG icon (matches Figma RF01)
+function StartScreen({ onStart, onBack, embedded, onResume, hasPendingDraft }) {
+  const STEPS = [
+    {
+      label: "Biometric Capture",
+      sub: "Capture fingerprint and face for identity verification",
+      icon: <FPIcon color="white" size={22} />,
+    },
+    {
+      label: "Personal Information",
+      sub: "Enter the farmer's basic details and identification number.",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2" /><line x1="9" y1="7" x2="15" y2="7"/>
+          <line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Farm Information",
+      sub: "Provide details about the farm and crop type.",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 17l3-5 4 2 3-6 4 4"/><path d="M5 20h14"/><circle cx="17" cy="8" r="2"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Cooperative & Association",
+      sub: "Add cooperative details if the farmer belongs to one",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Review & Submit",
+      sub: "Confirm all details and complete registration.",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      ),
+    },
+  ];
+
+  const body = (
+    <>
+      <button onClick={onBack} className="flex items-center gap-2 text-brand-text-secondary mb-5">
+        <ArrowLeft size={18} />
+        <span className="font-sans text-sm">Go back</span>
+      </button>
+      <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-2 md:text-left">Register new farmer</h1>
+      <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-7 md:max-w-[760px]">
+        Begin a new farmer registration by capturing their personal and biometric details to create a verified profile.
+      </p>
+      <h2 className="font-display font-bold text-base text-brand-text-primary mb-4">Registration steps</h2>
+      <div className="grid grid-cols-1 gap-3 md:max-w-[560px]">
+        {STEPS.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl border border-brand-border bg-white p-4 shadow-sm flex gap-3 items-start"
+          >
+            <div className="w-11 h-11 rounded-xl bg-brand-green flex items-center justify-center shrink-0">{s.icon}</div>
+            <div className="min-w-0 pt-0.5">
+              <p className="font-sans font-bold text-sm text-brand-text-primary leading-snug">{s.label}</p>
+              <p className="font-sans text-xs text-brand-text-secondary mt-1 leading-relaxed">{s.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  const draftBanner = hasPendingDraft && (
+    <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <p className="font-sans text-sm font-semibold text-amber-900 mb-1">Unfinished registration found</p>
+      <p className="font-sans text-xs text-amber-700 mb-4">
+        You have a registration in progress. Would you like to continue where you left off, or start a new one?
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={onResume}
+          className="flex-1 rounded-[18px] bg-brand-green py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Continue registration
+        </button>
+        <button
+          type="button"
+          onClick={onStart}
+          className="flex-1 rounded-[18px] border border-brand-border bg-white py-3 text-sm font-semibold text-brand-text-primary transition-colors hover:bg-brand-page-bg"
+        >
+          Start new
+        </button>
+      </div>
+    </div>
+  );
+
+  const startBtn = !hasPendingDraft && (
+    <button type="button" onClick={onStart} className="btn-primary w-full max-w-xs px-8">
+      Start Registration
+    </button>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]">
+        <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">
+          {draftBanner}
+          {body}
+        </div>
+        {startBtn && (
+          <div className="shrink-0 pt-4 border-t border-brand-border flex justify-center">
+            {startBtn}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-container">
+      <div className="flex-1 px-4 pt-5 pb-28 overflow-y-auto scrollbar-hide">
+        {draftBanner}
+        {body}
+      </div>
+      {startBtn && (
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 flex justify-center">
+          {startBtn}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── RF02/04/08: Biometric capture hub ─────────────────────
+function BiometricStep({ faceCapture, fingerCapture, onFaceTap, onFingerTap, onNext, onBack, embedded }) {
+  const FaceIcon = ({ color, size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+      <path d="M9 10.5c0 1.5 1.5 2.5 3 2.5s3-1 3-2.5"/>
+    </svg>
+  );
+
+  const done_color = "#155235";
+  const idle_color = "#9ca3af";
+
+  const Row = ({ label, subLabel, done, Icon, onTap }) => (
+    <div>
+      <p className="font-sans text-sm font-semibold text-brand-text-primary mb-2">{label}</p>
+      <button
+        onClick={!done ? onTap : undefined}
+        className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl border transition-all ${
+          done ? "bg-white border-brand-green/30" : "bg-white border-brand-border active:scale-[0.98]"
+        }`}
+      >
+        <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 ${
+          done ? "border-brand-green bg-brand-green-muted" : "border-brand-border"
+        }`}>
+          <Icon color={done ? done_color : idle_color} size={20} />
+        </div>
+        <span className={`flex-1 text-left font-sans text-sm ${done ? "text-brand-green font-medium" : "text-brand-text-secondary"}`}>
+          {done ? `${label.split(" ")[0]} verification successful` : subLabel}
+        </span>
+        {done ? (
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-green/10 text-brand-green text-xs">
+            ✓
+          </span>
+        ) : (
+          <ChevronRight size={16} className="text-brand-text-muted shrink-0" />
+        )}
+      </button>
+    </div>
+  );
+
+  const navLayout = embedded ? "inline" : "fixed";
+  const scrollPb = embedded ? "pb-4" : "pb-32";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-white flex flex-col";
+
+  return (
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
+        <Steps current={1} />
+        <h1 className="font-display font-bold text-3xl md:text-[48px] md:leading-[52px] text-brand-text-primary mb-2 text-center">Biometric capture</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-8 text-center">
+          Capture fingerprint and face for identity verification.
+        </p>
+        <div className="space-y-5 md:max-w-[520px] md:mx-auto">
+          <Row
+            label="Face verification"
+            subLabel="Capture your face to verify"
+            done={faceCapture === "done"}
+            Icon={FaceIcon}
+            onTap={onFaceTap}
+          />
+          <Row
+            label="Fingerprint verification"
+            subLabel="Capture right thumb, right index, left thumb and left index"
+            done={fingerCapture === "done"}
+            Icon={FPIcon}
+            onTap={onFingerTap}
+          />
+          <p className="font-sans text-xs text-brand-text-muted text-center">
+            Required fingers only: right thumb, right index, left thumb, left index.
+          </p>
+        </div>
+      </div>
+      <NavRow
+        layout={navLayout}
+        onBack={onBack}
+        onNext={() => {
+          setDraft({ biometric: { face: true, fingerprint: true } });
+          onNext();
+        }}
+        disabled={faceCapture !== "done" || fingerCapture !== "done"}
+      />
+    </div>
+  );
+}
+
+// ── RF09: Personal info (all fields including optional) ────
+function PersonalStep({ onNext, onBack, embedded, stateOptions, statesLoading, statesError }) {
+  const d = getDraft().personal || {};
+  const [form, setForm] = useState({
+    fullName: "", phone: "", dob: "", gender: "Male",
+    stateId: "", state: "", lgaId: "", lga: "", address: "", nin: "", bvn: "",
+    maritalStatus: "", educationLevel: "", yearsExperience: "",
+    primaryCrops: [],
+    nextKinName: "", nextKinPhone: "", nextKinRelationship: "",
+    ...d,
+  });
+  const [lgaOptions, setLgaOptions] = useState([]);
+  const [lgasLoading, setLgasLoading] = useState(false);
+  const [lgasError, setLgasError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validatePersonal = (values) => {
+    const next = {};
+    if (!readString(values.fullName)) next.fullName = "Full name is required.";
+    if (!readString(values.dob)) next.dob = "Date of birth is required.";
+    else if (!isValidPastDate(values.dob)) next.dob = "Date of birth cannot be in the future.";
+
+    const phoneDigits = readString(values.phone).replace(/\D/g, "");
+    if (phoneDigits.length < 10) next.phone = "Enter a valid phone number.";
+    if (!readString(values.stateId, values.state)) next.stateId = "State is required.";
+    if (!readString(values.lgaId, values.lga)) next.lgaId = "LGA is required.";
+
+    const ninDigits = readString(values.nin).replace(/\D/g, "");
+    if (ninDigits.length !== 11) next.nin = "NIN must be 11 digits.";
+    const bvnDigits = readString(values.bvn).replace(/\D/g, "");
+    if (bvnDigits.length !== 11) next.bvn = "BVN must be 11 digits.";
+
+    if (!readString(values.address)) next.address = "Residential address is required.";
+    if (!readString(values.nextKinName)) next.nextKinName = "Next of kin name is required.";
+    const kinPhoneDigits = readString(values.nextKinPhone).replace(/\D/g, "");
+    if (kinPhoneDigits.length < 10) next.nextKinPhone = "Enter a valid next of kin phone number.";
+    if (!readString(values.nextKinRelationship)) next.nextKinRelationship = "Relationship is required.";
+    return next;
+  };
+
+  useEffect(() => {
+    if (form.stateId || !form.state || stateOptions.length === 0) return;
+    const matchedState = stateOptions.find((option) => option.name === form.state);
+    if (matchedState) {
+      setForm((current) => ({ ...current, stateId: String(matchedState.id) }));
+    }
+  }, [form.state, form.stateId, stateOptions]);
+
+  useEffect(() => {
+    if (!form.stateId) {
+      setLgaOptions([]);
+      setLgasError("");
+      return;
+    }
+
+    let active = true;
+    setLgasLoading(true);
+    setLgasError("");
+
+    loadGeoLgas(form.stateId)
+      .then(({ options, error }) => {
+        if (!active) return;
+        setLgaOptions(options);
+        setLgasError(error);
+      })
+      .finally(() => {
+        if (active) setLgasLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [form.stateId]);
+
+  useEffect(() => {
+    if (form.lgaId || !form.lga || lgaOptions.length === 0) return;
+    const matchedLga = lgaOptions.find((option) => option.name === form.lga);
+    if (matchedLga) {
+      setForm((current) => ({ ...current, lgaId: String(matchedLga.id) }));
+    }
+  }, [form.lga, form.lgaId, lgaOptions]);
+
+  const set = (key) => (event) => {
+    const value = event.target.value;
+    setForm((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => ({ ...current, [key]: "" }));
+  };
+  const handleStateChange = (event) => {
+    const selected = stateOptions.find((option) => String(option.id) === event.target.value);
+    setForm((current) => ({
+      ...current,
+      stateId: event.target.value,
+      state: selected?.name || "",
+      lgaId: "",
+      lga: "",
+    }));
+    setFieldErrors((current) => ({ ...current, stateId: "", lgaId: "" }));
+  };
+  const handleLgaChange = (event) => {
+    const selected = lgaOptions.find((option) => String(option.id) === event.target.value);
+    setForm((current) => ({
+      ...current,
+      lgaId: event.target.value,
+      lga: selected?.name || "",
+    }));
+    setFieldErrors((current) => ({ ...current, lgaId: "" }));
+  };
+
+  const CROP_OPTIONS = ["Maize", "Rice", "Cassava", "Yam", "Soybean", "Green Beans", "Tomato", "Pepper", "Groundnut", "Wheat"];
+  const addCrop = (crop) => {
+    if (crop && !form.primaryCrops.includes(crop)) {
+      setForm((current) => ({ ...current, primaryCrops: [...current.primaryCrops, crop] }));
+    }
+  };
+  const removeCrop = (crop) =>
+    setForm((current) => ({
+      ...current,
+      primaryCrops: current.primaryCrops.filter((item) => item !== crop),
+    }));
+
+  const navLayout = embedded ? "inline" : "fixed";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-white flex flex-col";
+
+  return (
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-4 min-h-0 ${scrollPb}`}>
+        <Steps current={2} />
+        <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">
+          Personal Information
+        </h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">
+          Enter the farmer&apos;s basic details and identification number.
+        </p>
+        {(statesError || lgasError) && (
+          <p className="font-sans text-sm text-red-600" role="alert">
+            {statesError || lgasError}
+          </p>
+        )}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
+          <F label="Full legal name" required>
+            <Input
+              value={form.fullName}
+              onChange={set("fullName")}
+              placeholder="Write farmer full name here"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
+            />
+            {fieldErrors.fullName ? <p className="font-sans text-xs text-red-500">{fieldErrors.fullName}</p> : null}
+          </F>
+          <F label="Date of birth" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              <input
+                type="date"
+                value={form.dob}
+                onChange={set("dob")}
+                placeholder="DD/MM/YYYY"
+                className="flex-1 bg-transparent focus:outline-none text-sm text-brand-text-primary placeholder:text-brand-text-muted"
+              />
+            </div>
+            {fieldErrors.dob ? <p className="font-sans text-xs text-red-500">{fieldErrors.dob}</p> : null}
+          </F>
+          <F label="Gender" required>
+            <Sel value={form.gender} onChange={set("gender")} options={["Male", "Female", "Other"]} />
+          </F>
+          <F label="Phone number" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="5" y="2" width="14" height="20" rx="2" /></svg>
+              <div className="w-px h-5 bg-brand-border shrink-0" />
+              <span className="text-sm text-brand-text-muted shrink-0">+234</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={form.phone}
+                onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value.replace(/\D/g, "") }))}
+                placeholder="Input phone number here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+            {fieldErrors.phone ? <p className="font-sans text-xs text-red-500">{fieldErrors.phone}</p> : null}
+          </F>
+          <F label="State of origin" required>
+            <Sel
+              value={form.stateId}
+              onChange={handleStateChange}
+              options={stateOptions}
+              placeholder={statesLoading ? "Loading states..." : "Select state"}
+            />
+            {fieldErrors.stateId ? <p className="font-sans text-xs text-red-500">{fieldErrors.stateId}</p> : null}
+          </F>
+          <F label="Local government area" required>
+            <Sel
+              value={form.lgaId}
+              onChange={handleLgaChange}
+              options={lgaOptions}
+              placeholder={!form.stateId ? "Select state first" : lgasLoading ? "Loading LGAs..." : "Select LGA"}
+            />
+            {fieldErrors.lgaId ? <p className="font-sans text-xs text-red-500">{fieldErrors.lgaId}</p> : null}
+          </F>
+          <F label="NIN (National ID No.)" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+              <input
+                value={form.nin}
+                onChange={set("nin")}
+                placeholder="Input NIN here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+            {fieldErrors.nin ? <p className="font-sans text-xs text-red-500">{fieldErrors.nin}</p> : null}
+          </F>
+          <F label="BVN" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 9h3m0 0v6m0-6h4" /></svg>
+              <input
+                value={form.bvn}
+                onChange={set("bvn")}
+                placeholder="Input BVN here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+            {fieldErrors.bvn ? <p className="font-sans text-xs text-red-500">{fieldErrors.bvn}</p> : null}
+          </F>
+          <F label="Marital Status (optional)">
+            <Sel value={form.maritalStatus} onChange={set("maritalStatus")} options={["Single", "Married", "Divorced", "Widowed"]} placeholder="Select" />
+          </F>
+          <F label="Education Level (optional)">
+            <Sel value={form.educationLevel} onChange={set("educationLevel")} options={["No formal education", "Primary", "Secondary", "OND/NCE", "HND/BSc", "Postgraduate"]} placeholder="Select" />
+          </F>
+          <F label="Years of Farming Experience (optional)">
+            <Sel value={form.yearsExperience} onChange={set("yearsExperience")} options={["Less than 1 year", "1-3 years", "4-7 years", "8-15 years", "15+ years"]} placeholder="Select" />
+          </F>
+          <F label="Primary Crop(s) (optional)">
+            <div className="flex flex-wrap gap-2 min-h-[42px] p-3 rounded-2xl border border-brand-border bg-white">
+              {form.primaryCrops.map((crop) => (
+                <span key={crop} className="flex items-center gap-1 bg-brand-green-muted text-brand-green text-xs font-sans font-medium px-2.5 py-1 rounded-full">
+                  {crop}
+                  <button type="button" onClick={() => removeCrop(crop)} className="hover:text-brand-green-dark">
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
+              <select
+                onChange={(event) => {
+                  addCrop(event.target.value);
+                  event.target.value = "";
+                }}
+                className="dropdown-field text-xs font-semibold min-w-[110px]"
+              >
+                <option value="">+</option>
+                {CROP_OPTIONS.filter((crop) => !form.primaryCrops.includes(crop)).map((crop) => (
+                  <option key={crop}>{crop}</option>
+                ))}
+              </select>
+            </div>
+          </F>
+          <F label="Next of Kin Name" required>
+            <Input
+              value={form.nextKinName}
+              onChange={set("nextKinName")}
+              placeholder="Write farmer next of kin name here"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
+            />
+            {fieldErrors.nextKinName ? <p className="font-sans text-xs text-red-500">{fieldErrors.nextKinName}</p> : null}
+          </F>
+          <F label="Next of Kin phone number" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><rect x="5" y="2" width="14" height="20" rx="2" /></svg>
+              <div className="w-px h-5 bg-brand-border shrink-0" />
+              <span className="text-sm text-brand-text-muted shrink-0">+234</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={form.nextKinPhone}
+                onChange={(event) => setForm((current) => ({ ...current, nextKinPhone: event.target.value.replace(/\D/g, "") }))}
+                placeholder="Input your phone number here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+            {fieldErrors.nextKinPhone ? <p className="font-sans text-xs text-red-500">{fieldErrors.nextKinPhone}</p> : null}
+          </F>
+          <F label="Residential address" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+              <input
+                value={form.address}
+                onChange={set("address")}
+                placeholder="Write farmer full address here"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted"
+              />
+            </div>
+            {fieldErrors.address ? <p className="font-sans text-xs text-red-500">{fieldErrors.address}</p> : null}
+          </F>
+          <F label="Next of Kin Relationship" required>
+            <Sel value={form.nextKinRelationship} onChange={set("nextKinRelationship")} options={["Spouse", "Parent", "Sibling", "Child", "Relative", "Friend"]} placeholder="Select" />
+            {fieldErrors.nextKinRelationship ? <p className="font-sans text-xs text-red-500">{fieldErrors.nextKinRelationship}</p> : null}
+          </F>
+        </div>
+      </div>
+      <NavRow
+        layout={navLayout}
+        onBack={onBack}
+        onNext={() => {
+          const nextErrors = validatePersonal(form);
+          if (Object.keys(nextErrors).length > 0) {
+            setFieldErrors(nextErrors);
+            return;
+          }
+          setDraft({
+            personal: {
+              ...form,
+              state: form.state,
+              lga: form.lga,
+            },
+          });
+          onNext();
+        }}
+      />
+    </div>
+  );
+}
+
+// ── Farm info ──────────────────────────────────────────────
+function FarmStep({ onNext, onBack, embedded }) {
+  const d = getDraft().farm || {};
+  const [form, setForm] = useState({ farmSize:"", farmLocation:"", cropType:"", soilType:"", landOwnership:"", ...d });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const set = (k) => (e) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+    setFieldErrors((current) => ({ ...current, [k]: "" }));
+  };
+
+  const navLayout = embedded ? "inline" : "fixed";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-white flex flex-col";
+
+  return (
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-5 min-h-0 ${scrollPb}`}>
+        <Steps current={3} />
+        <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Farm Information</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">Enter basic details about the farmer's farm.</p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
+          <F label="Farm Size" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <input value={form.farmSize} onChange={set("farmSize")} placeholder="Enter farm size (e.g. 2 acres)"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
+            </div>
+            {fieldErrors.farmSize ? <p className="font-sans text-xs text-red-500">{fieldErrors.farmSize}</p> : null}
+          </F>
+          <F label="Crop Type" required>
+            <Sel value={form.cropType} onChange={set("cropType")}
+              options={["Maize","Rice","Cassava","Yam","Soybean","Green Beans","Tomato","Pepper","Groundnut"]}
+              placeholder="Select crop type" />
+            {fieldErrors.cropType ? <p className="font-sans text-xs text-red-500">{fieldErrors.cropType}</p> : null}
+          </F>
+          <F label="Farm Location" required>
+            <div className="flex items-center input-field gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" className="shrink-0"><path d="M12 21s-6-4.35-6-10a6 6 0 1 1 12 0c0 5.65-6 10-6 10Z"/><circle cx="12" cy="11" r="2.5"/></svg>
+              <input value={form.farmLocation} onChange={set("farmLocation")} placeholder="Input farm location"
+                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-brand-text-muted" />
+            </div>
+            {fieldErrors.farmLocation ? <p className="font-sans text-xs text-red-500">{fieldErrors.farmLocation}</p> : null}
+          </F>
+          <F label="Soil Type" required>
+            <Sel value={form.soilType} onChange={set("soilType")}
+              options={["Loamy soil","Clay soil","Sandy","Silty soil","Peaty soil","Chalky soil"]}
+              placeholder="Select soil type" />
+            {fieldErrors.soilType ? <p className="font-sans text-xs text-red-500">{fieldErrors.soilType}</p> : null}
+          </F>
+          <F label="Land Ownership (Optional)">
+            <Sel value={form.landOwnership} onChange={set("landOwnership")}
+              options={["Owned","Leased","Communal","Family"]}
+              placeholder="Select ownership type (e.g. Owned, Leased)" />
+          </F>
+        </div>
+      </div>
+      <NavRow
+        layout={navLayout}
+        onBack={onBack}
+        onNext={() => {
+          const nextErrors = {};
+          if (!readString(form.farmSize)) nextErrors.farmSize = "Farm size is required.";
+          if (!readString(form.cropType)) nextErrors.cropType = "Crop type is required.";
+          if (!readString(form.farmLocation)) nextErrors.farmLocation = "Farm location is required.";
+          if (!readString(form.soilType)) nextErrors.soilType = "Soil type is required.";
+          if (Object.keys(nextErrors).length > 0) {
+            setFieldErrors(nextErrors);
+            return;
+          }
+          setDraft({ farm: form });
+          onNext();
+        }}
+      />
+    </div>
+  );
+}
+
+// ── Cooperative info ───────────────────────────────────────
+function CoopStep({ onNext, onBack, embedded, stateOptions }) {
+  const d = getDraft().cooperative || {};
+  const personal = getDraft().personal || {};
+  const derivedStateId =
+    personal.stateId || readString(stateOptions.find((option) => option.name === personal.state)?.id);
+  const [form, setForm] = useState({
+    name: "",
+    regNo: "",
+    role: "Member",
+    joinedDate: "",
+    lgaId: "",
+    lga: "",
+    commodity: "",
+    landType: "",
+    ...d,
+  });
+  const [lgaOptions, setLgaOptions] = useState([]);
+  const [lgasLoading, setLgasLoading] = useState(false);
+  const [lgasError, setLgasError] = useState("");
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  useEffect(() => {
+    if (!derivedStateId) {
+      setLgaOptions([]);
+      setLgasError("");
+      return;
+    }
+
+    let active = true;
+    setLgasLoading(true);
+    setLgasError("");
+
+    loadGeoLgas(derivedStateId)
+      .then(({ options, error }) => {
+        if (!active) return;
+        setLgaOptions(options);
+        setLgasError(error || "");
+      })
+      .finally(() => {
+        if (active) setLgasLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [derivedStateId]);
+
+  useEffect(() => {
+    if (form.lgaId || !form.lga || lgaOptions.length === 0) return;
+    const matchedLga = lgaOptions.find((option) => option.name === form.lga);
+    if (matchedLga) {
+      setForm((current) => ({ ...current, lgaId: String(matchedLga.id) }));
+    }
+  }, [form.lga, form.lgaId, lgaOptions]);
+
+  const handleLgaChange = (event) => {
+    const selected = lgaOptions.find((option) => String(option.id) === event.target.value);
+    setForm((current) => ({
+      ...current,
+      lgaId: event.target.value,
+      lga: selected?.name || "",
+    }));
+  };
+
+  const navLayout = embedded ? "inline" : "fixed";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-white flex flex-col";
+
+  return (
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide space-y-4 min-h-0 ${scrollPb}`}>
+        <Steps current={4} />
+        <h1 className="font-display font-bold text-3xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Cooperative & Association</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-2">Add cooperative details if the farmer belongs to one.</p>
+        {lgasError && (
+          <p className="font-sans text-sm text-red-600" role="alert">
+            {lgasError}
+          </p>
+        )}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
+          <F label="Cooperative Name">
+            <Input value={form.name} onChange={set("name")} placeholder="Enter cooperative name" />
+          </F>
+          <F label="Cooperative Registration No.">
+            <Input value={form.regNo} onChange={set("regNo")} placeholder="Enter registration number" />
+          </F>
+          <F label="Membership Role">
+            <Sel value={form.role} onChange={set("role")} options={["Member","Secretary","Chairman","Treasurer"]} />
+          </F>
+          <F label="Date Joined">
+            <Input
+              type="date"
+              value={form.joinedDate}
+              onChange={set("joinedDate")}
+              className="bg-white"
+            />
+          </F>
+          <F label="LGA of Cooperative">
+            <Sel
+              value={form.lgaId}
+              onChange={handleLgaChange}
+              options={lgaOptions}
+              placeholder={!derivedStateId ? "Select farmer state first" : lgasLoading ? "Loading LGAs..." : "Select LGA"}
+            />
+          </F>
+          <F label="Commodity Focus">
+            <Input value={form.commodity} onChange={set("commodity")} placeholder="e.g. Maize, Cassava" />
+          </F>
+          <F label="Land Ownership Type">
+            <Sel value={form.landType} onChange={set("landType")} options={["Owned","Leased","Communal","Family"]} placeholder="Select" />
+          </F>
+        </div>
+      </div>
+      <NavRow
+        layout={navLayout}
+        onBack={onBack}
+        onNext={() => {
+          setDraft({
+            cooperative: {
+              ...form,
+              lga: form.lga,
+            },
+          });
+          onNext();
+        }}
+        nextLabel="Review"
+      />
+    </div>
+  );
+}
+
+// ── RF12: Review — flat label:bold-value list (no cards) ───
+function ReviewStep({ onSubmit, onBack, submitting, embedded, submitError, submitLabel = "Continue and submit" }) {
+  const d = getDraft();
+  const p = d.personal   || {};
+  const f = d.farm       || {};
+  const c = d.cooperative || {};
+
+  const Section = ({ title, rows }) => (
+    <div className="mb-5">
+      <p className="font-sans text-xs text-brand-text-muted uppercase tracking-wider mb-2">{title}</p>
+      <div className="space-y-1.5">
+        {rows.filter(([, v]) => v).map(([label, value]) => (
+          <p key={label} className="font-sans text-sm text-brand-text-primary leading-snug">
+            {label} : <span className="font-bold">{value}</span>
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+
+  const footerClass =
+    embedded
+      ? "mt-6 pt-4 border-t border-brand-border w-full shrink-0"
+      : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 z-10";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-container";
+
+  return (
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
+        <h1 className="font-display font-bold text-2xl md:text-[40px] md:leading-[48px] text-brand-text-primary mb-1">Review Details</h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-6">
+          Please review all information before submitting.
+        </p>
+        {submitError && (
+          <p className="font-sans text-sm text-red-600 mb-4" role="alert">
+            {submitError}
+          </p>
+        )}
+
+        <Section title="Biometric Information" rows={[
+          ["Fingerprint", "Captured"],
+          ["Face", "Captured"],
+        ]} />
+
+        <Section title="Personal Information" rows={[
+          ["Full Name",    p.fullName],
+          ["Date of Birth", p.dob],
+          ["Gender",       p.gender],
+          ["Phone Number", p.phone],
+          ["State",        p.state],
+          ["LGA",          p.lga],
+          ["Address",      p.address],
+          ["NIN",          p.nin],
+        ]} />
+
+        <Section title="Farm Information" rows={[
+          ["Farm Size",      f.farmSize],
+          ["Farm Location",  f.farmLocation],
+          ["Crop Type",      f.cropType],
+          ["Soil Type",      f.soilType],
+          ["Land Ownership", f.landOwnership],
+        ]} />
+
+        <Section title="Cooperative & Association" rows={[
+          ["Cooperative Name",    c.name],
+          ["Registration Number", c.regNo],
+          ["Membership Role",     c.role],
+          ["Date Joined",         c.joinedDate],
+          ["LGA",                 c.lga],
+          ["Commodity Focus",     c.commodity],
+          ["Land Ownership Type", c.landType],
+        ]} />
+      </div>
+
+      <div
+        className={`${footerClass} flex flex-col gap-3 px-0 sm:flex-row sm:gap-4 sm:justify-center sm:items-center`}
+      >
+        <button
+          type="button"
+          onClick={onBack}
+          className="h-[44px] w-full sm:w-auto sm:min-w-[140px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap hover:bg-gray-50 transition-colors"
+        >
+          Edit details
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const blob = new Blob(["Demo CSV export — connect API for real data"], { type: "text/csv" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "farmer-review-demo.csv";
+            a.click();
+            URL.revokeObjectURL(a.href);
+          }}
+          className="h-[44px] w-full sm:w-auto sm:min-w-[140px] px-5 rounded-2xl border-2 border-brand-border text-brand-text-primary font-sans font-semibold text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap hover:bg-gray-50 transition-colors"
+        >
+          <FileDown size={16} /> Download as CSV
+        </button>
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={submitting}
+          className="h-[44px] w-full sm:w-auto sm:min-w-[180px] px-8 rounded-2xl bg-brand-green text-white font-sans font-semibold text-sm inline-flex items-center justify-center whitespace-nowrap transition-all duration-200 active:scale-95 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Saving..." : submitLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── RF13: Done screen ──────────────────────────────────────
+function DoneStep({ idCard, onRegisterAnother, onGoHome, embedded }) {
+  const footerClass =
+    embedded
+      ? "mt-6 pt-4 border-t border-brand-border space-y-3 w-full shrink-0"
+      : "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 pb-6 bg-white pt-3 space-y-3 z-10";
+  const scrollPb = embedded ? "pb-4" : "pb-36";
+  const rootClass = embedded
+    ? "flex flex-col min-h-0 flex-1 w-full max-h-[calc(100dvh-220px)]"
+    : "page-container";
+  const isOnlineSubmission = idCard?.mode === "online";
+  const title = isOnlineSubmission ? "Farmer ID" : "Saved for Sync";
+  const description = isOnlineSubmission
+    ? "Farmer has been successfully registered. View and share their ID below."
+    : "This farmer has been saved on this device and queued for sync. An official farmer ID will appear after a successful sync.";
+  const referenceLabel = isOnlineSubmission
+    ? idCard.farmerId
+      ? "Farmer ID"
+      : "Registration status"
+    : "Sync Reference";
+  const referenceValue = isOnlineSubmission
+    ? idCard.farmerId || "Submitted online"
+    : idCard.clientId;
+  const issueDate = readString(idCard.savedAt, formatToday());
+  const expiryDate = addOneYear(issueDate) || "20/04/2027";
+  const shareId = () => {
+    if (!referenceValue) return;
+    window.open(buildWhatsAppShareURL(referenceValue), "_blank");
+  };
+
+  return (
+    <div className={rootClass}>
+      <div className={`flex-1 px-4 pt-5 overflow-y-auto scrollbar-hide min-h-0 ${scrollPb}`}>
+        <button onClick={onGoHome} className="flex items-center gap-2 text-brand-text-secondary mb-4">
+          <ArrowLeft size={16} /><span className="font-sans text-sm">Go back home</span>
+        </button>
+
+        <h1 className="font-heading font-semibold text-[32px] leading-[38px] md:text-[40px] md:leading-[46px] text-brand-text-primary mb-1">
+          {title}
+        </h1>
+        <p className="font-sans text-sm md:text-[14px] text-brand-text-secondary mb-5">
+          {description}
+        </p>
+
+        {isOnlineSubmission && idCard.credentials?.loginId && idCard.credentials?.password ? (
+          <div className="mb-5 w-full max-w-[284px] self-start rounded-[20px] border border-brand-border bg-[#F7FAF8] px-4 py-4">
+            <p className="font-sans text-sm font-semibold text-brand-text-primary mb-3">
+              Login details for farmer
+            </p>
+            <div className="space-y-2 text-left">
+              <div>
+                <p className="font-sans text-[11px] uppercase tracking-wide text-brand-text-muted">Farmer ID</p>
+                <p className="font-sans text-sm font-semibold text-brand-text-primary break-all">
+                  {idCard.credentials.loginId}
+                </p>
+              </div>
+              <div>
+                <p className="font-sans text-[11px] uppercase tracking-wide text-brand-text-muted">
+                  Temporary password
+                </p>
+                <p className="font-sans text-sm font-semibold text-brand-text-primary break-all">
+                  {idCard.credentials.password || "—"}
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 font-sans text-xs text-brand-text-secondary">
+              Share these with the farmer so they can log in.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="w-full max-w-[284px] self-start bg-brand-green rounded-[22px] px-4 py-4 flex flex-col items-center text-white shadow-md">
+          <div className="self-start mb-3">
+            <img
+              src="/brand/HFEI_Primary_Logo_White.png"
+              alt="HFEI by HFEI Cropex Ltd"
+              className="h-7 w-auto object-contain"
+              draggable="false"
+            />
+          </div>
+
+          <img src={idCard.photo || DEMO_FARMER_PHOTO} alt={idCard.name}
+            className="w-[116px] h-[116px] rounded-[16px] object-cover border-[2.5px] border-white/35 mb-3" />
+
+          <div className="text-center mb-2">
+            <p className="text-white/60 text-[10px]">Full Name</p>
+            <p className="font-display font-extrabold text-[18px] leading-[110%] mt-1">{idCard.name}</p>
+          </div>
+          <div className="text-center mb-2">
+            <p className="text-white/60 text-[10px]">{referenceLabel}</p>
+            <p className="font-display font-extrabold text-[15px] leading-[110%] tracking-[0.01em] mt-1 break-all px-1">
+              {referenceValue}
+            </p>
+          </div>
+          <div className="text-center mb-3">
+            <p className="text-white/60 text-[10px]">Corporative name</p>
+            <p className="font-display font-semibold text-[14px] leading-[120%] mt-1">{idCard.cooperative || "-"}</p>
+          </div>
+
+          <div className="w-full h-px bg-white/20 mb-3" />
+
+          <div className="grid grid-cols-2 gap-3 w-full mb-3 text-center">
+            <div>
+              <p className="text-white/60 text-[10px]">Agent name</p>
+              <p className="font-sans font-semibold text-[12px] mt-1">{idCard.agentName || "-"}</p>
+            </div>
+            <div>
+              <p className="text-white/60 text-[10px]">Agent signature</p>
+              <p className="font-sans italic text-[12px] mt-1 text-white/90">HFEI</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-5 w-full">
+            <div className="text-center">
+              <p className="text-white/60 text-[10px]">Issue date</p>
+              <p className="font-display font-bold text-[12px] mt-1">{issueDate}</p>
+            </div>
+            <div className="w-px h-7 bg-white/30" />
+            <div className="text-center">
+              <p className="text-white/60 text-[10px]">Expiry date</p>
+              <p className="font-display font-bold text-[12px] mt-1">{expiryDate}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`${footerClass} flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-start items-stretch`}
+      >
+        {isOnlineSubmission ? (
+          <button
+            type="button"
+            onClick={shareId}
+            className="order-1 inline-flex items-center justify-center min-h-12 py-2.5 box-border px-8 rounded-full border-2 border-brand-border bg-white text-brand-green font-display font-semibold text-sm hover:bg-gray-50 transition-all w-full sm:w-auto sm:min-w-[13rem] text-center leading-snug"
+          >
+            Share ID
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onRegisterAnother}
+          className="order-2 inline-flex items-center justify-center min-h-12 py-2.5 box-border px-8 rounded-full border-2 border-brand-green bg-brand-green text-white font-display font-semibold text-sm hover:brightness-95 active:scale-[0.99] transition-all w-full sm:w-auto sm:min-w-[13rem] text-center leading-snug"
+        >
+          Register Another Farmer
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── MAIN EXPORT ────────────────────────────────────────────
+export default function AgentRegisterFarmer() {
+  const navigate  = useNavigate();
+  const [step, setStep]           = useState("start");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [idCard, setIdCard]         = useState(null);
+  const [stateOptions, setStateOptions] = useState([]);
+  const [statesLoading, setStatesLoading] = useState(true);
+  const [statesError, setStatesError] = useState("");
+  const [isOnline, setIsOnline]     = useState(
+    typeof navigator === "undefined" ? true : navigator.onLine
+  );
+
+  useEffect(() => {
+    const handleOnline  = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online",  handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online",  handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    void preloadDigitalPersonaSdk();
+  }, [isOnline]);
+
+  // Biometric state LIFTED — survives sub-screen navigation
+  const [faceCapture, setFaceCapture] = useState("idle");
+  const [fingerCapture, setFingerCapture] = useState("idle");
+  const [enrollmentSessionId, setEnrollmentSessionId] = useState(() =>
+    readString(getDraft()?.enrollment?.sessionId)
+  );
+  const [startingEnrollment, setStartingEnrollment] = useState(false);
+  const [enrollmentStartError, setEnrollmentStartError] = useState("");
+  const goHome = () => navigate("/agent/home");
+  const agentSession = getAgentSession();
+  const agentName =
+    readString(agentSession?.fullName, agentSession?.full_name) || "Assigned agent";
+
+  useEffect(() => {
+    let active = true;
+    setStatesLoading(true);
+    setStatesError("");
+
+    loadGeoStates({ online: isOnline })
+      .then(({ options, error }) => {
+        if (!active) return;
+        setStateOptions(options);
+        setStatesError(error);
+      })
+      .finally(() => {
+        if (active) setStatesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOnline]);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError("");
+    const draft = getDraft();
+    const validationError = validateDraftForSubmit(draft);
+    if (validationError) {
+      setSubmitError(validationError);
+      setSubmitting(false);
+      return;
+    }
+    if (faceCapture !== "done" || fingerCapture !== "done") {
+      setSubmitError("Complete face and fingerprint capture before submitting.");
+      setSubmitting(false);
+      return;
+    }
+
+    // ── OFFLINE PATH ──────────────────────────────────────────
+    if (!isOnline) {
+      const biometricError = validateOfflineBiometricsForSubmit(draft);
+      if (biometricError) {
+        setSubmitError(biometricError);
+        setSubmitting(false);
+        return;
+      }
+
+      try {
+        const agentId = getAgentIdFromSession();
+        const savedAt = formatToday();
+        const enrollmentDraft = buildEnrollmentDraftSnapshot(draft);
+        const offlinePhoto = buildOfflinePhotoUrl(draft);
+        const clientId =
+          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `offline-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+        const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
+        const record = await createOfflineFarmerRecord({
+          clientId,
+          ownerAgentId: agentId,
+          enrollmentDraft,
+          payload: { ...queuedPayload.payload, client_id: clientId },
+          status: OFFLINE_FARMER_STATUS.PENDING,
+          name: queuedPayload.name,
+          photo: offlinePhoto,
+          regDate: savedAt,
+          phone: queuedPayload.phone,
+          state: queuedPayload.state,
+          lga: queuedPayload.lga,
+          address: queuedPayload.address,
+          nin: queuedPayload.nin,
+          gender: queuedPayload.gender,
+          cooperative: queuedPayload.cooperative,
+          primaryCrop: queuedPayload.primaryCrop,
+          farmSize: queuedPayload.farmSize,
+          landOwnership: queuedPayload.landOwnership,
+          biometric: { face: true, fingerprint: true },
+        });
+        setIdCard({
+          mode: "offline",
+          clientId: record.clientId || clientId,
+          farmerId: "",
+          name: queuedPayload.name,
+          photo: queuedPayload.photo,
+          cooperative: queuedPayload.cooperative,
+          savedAt,
+          agentName,
+        });
+        requestFarmersRefresh();
+        clearDraft();
+        setEnrollmentSessionId("");
+        setStep("done");
+      } catch (error) {
+        setSubmitError(getDisplayError(error, "Could not save farmer record offline."));
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // ── ONLINE PATH ───────────────────────────────────────────
+    let enrollmentPayload = null;
+    try {
+      const agentId = getAgentIdFromSession();
+      if (!agentId) {
+        throw new Error("Agent session is missing an agent ID. Log in again and retry.");
+      }
+      const queuedPayload = buildQueuedFarmerRecord(draft, agentId);
+      enrollmentPayload = draftToFarmerEnrollmentRequest(draft, agentId);
+      const payloadContractError = validateEnrollmentPayloadAgainstContract(enrollmentPayload);
+      if (payloadContractError) {
+        throw new Error(payloadContractError);
+      }
+
+      const savedAt = formatToday();
+
+      const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+      if (isOffline) {
+        const biometricError = validateOfflineBiometricsForSubmit(draft);
+        if (biometricError) {
+          setSubmitError(biometricError);
+          setSubmitting(false);
+          return;
+        }
+
+        const enrollmentDraft = buildEnrollmentDraftSnapshot(draft);
+        const offlinePhoto = buildOfflinePhotoUrl(draft);
+        const offlineRecord = await createOfflineFarmerRecord({
+          ...queuedPayload,
+          ownerAgentId: agentId,
+          enrollmentDraft,
+          photo: offlinePhoto,
+          status: OFFLINE_FARMER_STATUS.PENDING,
+          regDate: savedAt,
+          syncedAt: null,
+        });
+
+        requestFarmersRefresh();
+        clearDraft();
+        setEnrollmentSessionId("");
+        setIdCard({
+          mode: "offline",
+          clientId: offlineRecord.clientId,
+          farmerId: undefined,
+          name: offlineRecord.name,
+          photo: offlineRecord.photo,
+          cooperative: offlineRecord.cooperative,
+          savedAt,
+          agentName,
+        });
+        setStep("done");
+        return;
+      }
+
+      const createResponse = await enrollFarmer(enrollmentPayload);
+      let farmerRoot = parseEnrolledFarmerResponse(createResponse);
+      let resolvedFarmerId = readString(farmerRoot.farmer_id, farmerRoot.id);
+
+      if (!resolvedFarmerId) {
+        const matched = await resolveCreatedFarmerFromBackend({
+          personalInfo: enrollmentPayload,
+        });
+        if (matched) {
+          farmerRoot = matched;
+          resolvedFarmerId = readString(matched.farmer_id, matched.id);
+        }
+      }
+
+      if (!resolvedFarmerId) {
+        throw new Error("POST /farmers succeeded but no farmer ID was returned.");
+      }
+
+      const resolvedPhoto =
+        readString(
+          farmerRoot.profile_photo_url,
+          farmerRoot.photo_url,
+          farmerRoot.profile_photo,
+          farmerRoot.photo
+        ) || buildOfflinePhotoUrl(draft) || queuedPayload.photo;
+      const resolvedClientId = readString(farmerRoot.client_id, queuedPayload.clientId);
+
+      await createOfflineFarmerRecord({
+        clientId: resolvedClientId || undefined,
+        officialFarmerId: resolvedFarmerId,
+        id: resolvedFarmerId,
+        ownerAgentId: agentId,
+        payload: queuedPayload.payload,
+        status: OFFLINE_FARMER_STATUS.SYNCED,
+        syncedAt: new Date().toISOString(),
+        name: readString(farmerRoot.full_name, farmerRoot.name, queuedPayload.name),
+        photo: resolvedPhoto,
+        regDate: savedAt,
+        phone: readString(farmerRoot.phone_number, farmerRoot.phone, queuedPayload.phone),
+        state: readString(farmerRoot.state_of_origin, farmerRoot.state, queuedPayload.state),
+        lga: readString(farmerRoot.lga, farmerRoot.local_govt_area, queuedPayload.lga),
+        address: readString(
+          farmerRoot.residential_address,
+          farmerRoot.address,
+          queuedPayload.address
+        ),
+        nin: readString(farmerRoot.nin, queuedPayload.nin),
+        gender: readString(farmerRoot.gender, queuedPayload.gender),
+        cooperative: readString(farmerRoot.cooperative_name, queuedPayload.cooperative),
+        primaryCrop: readString(
+          farmerRoot.primary_crop,
+          farmerRoot.crop_type,
+          queuedPayload.primaryCrop
+        ),
+        farmSize: readString(farmerRoot.farm_size, queuedPayload.farmSize),
+        landOwnership: readString(farmerRoot.land_ownership, queuedPayload.landOwnership),
+        biometric: { face: true, fingerprint: true },
+      });
+
+      const enrollmentCredentials = extractFarmerEnrollmentCredentials(createResponse);
+      setIdCard({
+        mode: "online",
+        clientId: resolvedClientId,
+        farmerId: resolvedFarmerId,
+        name: readString(farmerRoot.full_name, farmerRoot.name, queuedPayload.name),
+        photo: resolvedPhoto,
+        cooperative: readString(farmerRoot.cooperative_name, queuedPayload.cooperative),
+        savedAt,
+        agentName,
+        credentials: enrollmentCredentials,
+      });
+      requestFarmersRefresh();
+
+      clearDraft();
+      setEnrollmentSessionId("");
+      setStep("done");
+    } catch (error) {
+      setSubmitError(formatEnrollmentError(error, enrollmentPayload));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const hydrateBiometricCaptureState = async (sessionIdOverride = "") => {
+    const draft = getDraft();
+    const sessionId = readString(sessionIdOverride, enrollmentSessionId, draft?.enrollment?.sessionId);
+    const resolved = await resolveBiometricCaptureState({ draft, sessionId, isOnline });
+    setFaceCapture(resolved.faceCapture);
+    setFingerCapture(resolved.fingerCapture);
+    return resolved;
+  };
+
+  const handleResumeDraft = async () => {
+    const draft = getDraft();
+    const savedSessionId = readString(draft?.enrollment?.sessionId);
+    if (savedSessionId) setEnrollmentSessionId(savedSessionId);
+    await hydrateBiometricCaptureState(savedSessionId);
+    setStep("biometric");
+  };
+
+  const handleStartEnrollment = async (clearExisting = false) => {
+    if (startingEnrollment) return;
+    setEnrollmentStartError("");
+    if (clearExisting) {
+      clearDraft();
+      setFaceCapture("idle");
+      setFingerCapture("idle");
+      setEnrollmentSessionId("");
+    } else if (enrollmentSessionId) {
+      await hydrateBiometricCaptureState(enrollmentSessionId);
+      setStep("biometric");
+      return;
+    }
+
+    // Offline — skip the server call, generate a local session UUID
+    if (!isOnline) {
+      const localSessionId =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `offline-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+      setEnrollmentSessionId(localSessionId);
+      setDraft({ enrollment: { sessionId: localSessionId, offline: true } });
+      setStep("biometric");
+      return;
+    }
+
+    setStartingEnrollment(true);
+    try {
+      const agentId = getAgentIdFromSession();
+      if (!agentId) throw new Error("Agent session is missing an agent ID. Log in again and retry.");
+      const response = await startEnrollmentSession({ agent_id: agentId });
+      const sessionId = readString(response?.data?.session_id, response?.session_id);
+      if (!sessionId) throw new Error("Backend did not return an enrollment session ID.");
+      setEnrollmentSessionId(sessionId);
+      setDraft({ enrollment: { sessionId } });
+      setStep("biometric");
+    } catch (error) {
+      setEnrollmentStartError(getDisplayError(error, "Could not start enrollment. Try again."));
+    } finally {
+      setStartingEnrollment(false);
+    }
+  };
+
+  if (step === "face-capture") {
+    return (
+      <>
+        <div className="md:hidden">
+          <AgentFacialVerification
+            onSuccess={() => {
+              markBiometricDraftFlag("face");
+              setFaceCapture("done");
+              setStep("biometric");
+            }}
+            onBack={() => setStep("biometric")}
+            sessionId={enrollmentSessionId}
+            offline={!isOnline}
+            onOfflineCapture={saveOfflineFaceCapture}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            <AgentFacialVerification
+              embedded
+              onSuccess={() => {
+                markBiometricDraftFlag("face");
+                setFaceCapture("done");
+                setStep("biometric");
+              }}
+              onBack={() => setStep("biometric")}
+              sessionId={enrollmentSessionId}
+              offline={!isOnline}
+              onOfflineCapture={saveOfflineFaceCapture}
+            />
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+
+  if (step === "fingerprint-capture") {
+    return (
+      <>
+        <div className="md:hidden">
+          <AgentFingerprintVerification
+            onSuccess={() => {
+              markBiometricDraftFlag("fingerprint");
+              setFingerCapture("done");
+              setStep("biometric");
+            }}
+            onBack={() => setStep("biometric")}
+            sessionId={enrollmentSessionId}
+            offline={!isOnline}
+            onOfflineCapture={saveOfflineFingerprintCapture}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            <AgentFingerprintVerification
+              embedded
+              onSuccess={() => {
+                markBiometricDraftFlag("fingerprint");
+                setFingerCapture("done");
+                setStep("biometric");
+              }}
+              onBack={() => setStep("biometric")}
+              sessionId={enrollmentSessionId}
+              offline={!isOnline}
+              onOfflineCapture={saveOfflineFingerprintCapture}
+            />
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+
+  if (step === "start") {
+    const startProps = {
+      onStart: () => handleStartEnrollment(true),
+      onResume: handleResumeDraft,
+      hasPendingDraft: hasUnfinishedDraft(),
+      onBack: goHome,
+    };
+    const offlineBanner = !isOnline && (
+      <div className="mx-4 mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2">
+        <span className="text-amber-600 text-lg leading-none mt-0.5">⚠</span>
+        <p className="font-sans text-xs text-amber-800">
+          <span className="font-semibold">You are offline.</span> Registration data will be saved to this device and synced to the server when you are back online. Use the &ldquo;Sync now&rdquo; button on the dashboard.
+        </p>
+      </div>
+    );
+    return (
+      <>
+        <div className="md:hidden">
+          {offlineBanner}
+          <StartScreen {...startProps} />
+          {enrollmentStartError ? (
+            <p className="px-4 pb-3 text-sm text-red-600">{enrollmentStartError}</p>
+          ) : null}
+          {startingEnrollment ? (
+            <p className="px-4 pb-3 text-sm text-brand-text-secondary">Starting enrollment session...</p>
+          ) : null}
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            {offlineBanner}
+            <StartScreen embedded {...startProps} />
+            {enrollmentStartError ? (
+              <p className="px-4 pb-3 text-sm text-red-600">{enrollmentStartError}</p>
+            ) : null}
+            {startingEnrollment ? (
+              <p className="px-4 pb-3 text-sm text-brand-text-secondary">Starting enrollment session...</p>
+            ) : null}
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "biometric") {
+    return (
+      <>
+        <div className="md:hidden">
+          <BiometricStep
+            faceCapture={faceCapture}
+            fingerCapture={fingerCapture}
+            onFaceTap={() => setStep("face-capture")}
+            onFingerTap={() => setStep("fingerprint-capture")}
+            onNext={() => setStep("personal")}
+            onBack={() => setStep("start")}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            <BiometricStep
+              embedded
+              faceCapture={faceCapture}
+              fingerCapture={fingerCapture}
+              onFaceTap={() => setStep("face-capture")}
+              onFingerTap={() => setStep("fingerprint-capture")}
+              onNext={() => setStep("personal")}
+              onBack={() => setStep("start")}
+            />
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "personal") {
+    return (
+      <>
+        <div className="md:hidden">
+          <PersonalStep
+            onNext={() => setStep("farm")}
+            onBack={() => setStep("biometric")}
+            stateOptions={stateOptions}
+            statesLoading={statesLoading}
+            statesError={statesError}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            <PersonalStep
+              embedded
+              onNext={() => setStep("farm")}
+              onBack={() => setStep("biometric")}
+              stateOptions={stateOptions}
+              statesLoading={statesLoading}
+              statesError={statesError}
+            />
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "farm") {
+    return (
+      <>
+        <div className="md:hidden">
+          <FarmStep onNext={() => setStep("coop")} onBack={() => setStep("personal")} />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            <FarmStep embedded onNext={() => setStep("coop")} onBack={() => setStep("personal")} />
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "coop") {
+    return (
+      <>
+        <div className="md:hidden">
+          <CoopStep onNext={() => setStep("review")} onBack={() => setStep("farm")} stateOptions={stateOptions} />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            <CoopStep embedded onNext={() => setStep("review")} onBack={() => setStep("farm")} stateOptions={stateOptions} />
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "review") {
+    const reviewProps = {
+      onSubmit: handleSubmit,
+      onBack: () => setStep("coop"),
+      submitting,
+      submitError,
+      submitLabel: isOnline ? "Continue and submit" : "Save offline & queue sync",
+    };
+    return (
+      <>
+        <div className="md:hidden">
+          <ReviewStep {...reviewProps} />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            <ReviewStep embedded {...reviewProps} />
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+  if (step === "done") {
+    return (
+      <>
+        <div className="md:hidden">
+          <DoneStep
+            idCard={idCard}
+            onRegisterAnother={() => {
+              setFaceCapture("idle");
+              setFingerCapture("idle");
+              setEnrollmentSessionId("");
+              setStep("start");
+            }}
+            onGoHome={goHome}
+          />
+        </div>
+        <AgentDesktopShell active="farmers">
+          <div className="w-full max-w-[862.81px]">
+            <DoneStep
+              embedded
+              idCard={idCard}
+              onRegisterAnother={() => {
+                setFaceCapture("idle");
+                setFingerCapture("idle");
+                setEnrollmentSessionId("");
+                setStep("start");
+              }}
+              onGoHome={goHome}
+            />
+          </div>
+        </AgentDesktopShell>
+      </>
+    );
+  }
+
+  return null;
+}
