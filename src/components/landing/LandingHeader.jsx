@@ -10,7 +10,7 @@ export default function LandingHeader() {
       <div className="relative flex items-center justify-between gap-4">
         <Link to="/" aria-label="HFEI home" className="shrink-0">
           <img
-            src="/brand/HFEI_Primary_Logo_.png"
+            src="/brand/HFEI_Primary_Logo_.svg"
             alt="HFEI"
             className="h-[33px] w-auto tablet:h-[34px]"
           />
