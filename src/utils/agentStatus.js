@@ -86,8 +86,15 @@ export function extractFarmerAgentUpgradeStatus(payload) {
         : root?.field_agent && typeof root.field_agent === "object"
           ? root.field_agent
           : null;
+  const agentUpgrade =
+    root?.agent_upgrade && typeof root.agent_upgrade === "object"
+      ? root.agent_upgrade
+      : farmer?.agent_upgrade && typeof farmer.agent_upgrade === "object"
+        ? farmer.agent_upgrade
+        : null;
 
   const status = readString(
+    agentUpgrade?.status,
     farmer?.agent_upgrade_status,
     farmer?.upgrade_to_agent_status,
     farmer?.upgrade_status,
