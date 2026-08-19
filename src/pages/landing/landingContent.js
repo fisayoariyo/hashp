@@ -194,6 +194,7 @@ export const LANDING_FOOTER_GROUPS = [
   {
     title: "Contact",
     links: [
+      { label: "Hashmar Cropex", href: "https://hashmarcropex.com/" },
       { label: "hashmarfarms@gmail.com", href: "mailto:hashmarfarms@gmail.com" },
       { label: "08153953002", href: "tel:08153953002" },
     ],
@@ -202,18 +203,23 @@ export const LANDING_FOOTER_GROUPS = [
 
 export const LANDING_SOCIAL_LINKS = [
   {
-    label: "WhatsApp",
-    href: "https://wa.me/2348133905285",
-    icon: "/landing/icons/whatsapp.svg",
+    label: "Instagram",
+    href: "https://www.instagram.com/hashmarfarms/",
+    icon: "/landing/icons/instagram.svg",
+  },
+  {
+    label: "TikTok",
+    href: "https://www.tiktok.com/@hashmarcropex",
+    icon: "/landing/icons/tiktok.svg",
   },
   {
     label: "Facebook",
-    href: "#",
+    href: "https://www.facebook.com/profile.php?id=61591667036191",
     icon: "/landing/icons/facebook.svg",
   },
   {
     label: "X",
-    href: "#",
+    href: "https://x.com/Hashmar_Cropex",
     icon: "/landing/icons/x.svg",
   },
 ];
